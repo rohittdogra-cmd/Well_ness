@@ -16,7 +16,7 @@ body {
   color: #293e33;
   background: #faf9f5;
   min-height: 100vh;
-  font-family: "Figtree", Arial, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 .wellness-shell * {
   box-sizing: border-box;

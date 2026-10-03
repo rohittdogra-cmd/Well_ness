@@ -3,17 +3,14 @@ import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   Search,
-  Plus,
   Users,
   ArrowUpRight,
   ArrowLeft,
   Check,
-  X,
 } from "lucide-react";
 import { useGroups, useCommunityAction } from "@/hooks/useCommunity";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { groupCategories, getCategory } from "@/lib/groupCategories";
-import { toast } from "sonner";
 const subscribeToLocation = (callback: () => void) => {
   window.addEventListener("popstate", callback);
   return () => window.removeEventListener("popstate", callback);
@@ -27,10 +24,7 @@ export function GroupsPage() {
   const initialCategory = useSyncExternalStore(subscribeToLocation, () => new URLSearchParams(window.location.search).get("category") || "", () => "");
   const [selectedCategory, setCategory] = useState<string | null>(null);
   const category = selectedCategory ?? (groupCategories.some(c => c.id === initialCategory) ? initialCategory : "");
-  const [create, setCreate] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [newCategory, setNewCategory] = useState("sports");
+
   const filtered =
     groups.data?.filter(
       (g) =>
@@ -49,16 +43,6 @@ export function GroupsPage() {
           <h1>Find your next connection.</h1>
           <p>Start with an interest. Stay for the people.</p>
         </div>
-        <button
-          className="wellness-button"
-          aria-expanded={create}
-          onClick={() => {
-            setCreate(!create);
-            setNewCategory(category || "sports");
-          }}
-        >
-          <Plus size={18} /> Create a subgroup
-        </button>
       </header>
       <div className="discovery-banner">
         <span className="banner-icon">
@@ -100,95 +84,6 @@ export function GroupsPage() {
           </button>
         </div>
       </div>
-      {create && (
-        <form
-          className="composer create-group-form"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              await action.mutateAsync({
-                name: "create_group",
-                args: {
-                  p_name: name,
-                  p_description: description,
-                  p_category: newCategory,
-                },
-              });
-              setCreate(false);
-              setName("");
-              setDescription("");
-              setCategory(newCategory);
-              setSearch("");
-              setMine(false);
-              toast.success("Your subgroup is ready.");
-            } catch (e) {
-              toast.error(
-                e instanceof Error ? e.message : "Could not create group",
-              );
-            }
-          }}
-        >
-          <div className="section-title">
-            <h2>Bring your people together</h2>
-            <button
-              type="button"
-              aria-label="Close group form"
-              className="icon-button"
-              onClick={() => setCreate(false)}
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <label className="field-label" htmlFor="group-category">
-            Main category
-          </label>
-          <select
-            id="group-category"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-          >
-            {groupCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <label className="field-label" htmlFor="group-name">
-            Subgroup name
-          </label>
-          <input
-            id="group-name"
-            required
-            minLength={2}
-            maxLength={60}
-            placeholder="e.g. Weekend football crew"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <label className="field-label" htmlFor="group-description">
-            What brings this group together?
-          </label>
-          <textarea
-            id="group-description"
-            required
-            maxLength={500}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <div className="composer-actions">
-            <button
-              type="button"
-              className="text-action"
-              onClick={() => setCreate(false)}
-            >
-              Cancel
-            </button>
-            <button className="wellness-button" disabled={action.isPending}>
-              {action.isPending ? "Creating…" : "Create subgroup"}
-            </button>
-          </div>
-        </form>
-      )}
       <div className="section-title">
         <h2>{category ? chosen.name : "Explore by category"}</h2>
         {category && (
@@ -244,7 +139,7 @@ export function GroupsPage() {
         <p role="status">Loading your groups…</p>
       ) : groups.error ? (
         <div className="empty-state" role="alert">
-          <p>We couldn’t load your groups.</p>
+          <p>We couldn&apos;t load your groups.</p>
           <button className="wellness-button" onClick={() => groups.refetch()}>
             Try again
           </button>
@@ -255,7 +150,7 @@ export function GroupsPage() {
           <h2>
             {mine ? "Your next group is waiting." : "No matching groups yet."}
           </h2>
-          <p>Try another category or create a subgroup around your interest.</p>
+          <p>Try another category or check back soon for new groups.</p>
           <button
             className="text-action"
             onClick={() => {

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRight,
   ArrowLeft,
@@ -15,10 +16,27 @@ import {
   Trophy,
   MessageCircle,
   LoaderCircle,
+  Zap,
+  Globe,
+  Sparkles,
 } from "lucide-react";
 import { getSupabase, isConfigured } from "@/lib/supabase/client";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 const subscribe = () => () => {};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.3 } },
+};
+const fadeUp = {
+  hidden: { opacity: 0, y: 25 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+};
+const fadeIn = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.5 } },
+};
+
 export function SignInPage() {
   const { user, isInitializing } = useInternetIdentity();
   const router = useRouter();
@@ -26,6 +44,7 @@ export function SignInPage() {
     "professional",
   );
   const [mode, setMode] = useState<"signin" | "signup" | "code">("signin");
+  const [otpType, setOtpType] = useState<"signup" | "email">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -69,6 +88,7 @@ export function SignInPage() {
     setCode("");
     setError("");
     setPassword("");
+    setOtpType("email");
   }
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,7 +115,10 @@ export function SignInPage() {
         });
         if (error) throw error;
         if (data.session) router.replace("/");
-        else setSent(true);
+        else {
+          setOtpType("signup");
+          setSent(true);
+        }
       } else {
         const { error } = await auth.signInWithOtp({
           email: address,
@@ -105,6 +128,7 @@ export function SignInPage() {
           },
         });
         if (error) throw error;
+        setOtpType("email");
         setSent(true);
       }
     } catch (e) {
@@ -125,7 +149,7 @@ export function SignInPage() {
       const { error } = await getSupabase().auth.verifyOtp({
         email: email.trim().toLowerCase(),
         token: code.trim(),
-        type: "email",
+        type: otpType,
       });
       if (error) throw error;
       router.replace("/");
@@ -156,66 +180,136 @@ export function SignInPage() {
   return (
     <main className="auth-experience">
       <section className="auth-story">
-        <div className="auth-logo">
+        {/* Floating particles */}
+        <div className="auth-particles" aria-hidden="true">
+          {[...Array(6)].map((_, i) => (
+            <motion.span
+              key={i}
+              className="particle"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{
+                opacity: [0, 0.6, 0],
+                scale: [0, 1.2, 0],
+                y: [0, -120 - i * 30],
+                x: [0, (i % 2 ? 1 : -1) * (20 + i * 15)],
+              }}
+              transition={{
+                duration: 4 + i * 0.7,
+                repeat: Infinity,
+                delay: i * 0.8,
+                ease: "easeInOut",
+              }}
+            />
+          ))}
+        </div>
+
+        <motion.div
+          className="auth-logo"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
           <span>
             <Heart size={22} />
           </span>
           wellness<span className="brand-dot">.</span>
-        </div>
-        <div className="auth-story-copy">
-          <span className="auth-kicker">MORE THAN WORK. MORE THAN CLASS.</span>
-          <h1>
-            Your people.
+        </motion.div>
+
+        <motion.div
+          className="auth-story-copy"
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.span className="auth-kicker typing-cursor" variants={fadeUp}>
+            MORE THAN WORK. MORE THAN CLASS.
+          </motion.span>
+
+          <motion.h1 variants={fadeUp}>
+            <span className="text-line">Your people.</span>
             <br />
-            Your interests.
+            <span className="text-line">Your interests.</span>
             <br />
-            <em>Your kind of place.</em>
-          </h1>
-          <p>
+            <em className="gradient-text-hero">Your kind of place.</em>
+          </motion.h1>
+
+          <motion.p variants={fadeIn}>
             Meet beyond the everyday. Find a team, share an idea, or turn a
             small hello into a real connection.
-          </p>
-        </div>
-        <div className="auth-collage">
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="auth-collage"
+          initial={{ opacity: 0, y: 30, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        >
           <img
             src="/images/community-hero.webp"
             alt="Friends sharing a relaxed break outdoors"
             width="1000"
             height="560"
           />
-          <div className="auth-photo-label">
+          <motion.div
+            className="auth-photo-label"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 1.8 }}
+          >
             <span className="connection-dot" /> A little more together.
-          </div>
-        </div>
-        <div className="auth-benefits">
-          <span>
-            <Trophy size={18} />
-            Find your team
-          </span>
-          <span>
-            <Users size={18} />
-            Meet your people
-          </span>
-          <span>
-            <MessageCircle size={18} />
-            Start a conversation
-          </span>
-        </div>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="auth-benefits"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 2.0 }}
+        >
+          {[
+            { Icon: Trophy, text: "Find your team" },
+            { Icon: Users, text: "Meet your people" },
+            { Icon: MessageCircle, text: "Start a conversation" },
+          ].map((item, i) => (
+            <motion.span
+              key={item.text}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 2.0 + i * 0.15 }}
+            >
+              <item.Icon size={18} />
+              {item.text}
+            </motion.span>
+          ))}
+        </motion.div>
       </section>
+
       <section className="auth-form-side">
-        <div className="auth-top-note">
+        <motion.div
+          className="auth-top-note"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
           A space for professionals & students <span>✦</span>
-        </div>
-        <div className="auth-card">
-          <span className="eyebrow">LET’S MAKE ROOM FOR YOU</span>
+        </motion.div>
+
+        <motion.div
+          className="auth-card"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <span className="eyebrow">LET&apos;S MAKE ROOM FOR YOU</span>
           <h2>
             {sent
               ? "Check your inbox."
               : mode === "signup"
                 ? "Find where you belong."
                 : mode === "code"
-                  ? "One code. You’re in."
-                  : "Welcome to your hub."}
+                  ? "One code. You\u2019re in."
+                  : <>Welcome to <span className="gradient-text-warm">your hub</span>.</>}
           </h2>
           <p className="auth-subtitle">
             {sent
@@ -250,13 +344,14 @@ export function SignInPage() {
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                 />
                 <button className="wellness-button auth-submit" disabled={busy}>
-                  {busy ? "Verifying…" : "Verify code and continue"}
+                  {busy ? "Verifying\u2026" : "Verify code and continue"}
                   <ArrowRight size={18} />
                 </button>
               </form>
               <p className="auth-help">
-                If your email contains a confirmation link instead, open it in
-                this browser. New accounts must verify their email once.
+                Open the email link to continue automatically. The code is a
+                backup if you would rather finish here. New accounts verify
+                their email once.
               </p>
               <button
                 className="text-action"
@@ -297,9 +392,9 @@ export function SignInPage() {
               >
                 <Linkedin size={21} />
                 {linkedIn === "loading"
-                  ? "Checking LinkedIn…"
+                  ? "Checking LinkedIn\u2026"
                   : "Continue with LinkedIn"}
-                <ArrowUpRightIcon />
+                <ArrowRight size={18} aria-hidden="true" style={{ marginLeft: "auto" }} />
               </button>
               {linkedIn === "unavailable" && (
                 <p className="provider-status">
@@ -421,26 +516,37 @@ export function SignInPage() {
               )}
             </>
           )}
-          {(error || (expired && !sent)) && (
-            <p className="signin-error" role="alert">
-              {error ||
-                "We couldn’t complete email confirmation. Request a new email here, then use its latest link or verification code."}
-            </p>
-          )}
+          <AnimatePresence>
+            {(error || (expired && !sent)) && (
+              <motion.p
+                className="signin-error"
+                role="alert"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                {error ||
+                  "We couldn\u2019t complete email confirmation. Request a new email here, then use its latest link or verification code."}
+              </motion.p>
+            )}
+          </AnimatePresence>
           <div className="auth-trust">
             <ShieldCheck size={18} />
             <span>
               Your check-ins stay private. Your connections start with consent.
             </span>
           </div>
-        </div>
-        <p className="auth-bottom-note">
+        </motion.div>
+
+        <motion.p
+          className="auth-bottom-note"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+        >
           A little connection. A lot of possibility.
-        </p>
+        </motion.p>
       </section>
     </main>
   );
-}
-function ArrowUpRightIcon() {
-  return <ArrowRight size={18} aria-hidden="true" />;
 }

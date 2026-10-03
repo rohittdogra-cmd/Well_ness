@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useProfileQuery } from "../hooks/useLocalProfile";
+import { RowSkeleton, Skeleton } from "./Skeleton";
 export function AuthGate({ children }: { children: ReactNode }) {
   const { user, isInitializing } = useInternetIdentity();
   const profile = useProfileQuery();
@@ -22,7 +23,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return (
       <div className="auth-loading" role="alert">
         <div>
-          <h2>We couldn’t load your profile.</h2>
+          <h2>We couldn't load your profile.</h2>
           <p>{profile.error.message}</p>
           <button className="wellness-button" onClick={() => profile.refetch()}>
             Try again
@@ -32,8 +33,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   if (loading || !user || needsProfile)
     return (
-      <div className="auth-loading" role="status">
-        Loading your space…
+      <div className="auth-loading" role="status" aria-label="Loading">
+        <div style={{ width: "100%", maxWidth: 500, padding: "0 24px" }}>
+          <Skeleton style={{ height: 28, width: "50%", marginBottom: 16 }} />
+          <Skeleton style={{ height: 14, width: "80%", marginBottom: 24 }} />
+          <RowSkeleton count={3} />
+        </div>
       </div>
     );
   return children;

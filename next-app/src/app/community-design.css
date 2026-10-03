@@ -1167,24 +1167,44 @@
 }
 @media (max-width: 640px) {
   .auth-experience {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
   }
   .auth-story {
-    padding: 24px;
-    background: #123c43;
+    padding: 28px 24px 32px;
+    background: linear-gradient(165deg, #0b2e34 0%, #123d45 40%, #1a4f50 100%);
+    position: relative;
+  }
+  /* Subtle mesh overlay for depth */
+  .auth-story::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 80%, #5ef5d012 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, #087f7915 0%, transparent 50%);
+    pointer-events: none;
   }
   .auth-logo {
-    font-size: 23px;
+    font-size: 24px;
+    position: relative;
+    z-index: 1;
   }
   .auth-story-copy {
-    margin-top: 27px;
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
   }
   .auth-kicker {
-    font-size: 8px;
+    font-size: 9px;
+    letter-spacing: 0.18em;
   }
   .auth-story h1 {
-    font-size: 35px;
-    margin: 14px 0 0;
+    font-size: clamp(32px, 9vw, 42px);
+    margin: 12px 0 0;
+    line-height: 1.08;
+    letter-spacing: -0.05em;
   }
   .auth-story h1 br:nth-of-type(2) {
     display: none;
@@ -1193,13 +1213,38 @@
     display: block;
     margin-top: 4px;
   }
-  .auth-story-copy > p,
-  .auth-collage,
-  .auth-benefits {
+  /* Keep the subtitle visible on mobile */
+  .auth-story-copy > p {
+    display: block;
+    font-size: 13px;
+    color: #9fc5c5;
+    margin-top: 12px;
+    max-width: 320px;
+    line-height: 1.55;
+  }
+  .auth-collage {
     display: none;
   }
+  /* Show benefits as compact pills */
+  .auth-benefits {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    font-size: 9px;
+    position: relative;
+    z-index: 1;
+  }
+  .auth-benefits span {
+    background: #ffffff0d;
+    border: 1px solid #ffffff15;
+    border-radius: 20px;
+    padding: 5px 10px;
+    backdrop-filter: blur(4px);
+  }
   .auth-form-side {
-    padding: 25px 24px;
+    padding: 28px 24px;
+    flex: 1;
   }
   .auth-top-note {
     display: none;
@@ -1208,8 +1253,12 @@
     padding: 0;
     max-width: 420px;
   }
+  .auth-card::before {
+    display: none;
+  }
   .auth-card h2 {
-    font-size: 28px;
+    font-size: 26px;
+    letter-spacing: -0.03em;
   }
   .auth-card > .eyebrow {
     display: none;
@@ -1223,45 +1272,113 @@
   .auth-trust {
     margin-top: 22px;
   }
-  .auth-story h1 {
-    line-height: 1.1;
-  }
+
+  /* ─── Member Home Hero ─── */
   .member-home,
   .hub-page,
   .people-page {
-    padding: 24px 18px;
+    padding: 20px 16px;
   }
   .member-greeting {
     gap: 12px;
   }
   .member-greeting h1 {
-    font-size: 27px;
+    font-size: clamp(28px, 8vw, 36px);
+    letter-spacing: -0.04em;
+    line-height: 1.15;
   }
   .member-greeting p {
-    font-size: 12px;
+    font-size: 14px;
+    color: var(--muted);
   }
+  /* Keep the sparkle visible on mobile */
   .greeting-mark {
-    display: none;
+    display: grid;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #fcebd9, #fde2c8);
   }
   .member-hero {
     grid-template-columns: 1fr;
-    padding: 24px;
-    border-radius: 18px;
+    padding: 0;
+    border-radius: 20px;
+    background: linear-gradient(155deg, #0b2e34 0%, #123d45 50%, #1a4f50 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Subtle glow on mobile hero */
+  .member-hero::after {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, #5ef5d015 0%, transparent 70%);
+    top: -50px;
+    right: -50px;
+    pointer-events: none;
+  }
+  .member-hero > div:first-child {
+    padding: 26px 22px 0;
+    position: relative;
+    z-index: 1;
   }
   .member-hero h2 {
-    font-size: 38px;
-  }
-  .member-hero-image {
-    min-height: 0;
-    height: 190px;
+    font-size: clamp(32px, 9vw, 42px);
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin: 14px 0 10px;
   }
   .member-hero p {
     max-width: 100%;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
   }
+  .member-hero .wellness-button {
+    margin-bottom: 22px;
+  }
+  .member-hero-image {
+    min-height: 0;
+    height: 200px;
+    margin: 0;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+  }
+  .member-hero-image img {
+    border-radius: 0;
+    height: 200px;
+    object-position: center 30%;
+  }
+  .member-hero-image > span {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    padding: 10px 14px;
+    font-size: 11px;
+    background: #ffffffdd;
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+  }
+
+  /* ─── Quick Actions: horizontally scrollable ─── */
   .quick-actions {
-    gap: 10px;
-    margin-top: 16px;
-    margin-bottom: 28px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 0 8px;
+    margin: 16px -16px 28px;
+    padding-inline: 16px;
+  }
+  .quick-actions > div,
+  .quick-actions > a {
+    flex: 0 0 80%;
+    scroll-snap-align: start;
+    min-width: 260px;
+  }
+  .quick-actions::-webkit-scrollbar {
+    display: none;
   }
   .home-category-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1505,4 +1622,38 @@
   padding: 13px;
   border-radius: 10px;
   color: #286b4c !important;
+}
+
+/* Loading skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #edf1f2 25%, #f8fafa 37%, #edf1f2 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+.skeleton-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.skeleton-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #edf1f2;
+}
+.skeleton-hero {
+  padding: 36px 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    background: #edf1f2;
+  }
 }

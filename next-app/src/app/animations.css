@@ -1,0 +1,280 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ✨ Premium animations & effects
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Gradient text glow ─────────────────────────────────────────── */
+.gradient-text-glow {
+  background: linear-gradient(135deg, #5ef5d0 0%, #a8e6cf 30%, #7fdbca 60%, #45c9b0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-style: normal !important;
+  position: relative;
+}
+.gradient-text-glow::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: blur(20px);
+  opacity: 0.5;
+  z-index: -1;
+}
+
+/* Dark hero variant */
+.gradient-text-hero {
+  background: linear-gradient(135deg, #b2e2cb 0%, #5ef5d0 40%, #87edb5 70%, #ade3c9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-style: normal !important;
+}
+
+/* Warm greeting gradient */
+.gradient-text-warm {
+  background: linear-gradient(135deg, #087f79 0%, #0aa89f 35%, #45c9b0 65%, #087f79 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 4s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+}
+
+/* ─── Floating particles ─────────────────────────────────────────── */
+.auth-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.particle {
+  position: absolute;
+  bottom: 20%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5ef5d0;
+  box-shadow: 0 0 12px #5ef5d044;
+}
+.particle:nth-child(1) { left: 15%; }
+.particle:nth-child(2) { left: 35%; }
+.particle:nth-child(3) { left: 55%; }
+.particle:nth-child(4) { left: 70%; }
+.particle:nth-child(5) { left: 25%; }
+.particle:nth-child(6) { left: 80%; }
+
+/* ─── Text line reveal ───────────────────────────────────────────── */
+.text-line {
+  display: inline-block;
+}
+
+/* ─── Glowing card effect ────────────────────────────────────────── */
+.auth-card {
+  position: relative;
+  overflow: hidden;
+}
+.auth-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    #087f7908 90deg,
+    transparent 180deg
+  );
+  animation: card-glow-rotate 8s linear infinite;
+  z-index: -1;
+}
+@keyframes card-glow-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Pulsing connection dot ─────────────────────────────────────── */
+.connection-dot {
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+/* ─── Greeting sparkle ───────────────────────────────────────────── */
+.greeting-mark {
+  animation: sparkle-rotate 6s ease-in-out infinite;
+}
+@keyframes sparkle-rotate {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(10deg) scale(1.1); }
+  75% { transform: rotate(-10deg) scale(0.95); }
+}
+
+/* ─── Hero section glow border ───────────────────────────────────── */
+.member-hero {
+  position: relative;
+  overflow: hidden;
+}
+.member-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  padding: 1px;
+  background: linear-gradient(135deg, #5ef5d022, #087f7933, #5ef5d022);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ─── Animated underline on hover ────────────────────────────────── */
+.animated-underline {
+  position: relative;
+  display: inline-block;
+}
+.animated-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #087f79, #5ef5d0);
+  transition: width 0.4s ease;
+  border-radius: 2px;
+}
+.animated-underline:hover::after {
+  width: 100%;
+}
+
+/* ─── Quick action card hover lift ───────────────────────────────── */
+.quick-actions > a {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s,
+              box-shadow 0.3s;
+}
+.quick-actions > a:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px #087f7912;
+}
+
+/* ─── Category card hover effect ─────────────────────────────────── */
+.home-category {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s;
+}
+.home-category:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 16px 40px #0a3d3a14;
+}
+
+/* ─── Typing cursor blink for kicker ─────────────────────────────── */
+.typing-cursor::after {
+  content: "▎";
+  animation: blink-cursor 1s step-end infinite;
+  color: #5ef5d0;
+  margin-left: 2px;
+}
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ─── Stats counter glow ─────────────────────────────────────────── */
+.stat-number {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  background: linear-gradient(135deg, #087f79, #0aa89f, #45c9b0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.stat-label {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ─── Stagger animation helpers ──────────────────────────────────── */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: stagger-in 0.5s ease forwards;
+}
+@keyframes stagger-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+.stagger-item:nth-child(1) { animation-delay: 0.05s; }
+.stagger-item:nth-child(2) { animation-delay: 0.1s; }
+.stagger-item:nth-child(3) { animation-delay: 0.15s; }
+.stagger-item:nth-child(4) { animation-delay: 0.2s; }
+.stagger-item:nth-child(5) { animation-delay: 0.25s; }
+.stagger-item:nth-child(6) { animation-delay: 0.3s; }
+
+/* ─── Smooth page content fade ───────────────────────────────────── */
+.wellness-content > main {
+  animation: page-enter 0.4s ease-out;
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Subgroup card shimmer border on hover ──────────────────────── */
+.subgroup-card {
+  position: relative;
+}
+.subgroup-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #087f7900, #087f7933, #5ef5d044, #087f7900);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.subgroup-card:hover::after {
+  opacity: 1;
+}
+
+/* ─── Respect reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gradient-text-warm { animation: none; }
+  .connection-dot { animation: none; }
+  .greeting-mark { animation: none; }
+  .auth-card::before { animation: none; }
+  .stagger-item { animation: none; opacity: 1; transform: none; }
+  .wellness-content > main { animation: none; }
+  .particle { display: none; }
+}
+
+/* Mobile particle adjustments */
+@media (max-width: 640px) {
+  .particle {
+    width: 4px;
+    height: 4px;
+  }
+  .particle:nth-child(n+5) {
+    display: none;
+  }
+  .auth-particles {
+    z-index: 0;
+  }
+}
