@@ -15,7 +15,9 @@ export function PsychologistsPage() {
         .from("providers")
         .select("id,name,description")
         .eq("status", "approved")
-        .eq("provider_type", "psychologist");
+        .eq("provider_type", "psychologist")
+        .order("name", { ascending: true })
+        .limit(200);
       if (error) throw error;
       return data as { id: number; name: string; description: string }[];
     },

@@ -13,7 +13,8 @@ export function AppointmentList() {
       const { data, error } = await getSupabase()
         .from("provider_bookings")
         .select("id,booking_time,confirmed,providers(name)")
-        .order("booking_time");
+        .order("booking_time", { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data;
     },

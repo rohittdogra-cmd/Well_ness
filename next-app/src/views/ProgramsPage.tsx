@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -7,7 +9,7 @@ import { motion } from "motion/react";
 import { CreateSessionModal } from "../components/CreateSessionModal";
 import { SessionCard, SessionCardSkeleton } from "../components/SessionCard";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
-import { useSessionsByType } from "../hooks/useQueries";
+import { useUpcomingSessions } from "../hooks/useQueries";
 import { ProgramType } from "../hooks/useQueries";
 import { getProgramConfig, getProgramTypeFromPath } from "../lib/programConfig";
 
@@ -329,7 +331,9 @@ export function ProgramsPage() {
   const programType = getProgramTypeFromPath(type) ?? ProgramType.meetup;
   const cfg = getProgramConfig(programType);
 
-  const { data: sessions, isLoading, isError } = useSessionsByType(programType);
+  const { data: sessions, isLoading, isError } = useUpcomingSessions({
+    type: programType,
+  });
   const { identity, login, isLoggingIn } = useInternetIdentity();
   const isAuthenticated = !!identity;
 

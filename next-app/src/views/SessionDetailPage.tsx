@@ -1,5 +1,8 @@
+"use client";
+
 import { EditSession } from "../components/EditSession";
 import { downloadCalendar } from "../lib/calendar";
+import { isFull, isJoined, participantCount } from "../lib/session";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -75,17 +78,12 @@ export function SessionDetailPage() {
   const principalStr = identity?.getPrincipal().toString();
   const isAuthenticated = !!identity;
 
-  const isParticipant =
-    session && principalStr
-      ? session.participants.some((p) => p.toString() === principalStr)
-      : false;
+  const isParticipant = session ? isJoined(session, principalStr) : false;
   const isCreator =
     session && principalStr
       ? session.creator.toString() === principalStr
       : false;
-  const isFull = session
-    ? session.participants.length >= Number(session.maxParticipants)
-    : false;
+  const full = session ? isFull(session) : false;
   const isTaskSession = session?.programType === ProgramType.taskAllocation;
 
   const cfg = session ? getProgramConfig(session.programType) : null;
@@ -290,9 +288,9 @@ export function SessionDetailPage() {
                   Participants
                 </div>
                 <div className="text-sm font-medium text-foreground">
-                  {session.participants.length} /{" "}
+                  {participantCount(session)} /{" "}
                   {session.maxParticipants.toString()}
-                  {isFull && (
+                  {full && (
                     <Badge variant="secondary" className="ml-2 text-xs">
                       Full
                     </Badge>
@@ -344,7 +342,7 @@ export function SessionDetailPage() {
                 ) : (
                   <Button
                     onClick={handleJoin}
-                    disabled={joinMutation.isPending || isFull}
+                    disabled={joinMutation.isPending || full}
                     data-ocid="session.join_button"
                     className="w-full sm:w-auto"
                   >
@@ -353,7 +351,7 @@ export function SessionDetailPage() {
                     ) : (
                       <UserPlus className="w-4 h-4 mr-2" />
                     )}
-                    {isFull ? "Session Full" : "Join Session"}
+                    {full ? "Session Full" : "Join Session"}
                   </Button>
                 )}
               </div>

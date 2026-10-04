@@ -1,5 +1,13 @@
+"use client";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Boundary adapter: converts persisted Postgres rows to the existing view contracts.
+//
+// Every read here is filtered, ordered and bounded in Postgres. Nothing loads a
+// whole table and filters in JavaScript: `getSession` reads one row by primary
+// key, list reads go through the `*_summaries` views that compute participant
+// counts and "have I joined" flags server-side, and administrative counters come
+// from aggregate functions in a single round trip.
 import { getSupabase } from "./supabase/client";
 import { accountId } from "@/hooks/useInternetIdentity";
 import {
@@ -8,16 +16,35 @@ import {
   type Task,
   type ProviderApplication,
   type ProviderBooking,
+  type ActivityLog,
+  type AdminStats,
+  type SessionListOptions,
   UserRole,
 } from "@/backend.types";
+
+/** Hard ceiling on any single list read, so one request can never pull a whole table. */
+const MAX_ROWS = 500;
+const cap = (requested: number | undefined, fallback: number, max = MAX_ROWS) =>
+  Math.min(Math.max(requested ?? fallback, 1), max);
+
 const ns = (date: string) => BigInt(new Date(date).getTime()) * 1_000_000n;
 const iso = (time: bigint) => new Date(Number(time / 1_000_000n)).toISOString();
-const session = (r: any): Session => ({
+
+type Row = Record<string, any>;
+
+const sessionFromRow = (
+  r: Row,
+  roster?: string[],
+  joinedFor?: string,
+): Session => ({
   id: BigInt(r.id),
   title: r.title,
   description: r.description,
   creator: accountId(r.creator),
-  participants: (r.session_members ?? []).map((m: any) => accountId(m.user_id)),
+  participants: (roster ?? []).map(accountId),
+  participantCount: BigInt(r.participant_count ?? roster?.length ?? 0),
+  joined:
+    r.joined ?? (roster && joinedFor ? roster.includes(joinedFor) : undefined),
   createdAt: ns(r.created_at),
   dateTime: ns(r.date_time),
   maxParticipants: BigInt(r.max_participants),
@@ -25,7 +52,8 @@ const session = (r: any): Session => ({
   spaceName: r.space_name ?? undefined,
   location: r.location ?? undefined,
 });
-const task = (r: any): Task => ({
+
+const taskFromRow = (r: Row): Task => ({
   id: BigInt(r.id),
   sessionId: BigInt(r.session_id),
   title: r.title,
@@ -34,7 +62,8 @@ const task = (r: any): Task => ({
   completed: r.completed,
   createdAt: ns(r.created_at),
 });
-const provider = (r: any): ProviderApplication => ({
+
+const providerFromRow = (r: Row): ProviderApplication => ({
   id: BigInt(r.id),
   name: r.name,
   description: r.description,
@@ -43,7 +72,8 @@ const provider = (r: any): ProviderApplication => ({
   isRejected: r.status === "rejected",
   submittedAt: ns(r.created_at),
 });
-const booking = (r: any): ProviderBooking => ({
+
+const bookingFromRow = (r: Row): ProviderBooking => ({
   id: BigInt(r.id),
   providerId: BigInt(r.provider_id),
   user: accountId(r.user_id),
@@ -51,42 +81,112 @@ const booking = (r: any): ProviderBooking => ({
   isConfirmed: r.confirmed,
   createdAt: ns(r.created_at),
 });
-async function result(query: PromiseLike<any>) {
+
+const logFromRow = (r: Row): ActivityLog => ({
+  id: BigInt(r.id),
+  user: accountId(r.user_id),
+  activityType: r.activity_type,
+  relatedId: BigInt(r.related_id),
+  createdAt: ns(r.created_at),
+  activityTime: ns(r.created_at),
+});
+
+/** Unwraps a PostgREST response, turning driver errors into readable messages. */
+async function result<T>(query: PromiseLike<any>): Promise<T> {
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data;
+  if (error) throw new Error(error.message || "The database request failed.");
+  return data as T;
 }
-export async function rpc(name: string, args: Record<string, unknown> = {}) {
+
+export async function rpc(
+  name: string,
+  args: Record<string, unknown> = {},
+): Promise<any> {
   return result(getSupabase().rpc(name, args));
 }
+
 export function createBackend(userId: string): backendInterface {
   const db = getSupabase();
-  const sessions = async () =>
-    (
-      await result(
-        db
-          .from("sessions")
-          .select("*,session_members(user_id)")
-          .order("date_time"),
-      )
-    ).map(session) as Session[];
-  const tasks = async () =>
-    (await result(db.from("tasks").select("*"))).map(task) as Task[];
-  const providers = async () =>
-    (await result(db.from("providers").select("*"))).map(
-      provider,
-    ) as ProviderApplication[];
-  const bookings = async () =>
-    (
-      await result(
-        db.from("provider_bookings").select("*").order("booking_time"),
-      )
-    ).map(booking) as ProviderBooking[];
-  const one = <T>(items: T[], predicate: (item: T) => boolean): T => {
-    const item = items.find(predicate);
-    if (!item) throw new Error("This record is no longer available.");
-    return item;
+  const uid = userId;
+
+  // ── Sessions ───────────────────────────────────────────────────────────
+  const listSessions = async (options: SessionListOptions = {}) => {
+    let query = db
+      .from("session_summaries")
+      .select("*")
+      .order("date_time", { ascending: true })
+      .limit(cap(options.limit, 200));
+    if (options.type) query = query.eq("program_type", options.type);
+    if (options.upcoming)
+      query = query.gte("date_time", new Date().toISOString());
+    return (await result<Row[]>(query)).map((r) => sessionFromRow(r));
   };
+
+  const getSession = async (id: bigint) => {
+    const [summary] = await result<Row[]>(
+      db
+        .from("session_summaries")
+        .select("*")
+        .eq("id", id.toString())
+        .limit(1),
+    );
+    if (!summary) throw new Error("This record is no longer available.");
+    // Only the detail view shows the roster, so only it pays for the member ids.
+    const roster = await result<Row[]>(
+      db
+        .from("session_members")
+        .select("user_id")
+        .eq("session_id", id.toString())
+        .order("user_id"),
+    );
+    return sessionFromRow(
+      summary,
+      roster.map((m) => String(m.user_id)),
+      uid,
+    );
+  };
+
+  // ── Tasks ──────────────────────────────────────────────────────────────
+  const listTasks = async (options: { sessionId?: bigint; user?: string } = {}) => {
+    let query = db.from("tasks").select("*").order("id").limit(300);
+    if (options.sessionId)
+      query = query.eq("session_id", options.sessionId.toString());
+    if (options.user) query = query.eq("assigned_to", options.user);
+    return (await result<Row[]>(query)).map(taskFromRow);
+  };
+
+  // ── Providers ──────────────────────────────────────────────────────────
+  const listProviders = async (status?: "approved" | "pending" | "rejected") => {
+    let query = db.from("providers").select("*").order("id").limit(300);
+    if (status) query = query.eq("status", status);
+    return (await result<Row[]>(query)).map(providerFromRow);
+  };
+
+  // ── Appointments ───────────────────────────────────────────────────────
+  const listBookings = async (options: {
+    user?: string;
+    providerId?: bigint;
+    confirmed?: boolean;
+    limit?: number;
+  } = {}) => {
+    let query = db
+      .from("provider_bookings")
+      .select("*")
+      .order("booking_time", { ascending: false })
+      .limit(cap(options.limit, 200));
+    if (options.user) query = query.eq("user_id", options.user);
+    if (options.providerId)
+      query = query.eq("provider_id", options.providerId.toString());
+    if (options.confirmed !== undefined)
+      query = query.eq("confirmed", options.confirmed);
+    return (await result<Row[]>(query)).map(bookingFromRow);
+  };
+
+  const requireAdmin = async () => {
+    if (!(await result<boolean>(db.rpc("is_admin"))))
+      throw new Error("Admin access required");
+  };
+
   const actor: backendInterface = {
     _initializeAccessControlWithSecret: async () => {
       throw new Error("Manage administrator access in Supabase.");
@@ -94,15 +194,19 @@ export function createBackend(userId: string): backendInterface {
     assignCallerUserRole: async () => {
       throw new Error("Manage administrator access in Supabase.");
     },
-    isCallerAdmin: () => rpc("is_admin"),
+    isCallerAdmin: () => result(db.rpc("is_admin")),
     getCallerUserRole: async () =>
-      (await rpc("is_admin")) ? UserRole.admin : UserRole.user,
-    getCallerUserProfile: async () => {
-      const p = await result(
-        db.from("profiles").select("name").eq("id", userId).single(),
-      );
-      return p?.name ? p : null;
-    },
+      (await result(db.rpc("is_admin"))) ? UserRole.admin : UserRole.user,
+
+    getCallerUserProfile: async () =>
+      result(
+        db
+          .from("profiles")
+          .select("name")
+          .eq("id", uid)
+          .maybeSingle(),
+      ),
+
     getUserProfile: async (user) =>
       result(
         db
@@ -111,26 +215,56 @@ export function createBackend(userId: string): backendInterface {
           .eq("id", user.toString())
           .maybeSingle(),
       ),
+
     saveCallerUserProfile: async (profile) => {
+      // Upsert rather than update: the row is provisioned by a trigger, but a
+      // client that is ahead of that trigger should not lose its name.
       await result(
         db
           .from("profiles")
-          .update({ name: profile.name })
-          .eq("id", userId)
+          .upsert({ id: uid, name: profile.name }, { onConflict: "id" })
           .select()
           .single(),
       );
     },
-    getAllSessions: sessions,
+
+    // ── Sessions ─────────────────────────────────────────────────────────
+    listSessions,
+    getAllSessions: () => listSessions(),
     getSessionsByProgramType: async (type) =>
-      (await sessions()).filter((s) => s.programType === type),
-    getSession: async (id) => one(await sessions(), (s) => s.id === id),
+      listSessions({ type, upcoming: true }),
+    getSession,
     getMySessions: async () => {
-      const all = await sessions();
+      const created = await result<Row[]>(
+        db
+          .from("session_summaries")
+          .select("*")
+          .eq("creator", uid)
+          .order("date_time", { ascending: true })
+          .limit(200),
+      );
+      const memberships = await result<Row[]>(
+        db
+          .from("session_members")
+          .select("session_id")
+          .eq("user_id", uid)
+          .limit(500),
+      );
+      const ids = memberships.map((m) => String(m.session_id));
+      const joined = ids.length
+        ? await result<Row[]>(
+            db
+              .from("session_summaries")
+              .select("*")
+              .in("id", ids)
+              .order("date_time", { ascending: true })
+              .limit(500),
+          )
+        : [];
       return [
-        all.filter((s) => s.creator.toString() === userId),
-        all.filter((s) => s.participants.some((p) => p.toString() === userId)),
-      ];
+        created.map((r) => sessionFromRow(r)),
+        joined.map((r) => sessionFromRow(r)),
+      ] as [Session[], Session[]];
     },
     createSession: async (
       title,
@@ -180,14 +314,19 @@ export function createBackend(userId: string): backendInterface {
         p_location: location,
       });
     },
-    getAllTasks: tasks,
-    getTask: async (id) => one(await tasks(), (t) => t.id === id),
-    getTasksBySession: async (id) =>
-      (await tasks()).filter((t) => t.sessionId === id),
+
+    // ── Tasks ────────────────────────────────────────────────────────────
+    getAllTasks: () => listTasks(),
+    getTask: async (id) => {
+      const [row] = await result<Row[]>(
+        db.from("tasks").select("*").eq("id", id.toString()).limit(1),
+      );
+      if (!row) throw new Error("This record is no longer available.");
+      return taskFromRow(row);
+    },
+    getTasksBySession: async (id) => listTasks({ sessionId: id }),
     getTasksForUser: async (user) =>
-      (await tasks()).filter(
-        (t) => t.assignedTo?.toString() === user.toString(),
-      ),
+      listTasks({ user: user.toString() }),
     createTask: async (id, title, description, assigned) =>
       BigInt(
         await rpc("create_task", {
@@ -200,12 +339,18 @@ export function createBackend(userId: string): backendInterface {
     markTaskComplete: async (id) => {
       await rpc("complete_task", { p_task: id.toString() });
     },
-    getAllProviders: providers,
-    getApprovedProviders: async () =>
-      (await providers()).filter((p) => p.isApproved),
-    getPendingProviders: async () =>
-      (await providers()).filter((p) => !p.isApproved && !p.isRejected),
-    getProvider: async (id) => one(await providers(), (p) => p.id === id),
+
+    // ── Providers ────────────────────────────────────────────────────────
+    getAllProviders: () => listProviders(),
+    getApprovedProviders: () => listProviders("approved"),
+    getPendingProviders: () => listProviders("pending"),
+    getProvider: async (id) => {
+      const [row] = await result<Row[]>(
+        db.from("providers").select("*").eq("id", id.toString()).limit(1),
+      );
+      if (!row) throw new Error("This record is no longer available.");
+      return providerFromRow(row);
+    },
     submitProviderApplication: async (type, name, description) =>
       BigInt(
         await rpc("apply_provider", {
@@ -226,12 +371,23 @@ export function createBackend(userId: string): backendInterface {
         p_approve: false,
       });
     },
-    getAllBookings: bookings,
-    getBookingsForProvider: async (id) =>
-      (await bookings()).filter((b) => b.providerId === id),
+
+    // ── Appointments ─────────────────────────────────────────────────────
+    getAllBookings: () => listBookings(),
+    getBookingsForProvider: async (id) => listBookings({ providerId: id }),
     getBookingsForUser: async (user) =>
-      (await bookings()).filter((b) => b.user.toString() === user.toString()),
-    getBooking: async (id) => one(await bookings(), (b) => b.id === id),
+      listBookings({ user: user.toString() }),
+    getBooking: async (id) => {
+      const [row] = await result<Row[]>(
+        db
+          .from("provider_bookings")
+          .select("*")
+          .eq("id", id.toString())
+          .limit(1),
+      );
+      if (!row) throw new Error("This record is no longer available.");
+      return bookingFromRow(row);
+    },
     bookProvider: async (id, time) =>
       BigInt(
         await rpc("book_provider", {
@@ -242,67 +398,53 @@ export function createBackend(userId: string): backendInterface {
     cancelBooking: async (id) => {
       await rpc("cancel_booking", { p_booking: id.toString() });
     },
+
+    // ── Administration ───────────────────────────────────────────────────
     getAllUserProfiles: async () => {
-      const all = await sessions();
-      return (await result(db.from("profiles").select("id,name"))).map(
-        (p: any) => ({
-          principal: accountId(p.id),
-          name: p.name,
-          sessionsCreated: BigInt(
-            all.filter((s) => s.creator.toString() === p.id).length,
-          ),
-          sessionsJoined: BigInt(
-            all.filter((s) => s.participants.some((u) => u.toString() === p.id))
-              .length,
-          ),
-        }),
-      );
+      await requireAdmin();
+      const rows = await result<Row[]>(db.rpc("admin_user_profiles"));
+      return rows.map((p) => ({
+        principal: accountId(p.id),
+        name: p.name ?? "",
+        sessionsCreated: BigInt(p.sessions_created ?? 0),
+        sessionsJoined: BigInt(p.sessions_joined ?? 0),
+      }));
     },
-    getAdminStats: async () => {
-      if (!(await rpc("is_admin"))) throw new Error("Admin access required");
-      const [ss, tt, pp, bb, uu] = await Promise.all([
-        sessions(),
-        tasks(),
-        providers(),
-        bookings(),
-        result(db.from("profiles").select("id")),
-      ]);
+    getAdminStats: async (): Promise<AdminStats> => {
+      await requireAdmin();
+      const s = await result<Row>(db.rpc("admin_stats"));
       return {
-        totalTasks: BigInt(tt.length),
-        completedTasks: BigInt(tt.filter((t) => t.completed).length),
-        sessionsByType: [],
-        totalBookings: BigInt(bb.length),
-        rejectedProviders: BigInt(pp.filter((p) => p.isRejected).length),
-        approvedProviders: BigInt(pp.filter((p) => p.isApproved).length),
-        totalProviders: BigInt(pp.length),
-        totalUsers: BigInt(uu.length),
-        totalSessions: BigInt(ss.length),
-        pendingProviders: BigInt(
-          pp.filter((p) => !p.isApproved && !p.isRejected).length,
-        ),
+        totalTasks: BigInt(s.total_tasks ?? 0),
+        completedTasks: BigInt(s.completed_tasks ?? 0),
+        sessionsByType: Object.entries(
+          (s.sessions_by_type ?? {}) as Record<string, number>,
+        ).map(([type, count]) => [type, BigInt(count)] as [string, bigint]),
+        totalBookings: BigInt(s.total_bookings ?? 0),
+        rejectedProviders: BigInt(s.rejected_providers ?? 0),
+        approvedProviders: BigInt(s.approved_providers ?? 0),
+        totalProviders: BigInt(s.total_providers ?? 0),
+        totalUsers: BigInt(s.total_users ?? 0),
+        totalSessions: BigInt(s.total_sessions ?? 0),
+        pendingProviders: BigInt(s.pending_providers ?? 0),
       };
     },
-    getAllActivityLogs: async () =>
-      (
-        await result(
-          db
-            .from("activity_logs")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(200),
-        )
-      ).map((r: any) => ({
-        id: BigInt(r.id),
-        user: accountId(r.user_id),
-        activityType: r.activity_type,
-        relatedId: BigInt(r.related_id),
-        createdAt: ns(r.created_at),
-        activityTime: ns(r.created_at),
-      })),
+    getAllActivityLogs: () =>
+      result<Row[]>(
+        db
+          .from("activity_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(200),
+      ).then((rows) => rows.map(logFromRow)),
     getActivityLogsForUser: async (user) =>
-      (await actor.getAllActivityLogs()).filter(
-        (l) => l.user.toString() === user.toString(),
-      ),
+      result<Row[]>(
+        db
+          .from("activity_logs")
+          .select("*")
+          .eq("user_id", user.toString())
+          .order("created_at", { ascending: false })
+          .limit(200),
+      ).then((rows) => rows.map(logFromRow)),
   };
   return actor;
 }

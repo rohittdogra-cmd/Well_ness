@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { getSupabase } from "@/lib/supabase/client";
+import Link from "next/link";
+import { rpc } from "@/lib/backend";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 export function ContactPage() {
   const { user } = useInternetIdentity();
@@ -19,6 +20,18 @@ export function ContactPage() {
           message for the hub team.
         </p>
       </header>
+      {!user ? (
+        <div className="empty-state">
+          <h2>Sign in to send us a message.</h2>
+          <p>
+            Messages are tied to your account so the team can follow up. Reading
+            this page does not need an account.
+          </p>
+          <Link className="wellness-button" href="/signin">
+            Sign in
+          </Link>
+        </div>
+      ) : (
       <form
         className="composer"
         onSubmit={async (e) => {
@@ -26,14 +39,12 @@ export function ContactPage() {
           setBusy(true);
           setError("");
           try {
-            const { error } = await getSupabase()
-              .from("contact_requests")
-              .insert({
-                user_id: user!.id,
-                subject: subject.trim(),
-                message: message.trim(),
-              });
-            if (error) throw error;
+            // The insert privilege was revoked in the database; this function
+            // validates the input and enforces a per-day send limit.
+            await rpc("submit_contact_request", {
+              p_subject: subject.trim(),
+              p_message: message.trim(),
+            });
             setSent(true);
             setSubject("");
             setMessage("");
@@ -91,6 +102,7 @@ export function ContactPage() {
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

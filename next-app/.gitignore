@@ -41,11 +41,16 @@ yarn-error.log*
 next-env.d.ts
 !.env.example
 
+# Local verification build directories
 .next-ui-test/
-test-results/
-playwright-report/
-
+.next-build-check/
+.next-auth-check/
 .next-production-check/
 
+# Vercel
 .vercel
-.env*
+
+# Playwright output
+test-results/
+playwright-report/
+artifacts/

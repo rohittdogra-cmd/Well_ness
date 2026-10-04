@@ -11,8 +11,13 @@ Create a **new, dedicated Supabase project**. In its SQL editor, run these files
 3. `supabase/migrations/202609270003_session_updates.sql`
 4. `supabase/migrations/202609300001_connections.sql`
 5. `supabase/migrations/202610010001_group_categories.sql`
+6. `supabase/migrations/202610020001_scale_and_index.sql`
 
-For a fresh, dedicated project, `supabase_setup.sql` contains all five in order. If the first four are already installed, run only migration 5. If only the first three are installed, run migrations 4 and 5. Never rerun the fresh-install bundle on an existing installation.
+For a fresh, dedicated project, `supabase_setup.sql` contains all six in order. If the first five are already installed, run only migration 6. Never rerun the fresh-install bundle on an existing installation.
+
+Migration 6 is the scalability pass and is additive: it adds indexes, adds two summary views, replaces a handful of functions with equivalent or stricter versions, and adds `admin_stats()`, `admin_user_profiles()`, `group_category_counts()` and `submit_contact_request()`. Existing installs keep all of their rows.
+
+> **Upgrading note.** Migration 6 revokes `INSERT` on `contact_requests`. The contact form now calls `submit_contact_request()`, which validates the input and caps submissions at five per member per day. Nothing else changed: the table, its policies and the administrator inbox are untouched.
 
 Alternatively, use the Supabase CLI migration workflow against that project. The migrations create tables, constraints, indexes, row-level policies, transactional operations, profile provisioning, and starter groups. They do not create fake people, posts, sessions, providers, or reviews. Do not run these fresh-install migrations in an unrelated shared database: the first migration revokes default execution privileges in the public schema.
 
@@ -41,9 +46,29 @@ Copy `.env.example` to `.env.local` inside `next-app/` and set:
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=https://PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+NEXT_PUBLIC_SITE_URL=https://wellness.example.com
 ```
 
-Only these public client credentials are needed. Do not put a service-role/secret key into the browser environment. All writes use the signed-in user's token; Postgres policies and functions enforce authorization. Missing configuration shows a setup state instead of starting a fake/demo account.
+Only public client credentials are needed. Do not put a service-role/secret key into the browser environment. All writes use the signed-in user's token; Postgres policies and functions enforce authorization. Missing configuration shows a setup state instead of starting a fake/demo account.
+
+`GET /api/health` answers the only question that matters after a deploy: can this build actually serve traffic?
+
+| Response | Meaning | Action |
+| --- | --- | --- |
+| `200 {"status":"ok","schema":"current"}` | Environment and schema are both good | Ship it |
+| `503 {"status":"misconfigured"}` | A Supabase variable is missing or malformed | Set it and redeploy |
+| `503 {"status":"degraded","schema":"missing","migration":"..."}` | The project is on an older schema | Apply the named migration |
+| `200 {"schema":"unknown"}` | Configured, but the probe could not resolve the schema | Check the key can reach the PostgREST API |
+
+It probes `group_summaries`, which only exists after migration 6, and runs as `anon` so no session is needed. Because that view is granted to `authenticated` only, a correctly-installed database answers with a permission error and a stale one answers with a missing-relation error. It never returns a key, a URL or member data.
+
+If the schema is missing, members see the migration filename in the app too, rather than a blank page or a raw Postgres error.
+
+### `NEXT_PUBLIC_SITE_URL` must be set at build time
+
+Every page's canonical URL, Open Graph tags, `sitemap.xml` and `robots.txt` are produced during the build, because the public marketing pages are statically prerendered. Set `NEXT_PUBLIC_SITE_URL` in the **build** environment, not only at runtime. Vercel exposes environment variables during the build, so adding it to the project's variables and redeploying is enough. If it is unset, `siteUrl()` falls back to the Vercel production domain, then to `VERCEL_URL`, then to `http://localhost:3000`.
+
+Setting it to the stable production origin also stops preview deployments from advertising themselves as the canonical home of your content.
 
 From `next-app/`:
 
@@ -63,7 +88,20 @@ Import the repository and set:
 - **Build Command:** `npm run build`
 - **Output Directory:** leave at the Next.js default
 
-Add both environment variables for Production and any Preview environments that should access Supabase. Redeploy after changing these values: public environment values are bundled at build time. Keep test-only `NEXT_DIST_DIR` unset. No filesystem persistence, long-running server, service-role key, or Vercel cron job is required. Supabase holds the durable data.
+`vercel.json` already pins the framework, install and build commands and the `iad1` region, so those four fields are optional.
+
+Add all three environment variables for Production and any Preview environment that should access Supabase. Redeploy after changing them: `NEXT_PUBLIC_*` values are bundled at build time. Keep test-only `NEXT_DIST_DIR` unset. No filesystem persistence, long-running server, service-role key, or Vercel cron job is required. Supabase holds the durable data.
+
+After the first deploy, confirm the deployment rather than trusting it:
+
+```sh
+curl -fsS https://YOUR-VERCEL-DOMAIN/api/health          # {"status":"ok",...}
+curl -fsS https://YOUR-VERCEL-DOMAIN/robots.txt          # Sitemap: https://YOUR-VERCEL-DOMAIN/sitemap.xml
+curl -fsS https://YOUR-VERCEL-DOMAIN/sitemap.xml | head  # <loc>https://YOUR-VERCEL-DOMAIN</loc>
+curl -fsSI https://YOUR-VERCEL-DOMAIN/                  # content-security-policy, x-frame-options: DENY
+```
+
+If `/robots.txt` or the sitemap report `localhost:3000`, `NEXT_PUBLIC_SITE_URL` was not present during the build.
 
 ## 5. Create your first administrator
 
@@ -80,7 +118,7 @@ Users cannot grant themselves this role. Open `/dashboard` as the administrator 
 ## Included workflows
 
 - Email signup/signin/signout, session restoration, profile onboarding and cross-device preferences.
-- Groups: search, create, join/leave, real membership counts.
+- Groups: browse by category, server-side search, create a subgroup in any category, join/leave, real membership counts. Member counts are resolved in Postgres rather than shipped to the browser.
 - People: searchable member directory with only name, avatar, bio and interests; connection requests; recipient acceptance/decline; private text conversations after acceptance. Database policies exclude unrelated members and application admins from message reads. Chats refresh every 5 seconds while active, and connections every 10 seconds; no WebSocket quota is consumed. This is not end-to-end encryption; project/database operators retain administrative access.
 - Conversations: paginated posts, replies, anonymous aliases, likes, own-content deletion, reporting, moderator hide/dismiss, reply notifications. Foreground refresh every 15 seconds; this is not an instant-message or video-call service.
 - Private daily mood check-ins. These are excluded from administrator views and policies.
@@ -88,6 +126,46 @@ Users cannot grant themselves this role. Open `/dashboard` as the administrator 
 - Session tasks: participant assignment, ownership-checked completion and persisted audit history.
 - Providers: applications, admin approval/rejection, one-hour appointment requests with overlap prevention, confirmation and cancellation. Requests are not paid bookings. No payment, video-call, provider availability calendar or external calendar synchronization is implied.
 - Notifications, contact inbox, responsive navigation, accessible form labels, retry/error/empty states, reduced-motion support, optimized local WebP imagery.
+
+## Data access and scalability
+
+Reads are filtered, sorted and bounded in Postgres. No component or adapter method fetches a whole table and filters the result in JavaScript.
+
+- `group_summaries` and `session_summaries` are `security_invoker` views that resolve member counts, participant counts and the caller's membership. List pages receive one bounded page of rows; the full member roster is only read for a single session, where it is actually displayed. Row-level security still applies, because the view runs with the caller's permissions.
+- Single-record reads (`getSession`, `getTask`, `getProvider`, `getBooking`) select one row by primary key.
+- The group directory filters by category, membership and free text in Postgres and pages with a fixed page size. The activity directory filters by program type and "has not started" in Postgres; only free-text search and the capacity toggle are applied client-side, over one bounded page.
+- The feed (`get_feed`) uses keyset pagination on post id and caps the replies embedded in each post at 50.
+- Administrator counters come from `admin_stats()` and the member activity table from `admin_user_profiles()`, so the dashboard is a fixed number of round trips regardless of table size.
+- Indexes were added for each of these access patterns in migration 6.
+
+Every list read is capped. If you raise a cap, raise the matching page size in the hook at the same time.
+
+## SEO and crawler policy
+
+This is a private community, so SEO has to be scoped carefully. Enumerating it in a sitemap would disclose member-facing content to anyone.
+
+- **Public and indexable:** `/`, `/landing`, `/about`, `/careers`, `/membership`, `/coming-soon`, `/contact`, `/signin`, and the program landing pages `/programs/[type]`, `/meetup-activities`, `/social-gathering`, `/task-sharing`. These render for signed-out visitors and carry a title, description, canonical URL, Open Graph and Twitter cards, and `robots: index, follow`.
+- **Private and excluded:** groups, conversations, people, appointments, providers, the dashboard, the account page and session detail pages. These are behind `AuthGate`, marked `noindex, nofollow`, and disallowed in `robots.txt`.
+- `src/lib/routes.ts` is the single source of truth for that split. The proxy (caching and security headers), `AuthGate`, `robots.ts` and `sitemap.ts` all read it, so the policy cannot drift from what the app enforces.
+- `sitemap.ts` is generated from the public route list plus the category and program registries, so adding a public page automatically adds it to the sitemap.
+
+Routes render server-side metadata, so `page.tsx` files are Server Components that render a Client Component view. Do not add `"use client"` to a page that exports `metadata` or `generateMetadata`; move the client logic into `src/views/`.
+
+## Response headers
+
+The proxy attaches `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` and a Content Security Policy to every route. The policy's `connect-src` and `img-src` are derived from the configured Supabase origin plus `api.dicebear.com`, which serves the avatars. Production adds `Strict-Transport-Security` and `upgrade-insecure-requests`; development does not, so a loopback test origin is not rewritten to https.
+
+`Cache-Control: private, no-store` is applied only to the signed-in routes. An earlier version applied it to every response, which also prevented the sitemap, robots.txt and the public pages from being cached.
+
+## First deploy, in order
+
+1. Apply all six migrations to the target project. **This is the hard blocker** — the app cannot run against a project without migration 6.
+2. Set all three environment variables, including `NEXT_PUBLIC_SITE_URL`, in the Vercel project. They are needed at build time.
+3. Deploy.
+4. Check `/api/health`. It must return `200` with `"schema":"current"`.
+5. Register `/sitemap.xml` in Google Search Console and confirm `robots.txt` reports your production origin.
+
+If step 4 returns `schema: "missing"`, step 1 did not take effect. Rerun the migration and check for a PostgREST schema-cache reload in the Supabase dashboard (Settings → API → Reload schema) before assuming the SQL failed.
 
 ## Verification
 
@@ -98,6 +176,8 @@ npx playwright install chromium
 npm run test:ui
 npm run build
 ```
+
+Expect 86 database checks and 21 browser scenarios to pass.
 
 Database tests apply the actual migrations to embedded Postgres (PGlite) with simulated Supabase Auth roles. They exercise RLS, ownership, aliases, moderation, booking constraints and audit behavior. UI tests run the real Next app against a **test-only local fixture service**, so screenshots and flow checks do not require production credentials and do not prove live Supabase email delivery. Test servers are only started by Playwright and are never imported into the application.
 

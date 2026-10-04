@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRight,
@@ -245,11 +246,12 @@ export function SignInPage() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.8, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
         >
-          <img
+          <Image
             src="/images/community-hero.webp"
             alt="Friends sharing a relaxed break outdoors"
-            width="1000"
-            height="560"
+            width={1000}
+            height={560}
+            priority
           />
           <motion.div
             className="auth-photo-label"

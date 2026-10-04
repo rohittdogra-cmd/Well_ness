@@ -12,6 +12,13 @@ export interface Session {
     title: string;
     creator: Principal;
     participants: Array<Principal>;
+    /**
+     * Participant totals resolved by the database. List reads receive these
+     * without shipping every member id to the browser; `participants` is only
+     * populated for single-session reads where the roster is actually shown.
+     */
+    participantCount?: bigint;
+    joined?: boolean;
     createdAt: Time;
     description: string;
     spaceName?: string;
@@ -103,7 +110,16 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export interface SessionListOptions {
+    /** Restrict to one wellness program. */
+    type?: ProgramType | null;
+    /** Only sessions that have not started yet. */
+    upcoming?: boolean;
+    /** Upper bound on returned rows. */
+    limit?: number;
+}
 export interface backendInterface {
+    listSessions(options?: SessionListOptions): Promise<Array<Session>>;
     approveProvider(providerId: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bookProvider(providerId: bigint, bookingTime: Time): Promise<bigint>;

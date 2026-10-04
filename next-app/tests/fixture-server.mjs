@@ -11,6 +11,8 @@ const user = {
   user_metadata: {},
   created_at: new Date().toISOString(),
 };
+// Mirrors the group_summaries view: the database resolves member counts and the
+// caller's membership, so the client receives rows rather than member id lists.
 const groups = [
   {
     id: 1,
@@ -18,7 +20,8 @@ const groups = [
     category: "sports",
     name: "Cricket",
     description: "Find a team. Plan your next match.",
-    group_members: [{ user_id: id }],
+    member_count: 1,
+    joined: true,
   },
   {
     id: 2,
@@ -26,7 +29,8 @@ const groups = [
     category: "arts",
     name: "Music",
     description: "Share playlists and discover new sounds.",
-    group_members: [],
+    member_count: 0,
+    joined: false,
   },
   {
     id: 3,
@@ -34,9 +38,11 @@ const groups = [
     category: "wellbeing",
     name: "Health & wellness",
     description: "Build better habits together.",
-    group_members: [],
+    member_count: 0,
+    joined: false,
   },
 ];
+let nextGroupId = 4;
 let posts = [
   {
     id: 1,
@@ -68,6 +74,20 @@ const defaultProfile = {
   goal: "Meet my people",
 };
 let profile = { ...defaultProfile };
+const session = {
+  id: 1,
+  creator: id,
+  title: "A little lunchtime reset",
+  description: "Walk, talk, and get some fresh air.",
+  program_type: "meetup",
+  date_time: new Date(Date.now() + 86400000).toISOString(),
+  created_at: new Date().toISOString(),
+  max_participants: 8,
+  space_name: "Garden",
+  location: "Courtyard",
+  participant_count: 1,
+  joined: true,
+};
 function authSession() {
   const enc = (value) =>
     Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -85,6 +105,42 @@ function authSession() {
     user,
   };
 }
+const reset = () => {
+  connections = [];
+  messages = [];
+  profile = { ...defaultProfile };
+  groups.length = 0;
+  groups.push(
+    {
+      id: 1,
+      slug: "cricket",
+      category: "sports",
+      name: "Cricket",
+      description: "Find a team. Plan your next match.",
+      member_count: 1,
+      joined: true,
+    },
+    {
+      id: 2,
+      slug: "music",
+      category: "arts",
+      name: "Music",
+      description: "Share playlists and discover new sounds.",
+      member_count: 0,
+      joined: false,
+    },
+    {
+      id: 3,
+      slug: "health-wellness",
+      category: "wellbeing",
+      name: "Health & wellness",
+      description: "Build better habits together.",
+      member_count: 0,
+      joined: false,
+    },
+  );
+  nextGroupId = 4;
+};
 createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
@@ -100,10 +156,18 @@ createServer(async (req, res) => {
   let raw = "";
   for await (const chunk of req) raw += chunk;
   const body = raw ? JSON.parse(raw) : {};
-  const path = new URL(req.url, "http://localhost").pathname;
+  const url = new URL(req.url, "http://localhost");
+  const path = url.pathname;
+  const params = url.searchParams;
+  // PostgREST encodes operators as `eq.sports`; the fixture compares raw values.
+  const eq = (name) => {
+    const raw = params.get(name);
+    return raw === null || raw.startsWith("eq.") === false
+      ? raw
+      : raw.slice(3);
+  };
   let data = [];
-  if (path === "/auth/v1/settings")
-    data = { external: { linkedin_oidc: false } };
+  if (path === "/auth/v1/settings") data = { external: { linkedin_oidc: false } };
   else if (path === "/auth/v1/signup") data = { user, session: null };
   else if (path === "/auth/v1/logout") data = {};
   else if (path === "/auth/v1/user") data = user;
@@ -114,10 +178,7 @@ createServer(async (req, res) => {
       data = { code: "otp_expired", msg: "Token has expired or is invalid" };
     } else data = authSession();
   } else if (path === "/auth/v1/token") {
-    if (
-      new URL(req.url, "http://localhost").searchParams.get("grant_type") ===
-      "password"
-    ) {
+    if (params.get("grant_type") === "password") {
       if (body.password === "Correct-password1") data = authSession();
       else {
         res.statusCode = 400;
@@ -150,15 +211,12 @@ createServer(async (req, res) => {
     connections[0].status = "accepted";
     data = null;
   } else if (path === "/test/reset") {
-    connections = [];
-    messages = [];
-    profile = { ...defaultProfile };
+    reset();
     data = null;
   } else if (path === "/test/missing-profile") {
     profile = null;
     data = null;
-  } else if (path === "/rest/v1/direct_messages")
-    data = [...messages].reverse();
+  } else if (path === "/rest/v1/direct_messages") data = [...messages].reverse();
   else if (path === "/rest/v1/rpc/send_direct_message") {
     const m = {
       id: messages.length + 1,
@@ -169,22 +227,65 @@ createServer(async (req, res) => {
     messages.push(m);
     data = m.id;
   } else if (path === "/rest/v1/profiles") {
-    if (req.method === "POST" || req.method === "PATCH")
-      profile = { ...profile, ...body };
-    data = profile;
-  } else if (path === "/rest/v1/rpc/create_group") {
+    if (req.method === "POST" || req.method === "PATCH") {
+      profile = { ...(profile ?? defaultProfile), ...body };
+      data = profile;
+    } else data = profile;
+  }
+  // ── Group directory: server-side filtering, search and paging ─────────────
+  else if (path === "/rest/v1/rpc/create_group") {
     const group = {
-      id: groups.length + 1,
+      id: nextGroupId++,
       slug: "new-subgroup",
       name: body.p_name,
       description: body.p_description,
       category: body.p_category,
-      group_members: [{ user_id: id }],
+      member_count: 1,
+      joined: true,
     };
     groups.push(group);
     data = group.id;
-  } else if (path === "/rest/v1/groups") data = groups;
-  else if (path === "/rest/v1/rpc/get_feed") data = posts;
+  } else if (path === "/rest/v1/group_summaries" || path === "/rest/v1/groups") {
+    const category = eq("category");
+    const joined = eq("joined");
+    const slug = eq("slug");
+    const or = params.get("or");
+    const from = Number(params.get("offset") ?? "0");
+    const to = Number(params.get("limit") ?? "50");
+    let rows = [...groups];
+    if (slug) rows = rows.filter((g) => g.slug === slug);
+    if (category) rows = rows.filter((g) => g.category === category);
+    if (joined === "true") rows = rows.filter((g) => g.joined);
+    if (or) {
+      // or=(name.ilike.%music%,description.ilike.%music%)
+      const needle = or
+        .split(",")[0]
+        .split(".ilike.")
+        .pop()
+        .replace(/%/g, "")
+        .toLowerCase();
+      rows = needle
+        ? rows.filter((g) =>
+            `${g.name} ${g.description}`.toLowerCase().includes(needle),
+          )
+        : rows;
+    }
+    const sliced = rows.slice(from, from + to);
+    // PostgREST `.maybeSingle()` returns a bare object, not an array.
+    data = slug && params.has("select") ? (sliced[0] ?? null) : sliced;
+  } else if (path === "/rest/v1/rpc/group_category_counts")
+    data = groups.reduce((acc, g) => {
+      acc[g.category] = (acc[g.category] ?? 0) + 1;
+      return acc;
+    }, {});
+  else if (path === "/rest/v1/rpc/toggle_group") {
+    const group = groups.find((g) => g.id === body.p_group);
+    if (group) {
+      group.joined = Boolean(body.p_join);
+      group.member_count = body.p_join ? 1 : 0;
+    }
+    data = null;
+  } else if (path === "/rest/v1/rpc/get_feed") data = posts;
   else if (path === "/rest/v1/rpc/publish_post") {
     const p = {
       id: Date.now(),
@@ -199,27 +300,25 @@ createServer(async (req, res) => {
     };
     posts = [p, ...posts];
     data = p.id;
-  } else if (path === "/rest/v1/rpc/toggle_group") {
-    const g = groups.find((g) => g.id === body.p_group);
-    g.group_members = body.p_join ? [{ user_id: id }] : [];
-    data = null;
   } else if (path === "/rest/v1/rpc/is_admin") data = false;
   else if (path === "/rest/v1/check_ins") data = null;
-  else if (path === "/rest/v1/sessions")
-    data = [
-      {
-        id: 1,
-        creator: id,
-        title: "A little lunchtime reset",
-        description: "Walk, talk, and get some fresh air.",
-        program_type: "meetup",
-        date_time: new Date(Date.now() + 86400000).toISOString(),
-        created_at: new Date().toISOString(),
-        max_participants: 8,
-        space_name: "Garden",
-        location: "Courtyard",
-        session_members: [{ user_id: id }],
-      },
-    ];
+  // ── Activities: session_summaries carries participant_count and joined ─────
+  else if (path === "/rest/v1/session_summaries" || path === "/rest/v1/sessions") {
+    const type = eq("program_type");
+    data = type && type !== session.program_type ? [] : [{ ...session }];
+  } else if (path === "/rest/v1/session_members") {
+    // My Sessions asks for `select=session_id`; the roster asks for `user_id`.
+    data =
+      params.get("select") === "session_id" ? [{ session_id: 1 }] : [{ user_id: id }];
+  } else if (path === "/rest/v1/tasks") data = [];
+  else if (path === "/rest/v1/providers") data = [];
+  else if (path === "/rest/v1/provider_bookings") data = [];
+  else if (path === "/rest/v1/activity_logs") data = [];
+  else if (path === "/rest/v1/notifications") {
+    const head = req.method === "HEAD";
+    res.statusCode = head ? 200 : 200;
+    data = head ? null : [];
+  } else if (path === "/rest/v1/contact_requests") data = null;
+  else if (path === "/rest/v1/rpc/submit_contact_request") data = 1;
   res.end(JSON.stringify(data));
 }).listen(54329, "127.0.0.1", () => console.log("UI fixture server on 54329"));

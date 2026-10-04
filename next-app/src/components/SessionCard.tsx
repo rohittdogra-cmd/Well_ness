@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,7 @@ import type { Session } from "../backend.types";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useJoinSession, useLeaveSession } from "../hooks/useQueries";
 import { formatDateTimeShort, getProgramConfig } from "../lib/programConfig";
+import { isFull, isJoined, participantCount } from "../lib/session";
 
 interface SessionCardProps {
   session: Session;
@@ -35,13 +38,11 @@ export function SessionCard({
   const leaveMutation = useLeaveSession();
 
   const principalStr = identity?.getPrincipal().toString();
-  const isParticipant = principalStr
-    ? session.participants.some((p) => p.toString() === principalStr)
-    : false;
+  const isParticipant = isJoined(session, principalStr);
   const isCreator = principalStr
     ? session.creator.toString() === principalStr
     : false;
-  const isFull = session.participants.length >= Number(session.maxParticipants);
+  const full = isFull(session);
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -114,7 +115,7 @@ export function SessionCard({
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" />
-                  {session.participants.length}/
+                  {participantCount(session)}/
                   {session.maxParticipants.toString()}
                 </span>
               </div>
@@ -162,13 +163,13 @@ export function SessionCard({
                       <Button
                         size="sm"
                         onClick={handleJoin}
-                        disabled={joinMutation.isPending || isFull}
+                        disabled={joinMutation.isPending || full}
                         data-ocid="session.join_button"
                         className="text-xs h-7 px-2.5"
                       >
                         {joinMutation.isPending ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : isFull ? (
+                        ) : full ? (
                           "Full"
                         ) : (
                           <>

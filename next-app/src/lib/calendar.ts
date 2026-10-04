@@ -1,3 +1,5 @@
+"use client";
+
 import type { Session } from "@/backend.types";
 function escape(value: string) {
   return value

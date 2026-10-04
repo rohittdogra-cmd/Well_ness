@@ -21,6 +21,14 @@ import {
 import { MotionConfig } from "motion/react";
 import { Mascot } from "./Mascot";
 import { useLocalProfile } from "../hooks/useLocalProfile";
+import { isAuthPath, isPublicPath } from "../lib/routes";
+const publicNav = [
+  { label: "About", href: "/about" },
+  { label: "Membership", href: "/membership" },
+  { label: "Careers", href: "/careers" },
+  { label: "Contact", href: "/contact" },
+];
+
 const nav = [
   { label: "Home", href: "/", icon: House },
   { label: "Conversations", href: "/discuss", icon: MessageCircle },
@@ -32,17 +40,77 @@ const nav = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "/";
   const profile = useLocalProfile();
-  const { clear } = useInternetIdentity();
+  const { clear, user, isInitializing } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
   const isActive = (href: string) =>
     path === href || (href !== "/" && path.startsWith(href + "/"));
-  if (path === "/signin" || path.startsWith("/auth/"))
+  // Auth pages render their own minimal shell.
+  if (isAuthPath(path) || path === "/signin")
     return (
       <MotionConfig reducedMotion="user">
         <div className="wellness-shell">
           <AuthGate>{children}</AuthGate>
         </div>
+      </MotionConfig>
+    );
+  // Public marketing pages get the public chrome for signed-out visitors, and
+  // the member chrome once a session exists. The server render is always the
+  // public shell so crawlers and link previews receive real content; the swap
+  // happens once on hydration.
+  if (isPublicPath(path) && !(user && !isInitializing))
+    return (
+      <MotionConfig reducedMotion="user">
+        <AuthGate>
+          <div className="wellness-shell public-shell">
+            <a className="skip-link" href="#main-content">
+              Skip to content
+            </a>
+            <header className="public-header">
+              <Link href="/" className="wellness-logo">
+                <span>
+                  <Heart size={23} />
+                </span>
+                wellness<span className="logo-dot">.</span>
+              </Link>
+              <nav aria-label="Public navigation" className="public-nav">
+                {publicNav.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    {item.label}
+                  </Link>
+                ))}
+                {user ? (
+                  <>
+                    <Link
+                      className="topbar-account"
+                      href="/dashboard"
+                      title="Your dashboard"
+                    >
+                      {profile ? `Hey, ${profile.name}` : "Create an account"}
+                    </Link>
+                    <Link className="wellness-button" href="/dashboard">
+                      Go to your hub
+                    </Link>
+                  </>
+                ) : (
+                  <Link className="wellness-button" href="/signin">
+                    Sign in
+                  </Link>
+                )}
+              </nav>
+            </header>
+            <main id="main-content">{children}</main>
+            <footer className="public-footer">
+              <span>Make time for yourself.</span>
+              <div className="footer-links">
+                <Link href="/about">About</Link>
+                <Link href="/membership">Membership</Link>
+                <Link href="/careers">Careers</Link>
+                <Link href="/contact">Contact</Link>
+              </div>
+            </footer>
+          </div>
+        </AuthGate>
       </MotionConfig>
     );
   return (

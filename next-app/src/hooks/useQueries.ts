@@ -1,4 +1,7 @@
+"use client";
+
 import type { Principal } from "@dfinity/principal";
+import type { SessionListOptions } from "../backend.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type ActivityLog,
@@ -26,13 +29,34 @@ export type {
 
 // ─── Session Queries ──────────────────────────────────────────────
 
-export function useAllSessions() {
+export function useAllSessions(options: SessionListOptions = {}) {
   const { actor, isFetching } = useActor();
+  const type = options.type ?? null;
+  const upcoming = options.upcoming ?? false;
+  const limit = options.limit;
   return useQuery<Session[]>({
-    queryKey: ["sessions"],
+    // Filtering and bounding happen in Postgres, so they belong in the key.
+    queryKey: ["sessions", "list", type, upcoming, limit],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllSessions();
+      return actor.listSessions({ type, upcoming, limit });
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+/** Upcoming sessions only: the default for every browse surface. */
+export function useUpcomingSessions(options: SessionListOptions = {}) {
+  const { actor, isFetching } = useActor();
+  return useQuery<Session[]>({
+    queryKey: ["sessions", "list", options.type ?? null, true, options.limit],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.listSessions({
+        type: options.type ?? null,
+        upcoming: true,
+        limit: options.limit,
+      });
     },
     enabled: !!actor && !isFetching,
   });
@@ -124,8 +148,7 @@ export function useAdminStats() {
     queryKey: ["admin-stats"],
     queryFn: async () => {
       if (!actor) throw new Error("No actor");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (actor as any).getAdminStats() as Promise<AdminStats>;
+      return actor.getAdminStats();
     },
     enabled: !!actor && !isFetching,
   });
@@ -137,8 +160,7 @@ export function useAllUserProfilesAdmin() {
     queryKey: ["admin-user-profiles"],
     queryFn: async () => {
       if (!actor) return [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (actor as any).getAllUserProfiles() as Promise<UserProfileEntry[]>;
+      return actor.getAllUserProfiles();
     },
     enabled: !!actor && !isFetching,
   });
@@ -266,6 +288,47 @@ export function useMyBookings(userPrincipal: Principal | null) {
   });
 }
 
+export function useProviderBookings(providerId: bigint | null) {
+  const { actor, isFetching } = useActor();
+  return useQuery<ProviderBooking[]>({
+    queryKey: ["bookings", "provider", providerId?.toString()],
+    queryFn: async () => {
+      if (!actor || providerId === null) return [];
+      return actor.getBookingsForProvider(providerId);
+    },
+    enabled: !!actor && !isFetching && providerId !== null,
+  });
+}
+
+export function useBookProvider() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { providerId: bigint; bookingTime: bigint }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.bookProvider(args.providerId, args.bookingTime);
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["bookings"] });
+      await qc.invalidateQueries({ queryKey: ["providers"] });
+    },
+  });
+}
+
+export function useCancelBooking() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.cancelBooking(bookingId);
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+}
+
 // ─── Mutations ──────────────────────────────────────────────────
 
 export function useCreateSession() {
@@ -282,8 +345,7 @@ export function useCreateSession() {
       location?: string;
     }) => {
       if (!actor) throw new Error("Not authenticated");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (actor as any).createSession(
+      return actor.createSession(
         args.title,
         args.description,
         args.programType,
@@ -291,7 +353,7 @@ export function useCreateSession() {
         args.maxParticipants,
         args.spaceName ?? null,
         args.location ?? null,
-      ) as Promise<bigint>;
+      );
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["sessions"] });

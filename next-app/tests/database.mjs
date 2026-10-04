@@ -281,7 +281,108 @@ await denied(
   "select create_group('Bad category','Invalid category','invalid')",
 );
 await denied("update groups set category='arts' where id=$1", [subgroup]);
+
+// ── Summary views: counts and membership resolved by the database ──────────
+await as(alice);
+// alice created `subgroup`, so she is its only member so far
+const summary = (
+  await db.query("select * from group_summaries where id=$1", [subgroup])
+).rows[0];
+assert.equal(summary.member_count, 1);
+assert.equal(summary.joined, true);
+checks++;
+// The view must not expose the full member list any more.
+assert.equal(summary.group_members, undefined);
+checks++;
+await as(bob);
+const otherView = (
+  await db.query("select * from group_summaries where id=$1", [subgroup])
+).rows[0];
+assert.equal(otherView.joined, false);
+assert.equal(otherView.member_count, 1);
+checks++;
+await db.query("select toggle_group($1,true)", [subgroup]);
+assert.equal(
+  (
+    await db.query("select member_count from group_summaries where id=$1", [
+      subgroup,
+    ])
+  ).rows[0].member_count,
+  2,
+);
+checks++;
+const sessionRow = (
+  await db.query("select * from session_summaries where id=$1", [sid])
+).rows[0];
+assert.ok(sessionRow.participant_count >= 1);
+checks++;
+await as(null);
+await denied("select * from group_summaries");
+await denied("select * from session_summaries");
+
+// ── Administrator aggregates are counted in SQL, and stay admin-only ──────
+await as(alice);
+await denied("select admin_stats()");
+await denied("select admin_user_profiles()");
+await as(admin);
+const stats = await scalar("select admin_stats() as value");
+assert.equal(stats.total_users, 3);
+assert.ok(Number(stats.total_sessions) >= 1);
+assert.ok(Number(stats.total_groups) >= 1);
+assert.equal(typeof stats.sessions_by_type, "object");
+assert.ok(Number(stats.total_providers) >= 1);
+checks += 4;
+const adminProfiles = await scalar("select admin_user_profiles() as value");
+const aliceEntry = adminProfiles.find((p) => p.id === alice);
+const bobEntry = adminProfiles.find((p) => p.id === bob);
+assert.ok(aliceEntry && bobEntry);
+assert.equal(aliceEntry.name, "Alice");
+assert.equal(bobEntry.name, "Bob");
+assert.ok(aliceEntry.sessions_created >= 1);
+checks += 3;
+const categoryCounts = await scalar("select group_category_counts() as value");
+assert.ok(Number(categoryCounts.sports) >= 1);
+assert.ok(Number(categoryCounts.social) >= 1);
+checks += 2;
+
+// ── Contact submissions are rate limited in the database ──────────────────
+await as(alice);
+await denied("insert into contact_requests(user_id,subject,message) values($1,'Direct','Bypassing the function')", [
+  alice,
+]);
+const requestId = await scalar(
+  "select submit_contact_request('  Hello there  ','A message that is long enough.') as value",
+);
+assert.ok(Number(requestId) > 0);
+assert.equal(
+  await scalar("select subject as value from contact_requests where id=$1", [
+    requestId,
+  ]),
+  "Hello there",
+);
+checks += 3;
+await denied("select submit_contact_request('x','too short')");
+for (let i = 0; i < 4; i++)
+  await db.query("select submit_contact_request($1,$2)", [
+    `Repeat ${i}`,
+    "Another long enough message body.",
+  ]);
+await denied(
+  "select submit_contact_request('Sixth','Another long enough message body.')",
+);
+await as(null);
+await denied("select submit_contact_request('Anon','A message that is long enough.')");
+
+// ── Group creation validation returns readable messages ───────────────────
+await as(bob);
+await denied("select create_group(' ','Missing name','sports')");
+await denied(
+  "select create_group('','Missing name entirely','arts')",
+);
+await as(null);
+await denied("select create_group('Anon group','No access','sports')");
+
 console.log(
-  `PASS: ${checks} database checks covering migrations, RLS, anonymity, membership, reactions, moderation, capacity, ownership, notifications, appointments, audit history, connection consent and private messages.`,
+  `PASS: ${checks} database checks covering migrations, RLS, anonymity, membership, reactions, moderation, capacity, ownership, notifications, appointments, audit history, connection consent, private messages, summary views, admin aggregates and rate limiting.`,
 );
 await db.close();

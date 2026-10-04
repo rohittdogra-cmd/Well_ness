@@ -52,6 +52,69 @@ body {
   overflow: hidden;
   white-space: nowrap;
 }
+/* ─── Public marketing shell ──────────────────────────────────────────
+   Public pages reuse the member shell's tokens so typography, focus rings
+   and form controls stay identical, but drop the member sidebar, the
+   notification bell and the sign-out control. */
+.public-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.public-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 18px 28px;
+  border-bottom: 1px solid #e5e6db;
+  background: #faf9f5;
+}
+.public-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 15px;
+}
+.public-nav a:not(.wellness-button) {
+  color: #4c5a4a;
+}
+.public-nav a:not(.wellness-button):hover {
+  color: #293e33;
+  text-decoration: underline;
+}
+.public-footer {
+  margin-top: auto;
+  border-top: 1px solid #e5e6db;
+  padding: 25px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: #8c9282;
+  font-size: 14px;
+}
+.public-footer .footer-links {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .public-header {
+    padding: 16px 18px;
+  }
+  .public-nav {
+    gap: 14px;
+    font-size: 14px;
+  }
+  .public-footer {
+    padding: 22px 18px;
+  }
+}
+
 .wellness-sidebar {
   width: 244px;
   position: fixed;

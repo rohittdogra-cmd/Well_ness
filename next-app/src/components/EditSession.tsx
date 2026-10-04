@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@/backend.types";
+import { participantCount } from "@/lib/session";
 import { rpc } from "@/lib/backend";
 import { toast } from "sonner";
 export function EditSession({ session }: { session: Session }) {
@@ -88,7 +89,7 @@ export function EditSession({ session }: { session: Session }) {
             <input
               type="number"
               name="capacity"
-              min={Math.max(1, session.participants.length)}
+              min={Math.max(1, participantCount(session))}
               max={200}
               defaultValue={Number(session.maxParticipants)}
               required

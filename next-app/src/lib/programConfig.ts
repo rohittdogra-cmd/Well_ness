@@ -1,4 +1,6 @@
-import { ProgramType } from "../hooks/useQueries";
+// Imported from the DTO module, not the client hooks: this config is
+// read by server routes (sitemap, metadata) as well as by components.
+import { ProgramType } from "../backend.types";
 
 export interface ProgramConfig {
   type: ProgramType;

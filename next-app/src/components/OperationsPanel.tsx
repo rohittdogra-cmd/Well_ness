@@ -21,7 +21,8 @@ export function OperationsPanel() {
           .from("provider_bookings")
           .select("id,booking_time,confirmed,providers(name)")
           .eq("confirmed", false)
-          .order("booking_time"),
+          .order("booking_time", { ascending: true })
+          .limit(200),
       ]);
       for (const r of [reports, contacts, bookings])
         if (r.error) throw new Error(r.error.message);

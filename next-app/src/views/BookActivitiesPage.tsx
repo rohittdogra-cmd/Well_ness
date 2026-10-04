@@ -1,26 +1,31 @@
 "use client";
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { useAllSessions, ProgramType } from "@/hooks/useQueries";
+import { useUpcomingSessions, ProgramType } from "@/hooks/useQueries";
 import { CreateSessionModal } from "@/components/CreateSessionModal";
 import { SessionCard } from "@/components/SessionCard";
 import { PROGRAM_CONFIGS, PROGRAM_ORDER } from "@/lib/programConfig";
+import { isFull } from "@/lib/session";
 export function BookActivitiesPage() {
-  const sessions = useAllSessions();
-  const [now] = useState(() => Date.now());
+  // The date and program-type filters are applied by Postgres; only the
+  // free-text and "has space" refinements happen here, on one bounded page.
   const [search, setSearch] = useState("");
   const [type, setType] = useState("all");
   const [available, setAvailable] = useState(false);
+  const sessions = useUpcomingSessions({
+    type: type === "all" ? null : (type as ProgramType),
+  });
+  const needle = search.trim().toLowerCase();
   const upcoming =
-    sessions.data?.filter(
-      (s) =>
-        Number(s.dateTime / 1_000_000n) > now &&
-        (type === "all" || s.programType === type) &&
-        (!available || s.participants.length < Number(s.maxParticipants)) &&
-        (s.title + " " + s.description + " " + s.location)
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-    ) ?? [];
+    sessions.data
+      ?.filter(
+        (s) =>
+          (!available || !isFull(s)) &&
+          (!needle ||
+            `${s.title} ${s.description} ${s.location ?? ""}`
+              .toLowerCase()
+              .includes(needle)),
+      ) ?? [];
   return (
     <div className="hub-page">
       <header className="activity-hero">

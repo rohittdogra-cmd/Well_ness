@@ -14,6 +14,7 @@ export function Notifications() {
     queryKey: ["notifications", user?.id],
     enabled: !!user,
     refetchInterval: 30000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await getSupabase()
         .from("notifications")
@@ -29,7 +30,23 @@ export function Notifications() {
       }[];
     },
   });
-  const unread = query.data?.filter((n) => !n.read).length ?? 0;
+  // Counted in Postgres: the panel only loads the newest 30, so filtering that
+  // window in the browser would under-report once a member has more history.
+  const unreadCount = useQuery({
+    queryKey: ["notifications", "unread", user?.id],
+    enabled: !!user,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    queryFn: async () => {
+      const { count, error } = await getSupabase()
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("read", false);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+  const unread = unreadCount.data ?? 0;
   return (
     <div className="notifications">
       <button

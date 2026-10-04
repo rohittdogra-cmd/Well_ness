@@ -25,6 +25,10 @@ export default defineConfig({
       env: {
         NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329",
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "ui-test-publishable-key",
+        // Canonical URLs, the sitemap and robots.txt must resolve to the origin
+        // the test is actually driving, otherwise the SEO assertions are
+        // meaningless.
+        NEXT_PUBLIC_SITE_URL: "http://localhost:3101",
         NEXT_DIST_DIR: ".next-ui-test",
       },
     },

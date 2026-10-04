@@ -24,13 +24,15 @@
   z-index: -1;
 }
 
-/* Dark hero variant */
+/* Soft premium hero variant */
 .gradient-text-hero {
-  background: linear-gradient(135deg, #b2e2cb 0%, #5ef5d0 40%, #87edb5 70%, #ade3c9 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 40%, #8b5cf6 70%, #0ea5e9 100%);
+  background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   font-style: normal !important;
+  animation: gradient-shift 6s ease infinite;
 }
 
 /* Warm greeting gradient */

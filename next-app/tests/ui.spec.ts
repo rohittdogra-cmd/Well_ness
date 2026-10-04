@@ -404,3 +404,123 @@ test("existing email-link member can set a password in account settings", async 
     "",
   );
 });
+
+test("public marketing pages render for signed-out visitors", async ({
+  page,
+}) => {
+  for (const path of [
+    "/",
+    "/about",
+    "/membership",
+    "/careers",
+    "/contact",
+    "/programs/meetup",
+    "/meetup-activities",
+  ]) {
+    await page.goto(path);
+    expect(new URL(page.url()).pathname, `${path} must not redirect`).toBe(path);
+    await expect(page.getByRole("link", { name: /wellness/ }).first()).toBeVisible();
+  }
+});
+
+test("private routes still redirect signed-out visitors to sign in", async ({
+  page,
+}) => {
+  for (const path of ["/groups", "/people", "/dashboard", "/discuss"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/signin/);
+  }
+});
+
+test("every page declares metadata, canonical and index directives", async ({
+  request,
+}) => {
+  const pages = [
+    "/",
+    "/about",
+    "/careers",
+    "/membership",
+    "/coming-soon",
+    "/contact",
+    "/landing",
+    "/signin",
+    "/groups",
+    "/people",
+    "/discuss",
+    "/dashboard",
+    "/book-activities",
+    "/my-sessions",
+    "/psychologists",
+    "/onboarding",
+    "/account",
+    "/programs/meetup",
+    "/groups/some-subgroup",
+    "/sessions/1",
+  ];
+  for (const path of pages) {
+    const html = await (await request.get(path)).text();
+    const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "";
+    expect(title, `${path} needs a title`).not.toBe("");
+    expect(html, `${path} needs a canonical`).toContain('rel="canonical"');
+    expect(html, `${path} needs a description`).toMatch(
+      /name="description" content="[^"]{20,}"/,
+    );
+    expect(html, `${path} needs og:title`).toContain('property="og:title"');
+  }
+});
+
+test("private pages are marked noindex and public pages are indexable", async ({
+  request,
+}) => {
+  const privateHtml = await (await request.get("/dashboard")).text();
+  expect(privateHtml).toContain('name="robots" content="noindex');
+  const publicHtml = await (await request.get("/about")).text();
+  expect(publicHtml).toContain('name="robots" content="index, follow"');
+});
+
+test("sitemap and robots list the public surface only", async ({ request }) => {
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain("<urlset");
+  for (const path of ["/about", "/membership", "/careers", "/contact"]) {
+    expect(sitemap, `${path} missing from sitemap`).toContain(`localhost:3101${path}<`);
+  }
+  expect(sitemap, "program pages belong in the sitemap").toContain(
+    "localhost:3101/programs/meetup<",
+  );
+  for (const path of ["/dashboard", "/people", "/my-sessions", "/account"]) {
+    expect(sitemap, `${path} must not be in the sitemap`).not.toContain(
+      `localhost:3101${path}<`,
+    );
+  }
+
+  const robots = await (await request.get("/robots.txt")).text();
+  expect(robots).toContain("Sitemap:");
+  for (const path of ["/dashboard", "/people", "/sessions"]) {
+    expect(robots, `${path} must be disallowed`).toContain(`Disallow: ${path}`);
+  }
+  expect(robots).toContain("Disallow: /groups");
+});
+
+test("security headers and the health endpoint are present", async ({
+  request,
+}) => {
+  const response = await request.get("/about");
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+  expect(response.headers()["content-security-policy"]).toContain(
+    "frame-ancestors 'none'",
+  );
+
+  const health = await request.get("/api/health");
+  expect(health.status()).toBe(200);
+  const body = await health.json();
+  expect(body.status).toBe("ok");
+  expect(JSON.stringify(body)).not.toContain("publishable");
+});
+
+test("health reports the schema it expects", async ({ request }) => {
+  const body = await (await request.get("/api/health")).json();
+  expect(body.supabase).toBe("configured");
+  // The fixture serves group_summaries, so the probe resolves it.
+  expect(body.schema).toBe("current");
+});
