@@ -356,7 +356,22 @@ createServer(async (req, res) => {
     posts = [p, ...posts];
     data = p.id;
   } else if (path === "/rest/v1/rpc/is_admin") data = false;
-  else if (path === "/rest/v1/check_ins") data = null;
+  else if (path === "/rest/v1/check_ins") {
+    // A week of check-ins so the dashboard mood strip has real rows to read.
+    if (req.method === "POST" || req.method === "PATCH" || req.method === "PUT") {
+      data = null;
+    } else if (params.get("select") === "day,mood") {
+      const moods = ["Good", "Okay", "Great", "Low", "Okay", "Good", "Great"];
+      data = moods.map((mood, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return {
+          day: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+          mood,
+        };
+      });
+    } else data = null;
+  }
   // ── Activities: session_summaries carries participant_count and joined ─────
   else if (path === "/rest/v1/session_summaries" || path === "/rest/v1/sessions") {
     const type = eq("program_type");

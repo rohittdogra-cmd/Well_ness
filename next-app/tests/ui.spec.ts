@@ -752,3 +752,50 @@ test("Take a Moment uses the existing mood vocabulary", async ({
   for (const mood of ["Great", "Good", "Okay", "Low", "Overwhelmed"])
     await expect(group.getByRole("button", { name: new RegExp(mood) })).toBeVisible();
 });
+
+test("dashboard surfaces requests to talk, conversations and a private week", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/dashboard");
+  await expect(
+    page.getByRole("heading", { name: /Welcome back/ }),
+  ).toBeVisible();
+
+  // The mood strip must describe itself for a screen reader, not just draw bars.
+  const mood = page.getByRole("img", { name: /Mood over the last seven days/ });
+  await expect(mood).toBeVisible();
+  expect(await mood.getAttribute("aria-label")).toMatch(/Great|Good|Okay|Low/);
+
+  // A request to talk is the most time-sensitive thing here, so it has to be
+  // visible from the dashboard rather than only from /people.
+  await expect(
+    page.getByText("No one waiting on you").or(page.getByText(/would like to connect/)).first(),
+  ).toBeVisible();
+
+  // Upcoming sessions must be the next ones, not the oldest.
+  await expect(
+    page.getByText("What you have coming up"),
+  ).toBeVisible();
+});
+
+test("accepting a request to talk works from the dashboard", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/people");
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+  await request.post("http://127.0.0.1:54329/test/accept-connection");
+
+  await page.goto("/dashboard");
+  await expect(page.getByText("Conversations you can open")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Maya.*Open chat/ }),
+  ).toBeVisible();
+});

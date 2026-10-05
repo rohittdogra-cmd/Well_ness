@@ -35,6 +35,15 @@ import {
   useSaveUserProfile,
   useUserProfile,
 } from "../hooks/useQueries";
+import {
+  acceptedConnections,
+  pendingForYou,
+  pendingFromYou,
+  useMyConnections,
+  useRespondToConnection,
+} from "../hooks/useConnections";
+import { useGroups } from "../hooks/useCommunity";
+import { moodLabel, moodWeight, useMoodWeek } from "../hooks/useMood";
 import { AdminDashboardView } from "./AdminDashboardPage";
 
 const LOADING_SKELETON_KEYS = ["sk-a", "sk-b", "sk-c", "sk-d"];
@@ -174,9 +183,17 @@ export function DashboardPage() {
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
   const { data: mySessions, isLoading: sessionsLoading } = useMySessions();
+  const memberId = isAuthenticated
+    ? identity.getPrincipal().toString()
+    : undefined;
   const { data: activityLogs, isLoading: logsLoading } = useActivityLogsForUser(
     isAuthenticated ? identity.getPrincipal() : null,
   );
+  const { data: connections, isLoading: connectionsLoading } =
+    useMyConnections();
+  const respond = useRespondToConnection();
+  const { data: myGroups } = useGroups({ joinedOnly: true });
+  const { data: moodWeek } = useMoodWeek(memberId);
   const { data: myBookings, isLoading: bookingsLoading } = useMyBookings(
     isAuthenticated ? identity.getPrincipal() : null,
   );
@@ -247,8 +264,23 @@ export function DashboardPage() {
 
   const createdSessions = mySessions?.[0] ?? [];
   const joinedSessions = mySessions?.[1] ?? [];
-  const allMySessions = [...new Map([...createdSessions, ...joinedSessions].map(s => [s.id.toString(), s])).values()];
-  const recentSessions = allMySessions.slice(0, 3);
+  const allMySessions = [
+    ...new Map(
+      [...createdSessions, ...joinedSessions].map((s) => [s.id.toString(), s]),
+    ).values(),
+  ].sort((a, b) => Number(a.dateTime - b.dateTime));
+
+  // Split by now, then take what is actually next. Taking the first three of an
+  // ascending list showed the oldest sessions, which is the opposite of useful
+  // on a "what is next" dashboard.
+  const now = Date.now();
+  const upcomingSessions = allMySessions
+    .filter((s) => Number(s.dateTime / 1_000_000n) > now)
+    .slice(0, 3);
+
+  const incoming = pendingForYou(connections, memberId);
+  const outgoing = pendingFromYou(connections, memberId);
+  const openThreads = acceptedConnections(connections, memberId);
 
   const recentLogs = [...(activityLogs ?? [])]
     .sort((a, b) => Number(b.createdAt - a.createdAt))
@@ -432,6 +464,243 @@ export function DashboardPage() {
           </motion.div>
         </motion.div>
 
+        {/* Your people: pending requests and open conversations.
+            This used to live only on the people page, so a request to talk was
+            invisible until you went looking for it. */}
+        <div className="grid md:grid-cols-3 gap-6 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="md:col-span-2"
+          >
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Your people</CardTitle>
+                <Link
+                  href="/people"
+                  className="text-xs text-primary hover:underline"
+                  data-ocid="dashboard.link"
+                >
+                  Find more
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {connectionsLoading ? (
+                  <p className="text-sm text-muted-foreground" role="status">
+                    Loading who you are talking to…
+                  </p>
+                ) : (
+                  <div className="space-y-5">
+                    {incoming.length > 0 && (
+                      <section aria-labelledby="dash-incoming">
+                        <h2
+                          id="dash-incoming"
+                          className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"
+                        >
+                          Asked to talk to you
+                          <Badge className="rounded-full">
+                            {incoming.length}
+                          </Badge>
+                        </h2>
+                        <ul className="space-y-2">
+                          {incoming.map((c) => (
+                            <li
+                              key={c.id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3"
+                            >
+                              <span className="font-medium text-sm">
+                                {c.name} would like to connect
+                              </span>
+                              <span className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  className="rounded-xl"
+                                  disabled={respond.isPending}
+                                  onClick={() =>
+                                    respond.mutate({
+                                      connectionId: c.id,
+                                      accept: true,
+                                    })
+                                  }
+                                  data-ocid="dashboard.accept_connection"
+                                >
+                                  Accept
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="rounded-xl"
+                                  disabled={respond.isPending}
+                                  onClick={() =>
+                                    respond.mutate({
+                                      connectionId: c.id,
+                                      accept: false,
+                                    })
+                                  }
+                                >
+                                  Decline
+                                </Button>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+
+                    {openThreads.length > 0 ? (
+                      <section aria-labelledby="dash-threads">
+                        <h2
+                          id="dash-threads"
+                          className="text-sm font-semibold text-foreground mb-2"
+                        >
+                          Conversations you can open
+                        </h2>
+                        <ul className="space-y-2">
+                          {openThreads.slice(0, 4).map((c) => (
+                            <li key={c.id}>
+                              <Link
+                                href="/people"
+                                className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 hover:border-primary transition-colors"
+                              >
+                                <span className="font-medium text-sm">
+                                  {c.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  Open chat →
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    ) : null}
+
+                    {incoming.length === 0 && openThreads.length === 0 && (
+                      <div
+                        className="text-center py-8 text-muted-foreground"
+                        data-ocid="dashboard.empty_state"
+                      >
+                        <MessageCircle className="w-9 h-9 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm font-medium">
+                          No one waiting on you
+                        </p>
+                        <p className="text-xs mt-1">
+                          When someone asks to talk, it shows up here first.
+                        </p>
+                      </div>
+                    )}
+
+                    {outgoing.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {outgoing.length}{" "}
+                        {outgoing.length === 1
+                          ? "request still waiting"
+                          : "requests still waiting"}
+                        .
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Private mood trend */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Your week</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div
+                  className="flex items-end gap-1.5 h-24"
+                  role="img"
+                  aria-label={
+                    moodWeek
+                      ? `Mood over the last seven days: ${moodWeek
+                          .map((d) => `${d.day.slice(5)} ${moodLabel(d.mood)}`)
+                          .join(", ")}`
+                      : "Mood over the last seven days"
+                  }
+                >
+                  {(moodWeek ?? []).map((d) => {
+                    const weight = moodWeight(d.mood);
+                    return (
+                      <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                        <span
+                          className={
+                            weight === 0
+                              ? "w-full rounded-full bg-muted/30"
+                              : "w-full rounded-full bg-primary"
+                          }
+                          style={{
+                            height: `${Math.max(8, weight * 18)}px`,
+                            opacity: weight === 0 ? 1 : 0.35 + weight * 0.13,
+                          }}
+                        />
+                        <span className="text-[10px] text-muted-foreground">
+                          {d.day.slice(8)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Only you can see this.{" "}
+                  <Link href="/take-a-moment" className="text-primary hover:underline">
+                    Take a moment
+                  </Link>
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Your groups */}
+        {(myGroups?.pages.flat().length ?? 0) > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22 }}
+            className="mb-6"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-display text-lg font-bold text-foreground">
+                Your groups
+              </h2>
+              <Link
+                href="/groups"
+                className="text-xs text-primary hover:underline"
+              >
+                Browse all
+              </Link>
+            </div>
+            <ul className="flex flex-wrap gap-2">
+              {myGroups!.pages
+                .flat()
+                .slice(0, 6)
+                .map((g) => (
+                  <li key={g.id}>
+                    <Link
+                      href={`/groups/${g.slug}`}
+                      className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm hover:border-primary transition-colors min-h-9"
+                    >
+                      {g.name}
+                      <span className="text-xs text-muted-foreground">
+                        {g.member_count}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+            </ul>
+          </motion.div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-6 mb-6">
           {/* Quick actions */}
           <motion.div
@@ -461,7 +730,7 @@ export function DashboardPage() {
           >
             <Card>
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Recent Sessions</CardTitle>
+                <CardTitle className="text-base">What you have coming up</CardTitle>
                 <Link
                   href="/my-sessions"
                   className="text-xs text-primary hover:underline"
@@ -480,15 +749,17 @@ export function DashboardPage() {
                       <SessionCardSkeleton key={k} />
                     ))}
                   </div>
-                ) : recentSessions.length === 0 ? (
+                ) : upcomingSessions.length === 0 ? (
                   <div
                     className="text-center py-10 text-muted-foreground"
                     data-ocid="dashboard.empty_state"
                   >
                     <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm font-medium">No sessions yet</p>
+                    <p className="text-sm font-medium">
+                      Nothing planned yet
+                    </p>
                     <p className="text-xs mt-1">
-                      Join or create a session to get started
+                      Join or plan something to get started
                     </p>
                     <Link
                       href="/programs/meetup"
@@ -502,7 +773,7 @@ export function DashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {recentSessions.map((session, i) => (
+                    {upcomingSessions.map((session, i) => (
                       <SessionCard
                         key={session.id.toString()}
                         session={session}
