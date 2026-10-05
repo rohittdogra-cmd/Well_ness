@@ -103,23 +103,68 @@ export function useGroup(slug: string | undefined) {
   });
 }
 
+const FEED_PAGE = 20;
+
+/**
+ * Conversation feed.
+ *
+ * Polling is deliberately split from history. A `useInfiniteQuery` with
+ * `refetchInterval` refetches *every* loaded page on each tick, so a member who
+ * had scrolled to page four was issuing four `get_feed` round trips every 15
+ * seconds — cost growing linearly with engagement. Instead only the newest
+ * page is polled, and the accumulated older pages are left alone: posts already
+ * read do not change, and replies and likes surface on the newest page.
+ */
 export function useFeed(group: number | null) {
   const { user } = useInternetIdentity();
-  return useInfiniteQuery({
+  const enabled = !!user;
+
+  const history = useInfiniteQuery({
     queryKey: ["feed", user?.id, group],
-    enabled: !!user,
+    enabled,
     initialPageParam: null as number | null,
     queryFn: async ({ pageParam }) =>
       (await rpc("get_feed", {
         p_group: group,
         p_before: pageParam,
-        p_limit: 20,
+        p_limit: FEED_PAGE,
       })) as Post[],
     getNextPageParam: (last) =>
-      last.length === 20 ? last[last.length - 1].id : undefined,
+      last.length === FEED_PAGE ? last[last.length - 1].id : undefined,
+  });
+
+  const latest = useQuery({
+    queryKey: ["feed-latest", user?.id, group],
+    enabled,
+    queryFn: async () =>
+      (await rpc("get_feed", {
+        p_group: group,
+        p_before: null,
+        p_limit: FEED_PAGE,
+      })) as Post[],
     refetchInterval: 15000,
     refetchIntervalInBackground: false,
   });
+
+  // The polled page and the first loaded page overlap once a member has loaded
+  // more than one page, so merge on post id rather than concatenating.
+  const pages = history.data?.pages ?? [];
+  const head = latest.data ?? pages[0] ?? [];
+  const seen = new Set(head.map((post) => post.id));
+  const rest = pages
+    .slice(head.length ? 1 : 0)
+    .map((page) => page.filter((post) => !seen.has(post.id)))
+    .filter((page) => page.length);
+
+  return {
+    ...history,
+    posts: [...head, ...rest.flat()],
+    /** Pulls both the polled newest page and the loaded history. */
+    refresh: async () => {
+      await Promise.all([latest.refetch(), history.refetch()]);
+    },
+    isRefreshing: latest.isFetching || history.isFetching,
+  };
 }
 
 export type CommunityAction = {

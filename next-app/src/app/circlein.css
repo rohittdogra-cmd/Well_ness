@@ -339,14 +339,52 @@
 
 /* Responsive Adjustments */
 @media (max-width: 899px) {
+  .hero-visual-col {
+    height: 520px;
+    margin-top: 20px;
+  }
   .photo-wrapper {
     right: -20px;
-    border-radius: 100px 0 0 100px / 150px 0 0 150px;
+    width: calc(100% + 20px);
+    top: 5%;
+    height: 90%;
+    border-radius: 100px 0 0 100px / 120px 0 0 120px;
   }
-  .chat-card.card-1 { right: 10%; }
-  .chat-card.card-2 { right: 5%; }
-  .chat-card.card-3 { right: 15%; }
+  .chat-card {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .chat-card .icon {
+    width: 28px; height: 28px; font-size: 14px;
+  }
+  .chat-card .text {
+    font-size: 11px;
+  }
+  .chat-card.card-1 { right: auto; left: 10%; top: -5%; }
+  .chat-card.card-2 { right: 5%; top: 35%; }
+  .chat-card.card-3 { right: auto; left: 15%; top: 75%; }
   
+  .card-annotation {
+    font-size: 16px;
+    top: -30px;
+    left: 10px;
+  }
+  .annotation {
+    font-size: 20px;
+    right: 5%;
+  }
+
+  .social-proof-panel {
+    bottom: 10px;
+    left: 10px;
+    padding: 10px 12px;
+  }
+  .social-proof-panel strong { font-size: 11px; }
+  .social-proof-panel span { font-size: 9px; line-height: 1.1; display: block; max-width: 150px; }
+  .social-proof-panel .avatars img, .social-proof-panel .count {
+    width: 26px; height: 26px;
+  }
+
   /* Hide additional sections on mobile to keep the landing page clean and compact */
   .quick-actions,
   .home-interests,

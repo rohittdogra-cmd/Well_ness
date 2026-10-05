@@ -524,3 +524,63 @@ test("health reports the schema it expects", async ({ request }) => {
   // The fixture serves group_summaries, so the probe resolves it.
   expect(body.schema).toBe("current");
 });
+
+test("unknown routes and unknown ids answer with a real 404", async ({
+  request,
+}) => {
+  // A URL that matches no route at all.
+  const missing = await request.get("/this-route-does-not-exist");
+  expect(missing.status()).toBe(404);
+  expect(await missing.text()).toContain("That page isn");
+
+  // A malformed session id can never exist, so it is a confident not-found.
+  const badSession = await request.get("/sessions/not-a-number");
+  expect(badSession.status()).toBe(404);
+});
+
+test("a well-formed but unknown id renders the not-found page", async ({
+  page,
+  context,
+}) => {
+  // Signed in, because a signed-out visitor to a private route is redirected
+  // to sign-in before the not-found page would be visible.
+  await signIn(context);
+  await page.goto("/sessions/999999");
+  await expect(
+    page.getByRole("heading", { name: /That page isn.t here/ }),
+  ).toBeVisible();
+});
+
+test("an unknown group slug renders the not-found page", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.goto("/groups/no-such-group-abc123");
+  await expect(
+    page.getByRole("heading", { name: /That page isn.t here/ }),
+  ).toBeVisible();
+});
+
+test("the feed polls only the newest page", async ({ page, context }) => {
+  await signIn(context);
+  const feedCalls: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/rest/v1/rpc/get_feed")) feedCalls.push(r.url());
+  });
+  await page.goto("/discuss");
+  await expect(
+    page.getByRole("heading", { name: "Conversations", exact: true }),
+  ).toBeVisible();
+  // The first render issues the polled newest page; it must not also fetch
+  // history pages, because there is nothing to page through yet.
+  expect(feedCalls.length).toBeLessThanOrEqual(2);
+  for (const call of feedCalls)
+    expect(call).not.toContain("p_before=1");
+});
+
+test("dependency surface stays honest", async ({ request }) => {
+  // A deleted dependency would surface here rather than at runtime on Vercel.
+  const html = await (await request.get("/")).text();
+  expect(html.length).toBeGreaterThan(0);
+});

@@ -29,7 +29,7 @@ const groups = [
     category: "arts",
     name: "Music",
     description: "Share playlists and discover new sounds.",
-    member_count: 0,
+    member_count: 5,
     joined: false,
   },
   {
@@ -38,11 +38,56 @@ const groups = [
     category: "wellbeing",
     name: "Health & wellness",
     description: "Build better habits together.",
-    member_count: 0,
+    member_count: 12,
     joined: false,
   },
+  {
+    id: 4,
+    slug: "badminton",
+    category: "sports",
+    name: "Badminton",
+    description: "Smash it! Weekly games and tournaments.",
+    member_count: 8,
+    joined: false,
+  },
+  {
+    id: 5,
+    slug: "table-tennis",
+    category: "sports",
+    name: "Table Tennis",
+    description: "Ping pong enthusiasts gather here.",
+    member_count: 15,
+    joined: false,
+  },
+  {
+    id: 6,
+    slug: "football",
+    category: "sports",
+    name: "Football",
+    description: "Weekend kickabouts and watch parties.",
+    member_count: 24,
+    joined: false,
+  },
+  {
+    id: 7,
+    slug: "horse-riding",
+    category: "sports",
+    name: "Horse Riding",
+    description: "Equestrian club for all skill levels.",
+    member_count: 4,
+    joined: false,
+  },
+  {
+    id: 8,
+    slug: "photography",
+    category: "arts",
+    name: "Photography",
+    description: "Capture the moment. Photowalks and tips.",
+    member_count: 19,
+    joined: false,
+  }
 ];
-let nextGroupId = 4;
+let nextGroupId = 9;
 let posts = [
   {
     id: 1,
@@ -166,6 +211,8 @@ createServer(async (req, res) => {
       ? raw
       : raw.slice(3);
   };
+  /** maybeSingle() asks for a bare object; a list read asks for an array. */
+  const wantsObject = (req.headers.accept ?? "").includes("vnd.pgrst.object");
   let data = [];
   if (path === "/auth/v1/settings") data = { external: { linkedin_oidc: false } };
   else if (path === "/auth/v1/signup") data = { user, session: null };
@@ -271,8 +318,7 @@ createServer(async (req, res) => {
         : rows;
     }
     const sliced = rows.slice(from, from + to);
-    // PostgREST `.maybeSingle()` returns a bare object, not an array.
-    data = slug && params.has("select") ? (sliced[0] ?? null) : sliced;
+    data = wantsObject ? (sliced[0] ?? null) : sliced;
   } else if (path === "/rest/v1/rpc/group_category_counts")
     data = groups.reduce((acc, g) => {
       acc[g.category] = (acc[g.category] ?? 0) + 1;
@@ -305,7 +351,17 @@ createServer(async (req, res) => {
   // ── Activities: session_summaries carries participant_count and joined ─────
   else if (path === "/rest/v1/session_summaries" || path === "/rest/v1/sessions") {
     const type = eq("program_type");
-    data = type && type !== session.program_type ? [] : [{ ...session }];
+    const wanted = eq("id");
+    const matches =
+      (!type || type === session.program_type) &&
+      (!wanted || String(wanted) === String(session.id));
+    data = matches
+      ? wantsObject
+        ? { ...session }
+        : [{ ...session }]
+      : wantsObject
+        ? null
+        : [];
   } else if (path === "/rest/v1/session_members") {
     // My Sessions asks for `select=session_id`; the roster asks for `user_id`.
     data =

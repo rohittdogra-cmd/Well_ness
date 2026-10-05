@@ -66,7 +66,25 @@ const SECURITY_HEADERS: Record<string, string> = {
  * caching for the sitemap, robots.txt and the public marketing pages. Only the
  * signed-in routes render per-person data and are therefore uncacheable.
  */
+/**
+ * `/sessions/<id>` can only ever be a bigint, so anything else is a confident
+ * "no such page". Answering here rather than in the page matters: once a
+ * dynamic render starts streaming the status code is already committed, so
+ * `notFound()` inside a page renders the right screen but still returns 200.
+ * Well-formed ids that turn out to be missing keep that behaviour.
+ */
+function impossiblePath(pathname: string): boolean {
+  const session = pathname.match(/^\/sessions\/([^/]+)\/?$/);
+  return Boolean(session && !/^\d+$/.test(session[1]));
+}
+
 export async function proxy(request: NextRequest) {
+  if (impossiblePath(request.nextUrl.pathname))
+    return new NextResponse("Not found", {
+      status: 404,
+      headers: { "Cache-Control": "no-store", "Content-Type": "text/plain" },
+    });
+
   let response = NextResponse.next({ request });
 
   if (isConfigured()) {

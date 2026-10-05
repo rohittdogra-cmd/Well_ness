@@ -85,8 +85,8 @@ export function ConversationFeed({
         <h2>Conversations</h2>
         <button
           className="text-action"
-          onClick={() => feed.refetch()}
-          disabled={feed.isFetching}
+          onClick={() => feed.refresh()}
+          disabled={feed.isRefreshing}
         >
           <RefreshCw size={15} />
           Refresh
@@ -99,7 +99,7 @@ export function ConversationFeed({
       ) : feed.isError ? (
         <div className="empty-state" role="alert">
           <p>{feed.error.message}</p>
-          <button className="text-action" onClick={() => feed.refetch()}>
+          <button className="text-action" onClick={() => feed.refresh()}>
             Try again
           </button>
         </div>
@@ -110,16 +110,14 @@ export function ConversationFeed({
           <p>Share the first thought in this space.</p>
         </div>
       ) : (
-        feed.data.pages
-          .flat()
-          .map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              group={group}
-              canPost={canPost}
-            />
-          ))
+        feed.posts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            group={group}
+            canPost={canPost}
+          />
+        ))
       )}
       {feed.hasNextPage && (
         <button

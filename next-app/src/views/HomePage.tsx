@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -35,6 +36,7 @@ const floatAnim: Variants = {
 };
 
 export function HomePage() {
+  const router = useRouter();
   const profile = useLocalProfile();
   // Only the groups this member has actually joined, filtered in Postgres.
   const groups = useGroups({ joinedOnly: true });
@@ -149,7 +151,13 @@ export function HomePage() {
               </div>
             </motion.div>
 
-            <motion.div className="chat-card card-1" variants={floatAnim} whileHover={{ scale: 1.05 }}>
+            <motion.div 
+              className="chat-card card-1" 
+              variants={floatAnim} 
+              whileHover={{ scale: 1.05 }}
+              onClick={() => router.push('/groups/health-wellness')}
+              style={{ cursor: "pointer" }}
+            >
               <div className="icon">☕</div>
               <span className="text">Coffee<br/>tomorrow?</span>
               <div className="menu-dots"><MoreHorizontal size={14} color="#a0a0a0" /></div>
@@ -159,13 +167,25 @@ export function HomePage() {
               </div>
             </motion.div>
             
-            <motion.div className="chat-card card-2" variants={floatAnim} whileHover={{ scale: 1.05 }}>
+            <motion.div 
+              className="chat-card card-2" 
+              variants={floatAnim} 
+              whileHover={{ scale: 1.05 }}
+              onClick={() => router.push('/groups/cricket')}
+              style={{ cursor: "pointer" }}
+            >
               <div className="icon">🏏</div>
               <span className="text">Cricket<br/>this weekend?</span>
               <div className="menu-dots"><MoreHorizontal size={14} color="#a0a0a0" /></div>
             </motion.div>
             
-            <motion.div className="chat-card card-3" variants={floatAnim} whileHover={{ scale: 1.05 }}>
+            <motion.div 
+              className="chat-card card-3" 
+              variants={floatAnim} 
+              whileHover={{ scale: 1.05 }}
+              onClick={() => router.push('/groups/music')}
+              style={{ cursor: "pointer" }}
+            >
               <div className="icon">📚</div>
               <span className="text">Study<br/>circle?</span>
               <div className="menu-dots"><MoreHorizontal size={14} color="#a0a0a0" /></div>

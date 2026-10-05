@@ -167,6 +167,17 @@ The proxy attaches `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-
 
 If step 4 returns `schema: "missing"`, step 1 did not take effect. Rerun the migration and check for a PostgREST schema-cache reload in the Supabase dashboard (Settings → API → Reload schema) before assuming the SQL failed.
 
+## Error handling and not-found pages
+
+- `app/error.tsx` catches a thrown client component anywhere below the root layout and offers a retry. Before it existed, any such error replaced the whole page with Next's generic exception message and no way back.
+- `app/global-error.tsx` is the last-resort boundary for a failure inside the layout itself. It renders its own document and hard-reloads, because the broken tree is still mounted.
+- `app/not-found.tsx` is the 404 boundary. An unknown URL answers with a real HTTP 404.
+- `/sessions/<id>` where the id is not a bigint is answered with a 404 in the proxy. That case can never be valid, and deciding it before rendering is the only way to control the status code: once a dynamic route starts streaming the status is committed, so `notFound()` called inside a page renders the correct screen but still returns 200. A well-formed id that turns out to be missing therefore renders the 404 page with a 200 status. Both pages also resolve their real title on the server, so a shared link reads correctly even though they stay `noindex`.
+
+## Polling
+
+The conversation feed polls only its newest page every 15 seconds. An earlier version put `refetchInterval` on the infinite query, which refetched *every* loaded page on each tick, so read cost grew linearly with how far a member had scrolled. Loaded history is fetched once and left alone.
+
 ## Verification
 
 ```sh
@@ -177,7 +188,7 @@ npm run test:ui
 npm run build
 ```
 
-Expect 86 database checks and 21 browser scenarios to pass.
+Expect 86 database checks and 27 browser scenarios to pass.
 
 Database tests apply the actual migrations to embedded Postgres (PGlite) with simulated Supabase Auth roles. They exercise RLS, ownership, aliases, moderation, booking constraints and audit behavior. UI tests run the real Next app against a **test-only local fixture service**, so screenshots and flow checks do not require production credentials and do not prove live Supabase email delivery. Test servers are only started by Playwright and are never imported into the application.
 
