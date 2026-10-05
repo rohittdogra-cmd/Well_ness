@@ -90,7 +90,9 @@ Import the repository and set:
 
 `vercel.json` already pins the framework, install and build commands and the `iad1` region, so those four fields are optional.
 
-Add all three environment variables for Production and any Preview environment that should access Supabase. Redeploy after changing them: `NEXT_PUBLIC_*` values are bundled at build time. Keep test-only `NEXT_DIST_DIR` unset. No filesystem persistence, long-running server, service-role key, or Vercel cron job is required. Supabase holds the durable data.
+Add all three environment variables for Production and any Preview environment that should access Supabase. Redeploy after changing them: `NEXT_PUBLIC_*` values are bundled at build time. Keep test-only `NEXT_DIST_DIR` unset.
+
+> `NEXT_DIST_DIR` is only for the browser tests, which need an isolated build. Pointing it at a scratch directory makes `next` append that directory to `tsconfig.json`, so use the default `.next` (already git-ignored) for ad-hoc local builds. No filesystem persistence, long-running server, service-role key, or Vercel cron job is required. Supabase holds the durable data.
 
 After the first deploy, confirm the deployment rather than trusting it:
 
