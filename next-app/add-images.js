@@ -5,7 +5,8 @@ const path = require('path');
 const files = [
   'src/views/MindfulMeetupPage.tsx',
   'src/views/SocialGatheringPage.tsx',
-  'src/views/TaskSharingPage.tsx'
+  'src/views/TaskSharingPage.tsx',
+  'src/views/ProgramsPage.tsx'
 ];
 
 function slugify(text) {

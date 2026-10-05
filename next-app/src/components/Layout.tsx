@@ -29,6 +29,15 @@ const publicNav = [
   { label: "Contact", href: "/contact" },
 ];
 
+/** Trust links shown to everyone: a stranger judging the service should be able
+ *  to read the rules before creating an account. */
+const trustNav = [
+  { label: "How it works", href: "/how-it-works" },
+  { label: "Safety", href: "/safety" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Take a moment", href: "/take-a-moment" },
+];
+
 const nav = [
   { label: "Home", href: "/", icon: House },
   { label: "Conversations", href: "/discuss", icon: MessageCircle },
@@ -103,6 +112,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <footer className="public-footer">
               <span>Make time for yourself.</span>
               <div className="footer-links">
+                {trustNav.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    {item.label}
+                  </Link>
+                ))}
                 <Link href="/about">About</Link>
                 <Link href="/membership">Membership</Link>
                 <Link href="/careers">Careers</Link>
@@ -197,6 +211,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <footer className="wellness-footer">
               <span>Make time for yourself.</span>
               <div className="footer-links">
+                <Link href="/take-a-moment">Take a moment</Link>
+                <Link href="/how-it-works">How it works</Link>
+                <Link href="/safety">Safety</Link>
+                <Link href="/privacy">Privacy</Link>
                 <Link href="/psychologists">Support</Link>
                 <Link href="/contact">Contact</Link>
                 <Link href="/dashboard">Dashboard</Link>

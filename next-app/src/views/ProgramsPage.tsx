@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Inbox, LogIn } from "lucide-react";
@@ -15,6 +16,7 @@ import { getProgramConfig, getProgramTypeFromPath } from "../lib/programConfig";
 
 const EXERCISE_SPORTS = [
   {
+    image: "/images/activities/box-cricket.jpg",
     emoji: "🏏",
     name: "Box Cricket",
     description: "Fast-paced team cricket in a compact arena",
@@ -22,6 +24,7 @@ const EXERCISE_SPORTS = [
     formats: ["Indoor"],
   },
   {
+    image: "/images/activities/pickleball.jpg",
     emoji: "🏓",
     name: "Pickleball",
     description: "Easy to learn, endlessly fun racket sport",
@@ -29,6 +32,7 @@ const EXERCISE_SPORTS = [
     formats: ["Indoor", "Outdoor"],
   },
   {
+    image: "/images/activities/badminton.jpg",
     emoji: "🏸",
     name: "Badminton",
     description: "Full-body workout with rapid rallies",
@@ -36,6 +40,7 @@ const EXERCISE_SPORTS = [
     formats: ["Indoor"],
   },
   {
+    image: "/images/activities/tennis.jpg",
     emoji: "🎾",
     name: "Tennis",
     description: "Serve, volley, and unwind on the court",
@@ -43,6 +48,7 @@ const EXERCISE_SPORTS = [
     formats: ["Outdoor"],
   },
   {
+    image: "/images/activities/yoga.jpg",
     emoji: "🧘",
     name: "Yoga",
     description: "Mindful movement for stress relief",
@@ -50,6 +56,7 @@ const EXERCISE_SPORTS = [
     formats: ["Indoor"],
   },
   {
+    image: "/images/activities/running.jpg",
     emoji: "🏃",
     name: "Running",
     description: "Group runs to clear the mind",
@@ -57,6 +64,7 @@ const EXERCISE_SPORTS = [
     formats: ["Outdoor"],
   },
   {
+    image: "/images/activities/group-workout.jpg",
     emoji: "💪",
     name: "Group Workout",
     description: "HIIT and strength sessions together",
@@ -67,6 +75,7 @@ const EXERCISE_SPORTS = [
 
 const MEETUP_ACTIVITIES = [
   {
+    image: "/images/activities/chai-pe-charcha.jpg",
     emoji: "☕",
     name: "Chai Pe Charcha",
     description:
@@ -75,6 +84,7 @@ const MEETUP_ACTIVITIES = [
     size: "4–10 people",
   },
   {
+    image: "/images/activities/open-mic-stories.jpg",
     emoji: "🎙️",
     name: "Open Mic Stories",
     description:
@@ -83,6 +93,7 @@ const MEETUP_ACTIVITIES = [
     size: "6–15 people",
   },
   {
+    image: "/images/activities/icebreaker-circle.jpg",
     emoji: "🧩",
     name: "Icebreaker Circle",
     description:
@@ -91,6 +102,7 @@ const MEETUP_ACTIVITIES = [
     size: "5–20 people",
   },
   {
+    image: "/images/activities/mindful-check-in.jpg",
     emoji: "🌿",
     name: "Mindful Check-in",
     description:
@@ -99,6 +111,7 @@ const MEETUP_ACTIVITIES = [
     size: "3–8 people",
   },
   {
+    image: "/images/activities/walk-talk.jpg",
     emoji: "🚶",
     name: "Walk & Talk",
     description:
@@ -107,6 +120,7 @@ const MEETUP_ACTIVITIES = [
     size: "2–6 people",
   },
   {
+    image: "/images/activities/book-podcast-club.jpg",
     emoji: "📖",
     name: "Book / Podcast Club",
     description:
@@ -188,6 +202,11 @@ function SportCategoriesSection() {
             data-ocid={`exercise.sport.item.${i + 1}`}
             className="bg-card rounded-2xl border border-border/60 p-4 hover:border-primary/30 hover:shadow-md transition-all duration-250"
           >
+            {(sport as any).image && (
+              <div style={{ position: "relative", width: "100%", height: "120px", marginBottom: "12px", borderRadius: "8px", overflow: "hidden", background: "#e8edea" }}>
+                <Image src={(sport as any).image} alt={sport.name} fill style={{ objectFit: "cover" }} />
+              </div>
+            )}
             <div className="flex items-start gap-3 mb-3">
               <span className="text-2xl leading-none mt-0.5">
                 {sport.emoji}
@@ -272,6 +291,11 @@ function MeetupActivitiesSection() {
             data-ocid={`meetup.activity.item.${i + 1}`}
             className="bg-card rounded-2xl border border-border/60 p-5 hover:border-primary/30 hover:shadow-md transition-all duration-250"
           >
+            {(activity as any).image && (
+              <div style={{ position: "relative", width: "100%", height: "120px", marginBottom: "12px", borderRadius: "8px", overflow: "hidden", background: "#e8edea" }}>
+                <Image src={(activity as any).image} alt={activity.name} fill style={{ objectFit: "cover" }} />
+              </div>
+            )}
             <div className="flex items-start gap-3 mb-3">
               <span className="text-2xl leading-none mt-0.5">
                 {activity.emoji}

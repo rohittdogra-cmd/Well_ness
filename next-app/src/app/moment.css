@@ -1,0 +1,444 @@
+/* ──────────────────────────────────────────���─────────────────────────────
+   Surfaces for the trust pages and Take a Moment.
+
+   Built entirely on the tokens in tokens.css so the palette lives in one place.
+   Everything here respects prefers-reduced-motion and is safe at 320px.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Long-form information pages ────────────────────────────────────── */
+
+.info-page {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5) var(--space-8);
+  color: var(--text-body);
+}
+
+.info-header {
+  margin-bottom: var(--space-7);
+}
+
+.info-header h1 {
+  font-size: clamp(1.9rem, 6vw, 2.9rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  margin: var(--space-2) 0 var(--space-4);
+}
+
+.info-lede {
+  font-size: clamp(1.02rem, 2.6vw, 1.16rem);
+  line-height: 1.65;
+  color: var(--text-muted);
+  max-width: 38rem;
+}
+
+.info-updated {
+  margin-top: var(--space-4);
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.info-section {
+  margin-bottom: var(--space-7);
+}
+
+.info-section h2 {
+  font-size: 1.18rem;
+  color: var(--text-strong);
+  margin-bottom: var(--space-3);
+  letter-spacing: -0.01em;
+}
+
+.info-section p {
+  line-height: 1.72;
+  color: var(--text-body);
+  margin-bottom: var(--space-3);
+}
+
+.info-section p:last-child {
+  margin-bottom: 0;
+}
+
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.info-list li {
+  position: relative;
+  padding-left: 1.6rem;
+  line-height: 1.68;
+  color: var(--text-body);
+}
+
+/* A leaf-shaped marker rather than a generic bullet. */
+.info-list li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.62em;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 0 100% 0 100%;
+  background: var(--soft-sage);
+}
+
+.info-callout {
+  background: var(--surface-soft);
+  border-left: 3px solid var(--forest-sage);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: var(--space-5);
+}
+
+.info-honest {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+.info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.info-actions .wellness-button {
+  background: var(--action-primary);
+  color: var(--action-primary-text);
+  border-radius: var(--radius-pill);
+  padding: 0.7rem 1.4rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  transition: background var(--duration-fast) var(--ease-calm);
+}
+
+.info-actions .wellness-button:hover {
+  background: var(--action-primary-hover);
+}
+
+.info-actions .text-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: var(--radius-sm);
+  color: var(--forest-sage);
+  font-weight: 600;
+}
+
+/* ─── Take a Moment ──────────────────────────────────────────────────── */
+
+.moment-page {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5) var(--space-8);
+  color: var(--text-body);
+}
+
+.moment-header h1 {
+  font-size: clamp(1.9rem, 6vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.moment-header p {
+  color: var(--text-muted);
+  line-height: 1.65;
+  max-width: 32rem;
+}
+
+.moment-breath {
+  margin: var(--space-7) 0;
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.moment-orb {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+}
+
+/* The guide itself: a soft sage disc that breathes on its own. */
+.moment-orb::before {
+  content: "";
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--soft-sage),
+    var(--forest-sage)
+  );
+  opacity: 0.85;
+}
+
+/* A halo that expands and contracts with the disc. */
+.moment-orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--soft-sage);
+  animation: moment-breathe 11s var(--ease-calm) infinite;
+}
+
+.moment-breathing .moment-orb::before {
+  animation: moment-breathe 11s var(--ease-calm) infinite;
+}
+
+@keyframes moment-breathe {
+  0%,
+  100% {
+    transform: scale(0.86);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.moment-phase {
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 24rem;
+  min-height: 3rem;
+}
+
+.moment-breath .wellness-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--action-primary);
+  color: var(--action-primary-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.moment-breath .text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 32px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--forest-sage);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.moment-prompt,
+.moment-mood,
+.moment-note,
+.moment-exit {
+  margin-bottom: var(--space-7);
+}
+
+.moment-prompt h2,
+.moment-mood h2,
+.moment-note h2 {
+  font-size: 1.1rem;
+  color: var(--text-strong);
+  margin-bottom: var(--space-3);
+}
+
+.moment-prompt blockquote {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-strong);
+  font-size: clamp(1.05rem, 3vw, 1.2rem);
+  line-height: 1.55;
+}
+
+.moment-prompt .text-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--forest-sage);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.moment-mood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: var(--space-3);
+}
+
+.moment-mood-grid button {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-4);
+  min-height: 64px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--text-body);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color var(--duration-fast) var(--ease-calm),
+    background var(--duration-fast) var(--ease-calm);
+}
+
+.moment-mood-grid button:hover {
+  border-color: var(--soft-sage);
+}
+
+.moment-mood-grid button[aria-pressed="true"] {
+  border-color: var(--forest-sage);
+  background: var(--surface-soft);
+  color: var(--text-strong);
+}
+
+.moment-mood-grid strong {
+  font-size: 1rem;
+}
+
+.moment-mood-grid small {
+  color: var(--text-muted);
+}
+
+.moment-privacy {
+  margin-top: var(--space-3);
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.moment-note textarea {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  padding: var(--space-4);
+  font: inherit;
+  line-height: 1.6;
+  color: var(--text-body);
+  resize: vertical;
+}
+
+.moment-note textarea:focus-visible,
+.moment-mood-grid button:focus-visible,
+.moment-breath button:focus-visible,
+.info-actions a:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.moment-note .wellness-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.moment-note .wellness-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.moment-exit {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.moment-exit p {
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.moment-exit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.moment-exit-actions .wellness-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--action-primary);
+  color: var(--action-primary-text);
+  font-weight: 600;
+}
+
+.moment-exit-actions .text-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: var(--radius-sm);
+  color: var(--forest-sage);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .info-page,
+  .moment-page {
+    padding: var(--space-6) var(--space-4) var(--space-8);
+  }
+  .info-actions,
+  .moment-exit-actions {
+    gap: var(--space-3);
+  }
+}
+
+/* The breathing animation is decoration. Never show motion to someone who has
+   asked for none: the disc stays still and the copy explains why. */
+@media (prefers-reduced-motion: reduce) {
+  .moment-orb::before,
+  .moment-breathing .moment-orb::before,
+  .moment-orb-ring {
+    animation: none !important;
+    transform: none;
+  }
+  .moment-mood-grid button,
+  .info-actions .wellness-button {
+    transition: none;
+  }
+}

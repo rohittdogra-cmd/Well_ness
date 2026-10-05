@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Caveat } from "next/font/google";
+// Tokens first: the token layer must be able to override the legacy sheets.
+import "./tokens.css";
 import "./globals.css";
 import "./wellness.css";
 import "./community-design.css";
+import "./moment.css";
 import "./animations.css";
 import { siteUrl } from "@/lib/env";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";

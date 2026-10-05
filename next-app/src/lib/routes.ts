@@ -15,6 +15,11 @@ export const PUBLIC_PATHS = [
   "/coming-soon",
   "/contact",
   "/signin",
+  // Trust surfaces: readable before signing in, and linked from the footer.
+  "/how-it-works",
+  "/safety",
+  "/privacy",
+  "/take-a-moment",
   // Program landing pages render their own "Sign in to Book" affordance.
   "/programs",
   "/meetup-activities",

@@ -5,6 +5,9 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 60000,
+  // `next dev` compiles a route the first time it is requested, so the first
+  // full run after adding a page can exceed the default assertion timeout.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: "http://localhost:3101",
     browserName: "chromium",

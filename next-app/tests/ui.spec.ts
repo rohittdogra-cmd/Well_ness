@@ -656,3 +656,99 @@ test("interactive controls meet the minimum touch target size", async ({
   });
   expect(undersized, `undersized controls: ${undersized.join(", ")}`).toEqual([]);
 });
+
+test("trust pages are public, indexed and carry metadata", async ({
+  page,
+  request,
+}) => {
+  const routes = ["/how-it-works", "/safety", "/privacy", "/take-a-moment"];
+
+  for (const route of routes) {
+    const response = await request.get(route);
+    expect(response.status(), `${route} must be public`).toBe(200);
+    const html = await response.text();
+    expect(html, `${route} needs a title`).toMatch(/<title>[^<]{6,}<\/title>/);
+    expect(html, `${route} must be indexable`).toContain(
+      'name="robots" content="index, follow"',
+    );
+  }
+
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  for (const route of routes)
+    expect(sitemap, `${route} missing from sitemap`).toContain(
+      `localhost:3101${route}<`,
+    );
+
+  // The trust links must be reachable from the footer, not orphaned.
+  await page.goto("/");
+  for (const [name, href] of [
+    ["How it works", "/how-it-works"],
+    ["Safety", "/safety"],
+    ["Privacy", "/privacy"],
+    ["Take a moment", "/take-a-moment"],
+  ]) {
+    await expect(
+      page.locator(`footer a[href="${href}"]`).first(),
+      `${name} must be linked from the footer`,
+    ).toBeVisible();
+  }
+});
+
+test("trust pages state what anonymity does not promise", async ({
+  request,
+}) => {
+  const safety = await (await request.get("/safety")).text();
+  expect(safety).toMatch(/cannot be certain|not verification|not a mask|no mask/i);
+
+  const privacy = await (await request.get("/privacy")).text();
+  // The privacy page must not imply absolute anonymity, and must be honest that
+  // self-service deletion does not exist yet.
+  expect(privacy).toMatch(/not end-to-end encrypted/i);
+  expect(privacy).toMatch(/cannot currently delete|not currently offer/i);
+});
+
+test("Take a Moment respects reduced motion and exits cleanly", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/take-a-moment");
+  await expect(
+    page.getByRole("heading", { name: "Nothing to do here." }),
+  ).toBeVisible();
+
+  // A pseudo-element cannot be queried directly, so assert on the resolved
+  // computed style of the real elements that carry the animation.
+  const animations = await page.evaluate(() => {
+    const names: string[] = [];
+    for (const el of document.querySelectorAll(".moment-orb-ring, .moment-orb")) {
+      names.push(getComputedStyle(el).animationName);
+    }
+    const disc = document.querySelector(".moment-orb");
+    if (disc) {
+      const before = getComputedStyle(disc, "::before");
+      names.push(before.animationName);
+    }
+    return names;
+  });
+  expect(animations.length).toBeGreaterThan(0);
+  for (const name of animations) expect(name).toBe("none");
+
+  // It must never trap anyone: the way out is always present.
+  await expect(
+    page.getByRole("link", { name: /Back to conversations/ }),
+  ).toBeVisible();
+});
+
+test("Take a Moment uses the existing mood vocabulary", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.goto("/take-a-moment");
+  const group = page.getByRole("group", { name: "How are you arriving?" });
+  await expect(group).toBeVisible();
+  // These must match the check_ins CHECK constraint, otherwise the write fails
+  // and the private log silently stops recording.
+  for (const mood of ["Great", "Good", "Okay", "Low", "Overwhelmed"])
+    await expect(group.getByRole("button", { name: new RegExp(mood) })).toBeVisible();
+});

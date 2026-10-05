@@ -176,6 +176,29 @@ If step 4 returns `schema: "missing"`, step 1 did not take effect. Rerun the mig
 - `app/not-found.tsx` is the 404 boundary. An unknown URL answers with a real HTTP 404.
 - `/sessions/<id>` where the id is not a bigint is answered with a 404 in the proxy. That case can never be valid, and deciding it before rendering is the only way to control the status code: once a dynamic route starts streaming the status is committed, so `notFound()` called inside a page renders the correct screen but still returns 200. A well-formed id that turns out to be missing therefore renders the 404 page with a 200 status. Both pages also resolve their real title on the server, so a shared link reads correctly even though they stay `noindex`.
 
+## Trust surfaces and the quiet space
+
+Four public pages exist so a stranger can judge the service before creating an account:
+
+| Route | Purpose |
+| --- | --- |
+| `/how-it-works` | The journey in plain language, including how aliases actually work |
+| `/safety` | Community guidelines, reporting, moderation, and meeting someone in person safely |
+| `/privacy` | What is stored, who can see it, retention, and what anonymity does not promise |
+| `/take-a-moment` | A short private pause: a breathing guide, one reflection prompt, and the existing private mood check-in |
+
+All four are in `src/lib/routes.ts`, so they are public, indexable, in the sitemap, and linked from the footer of both shells.
+
+These pages state the limits honestly rather than promising more than the architecture delivers: an alias hides a poster's profile name from other members, but a moderator can identify the account behind reported content, and conversations are not end-to-end encrypted. The privacy page also records that self-service account deletion and data export **do not exist yet**.
+
+`/take-a-moment` writes only to the existing `check_ins` table, using the same mood vocabulary as the dashboard check-in so one account has one continuous history. It must keep matching that vocabulary or the write is rejected by the database constraint. The breathing guide is CSS-only, pauses when the tab is hidden, and stops entirely under `prefers-reduced-motion`.
+
+### Design tokens
+
+`src/app/tokens.css` holds the palette, spacing, radii, shadows and motion durations as CSS custom properties, and is imported before the legacy stylesheets. New surfaces use tokens rather than hex literals. The older sheets still contain ad-hoc colours; converting them is deliberate follow-up work, because rewriting them wholesale risks visual regressions for no functional gain.
+
+Contrast is measured, not assumed. `--text-muted` (#646b5e) clears 4.5:1 on every light surface. Note that the intuitive muted token for this palette, `#72786d`, measures only 4.06-4.31:1 and fails AA as body text; it is kept as `--text-faint` for large text, borders and icons only.
+
 ## Polling
 
 The conversation feed polls only its newest page every 15 seconds. An earlier version put `refetchInterval` on the infinite query, which refetched *every* loaded page on each tick, so read cost grew linearly with how far a member had scrolled. Loaded history is fetched once and left alone.
