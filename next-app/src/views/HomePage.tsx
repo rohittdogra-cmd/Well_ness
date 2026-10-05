@@ -254,6 +254,11 @@ export function HomePage() {
               whileHover={{ scale: 1.02 }}
             >
               <Link href={`/groups?category=${c.id}`}>
+                {(c as any).image && (
+                  <div style={{ position: "relative", width: "100%", height: "100px", marginBottom: "12px", borderRadius: "8px", overflow: "hidden", background: "#e8edea" }}>
+                    <Image src={(c as any).image} alt={c.name} fill style={{ objectFit: "cover" }} />
+                  </div>
+                )}
                 <span className="cat-icon" style={{ background: c.color + "20", color: c.color }}>
                   <c.icon size={25} />
                 </span>

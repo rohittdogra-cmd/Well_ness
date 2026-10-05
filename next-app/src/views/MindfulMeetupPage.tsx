@@ -38,6 +38,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "5–20 people",
   },
   {
+    image: "/images/activities/mindful-check-in.jpg",
     emoji: "🌿",
     name: "Mindful Check-in",
     description:
@@ -46,6 +47,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "3–8 people",
   },
   {
+    image: "/images/activities/walk-talk.jpg",
     emoji: "🚶",
     name: "Walk & Talk",
     description:
@@ -54,6 +56,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "2–6 people",
   },
   {
+    image: "/images/activities/book-podcast-club.jpg",
     emoji: "📖",
     name: "Book / Podcast Club",
     description:
@@ -62,6 +65,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "4–12 people",
   },
   {
+    image: "/images/activities/doodle-chill.jpg",
     emoji: "🎨",
     name: "Doodle & Chill",
     description:
@@ -70,6 +74,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "3–10 people",
   },
   {
+    image: "/images/activities/playlist-battle.jpg",
     emoji: "🎵",
     name: "Playlist Battle",
     description:
@@ -78,6 +83,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "4–12 people",
   },
   {
+    image: "/images/activities/sunrise-sunset-watch.jpg",
     emoji: "🌅",
     name: "Sunrise / Sunset Watch",
     description:
@@ -86,6 +92,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "Any",
   },
   {
+    image: "/images/activities/lunch-roulette.jpg",
     emoji: "🍜",
     name: "Lunch Roulette",
     description:
@@ -94,6 +101,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "2 people",
   },
   {
+    image: "/images/activities/board-game-hour.jpg",
     emoji: "🎲",
     name: "Board Game Hour",
     description:
@@ -102,6 +110,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "4–8 people",
   },
   {
+    image: "/images/activities/gratitude-circle.jpg",
     emoji: "🌱",
     name: "Gratitude Circle",
     description:
@@ -110,6 +119,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "3–10 people",
   },
   {
+    image: "/images/activities/stretch-breathe.jpg",
     emoji: "🤸",
     name: "Stretch & Breathe",
     description:
@@ -118,6 +128,7 @@ const ALL_MEETUP_ACTIVITIES = [
     size: "Any",
   },
   {
+    image: "/images/activities/friday-unwinding.jpg",
     emoji: "🍕",
     name: "Friday Unwinding",
     description:

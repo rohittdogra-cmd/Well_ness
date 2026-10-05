@@ -15,6 +15,7 @@ export const groupCategories = [
     icon: Trophy,
     color: "mint",
     examples: "Football · Cricket · Badminton",
+    image: "/images/categories/sports.jpg",
   },
   {
     id: "wellbeing",
@@ -23,6 +24,7 @@ export const groupCategories = [
     icon: HeartPulse,
     color: "rose",
     examples: "Yoga · Mindfulness · Fitness",
+    image: "/images/categories/wellbeing.jpg",
   },
   {
     id: "arts",
@@ -31,6 +33,7 @@ export const groupCategories = [
     icon: Palette,
     color: "lilac",
     examples: "Music · Movies · Photography",
+    image: "/images/categories/arts.jpg",
   },
   {
     id: "learning",
@@ -39,6 +42,7 @@ export const groupCategories = [
     icon: GraduationCap,
     color: "sky",
     examples: "Study circles · Tech · Careers",
+    image: "/images/categories/learning.jpg",
   },
   {
     id: "social",
@@ -47,6 +51,7 @@ export const groupCategories = [
     icon: Coffee,
     color: "peach",
     examples: "Coffee · Cooking · Board games",
+    image: "/images/categories/social.jpg",
   },
   {
     id: "outdoors",
@@ -55,6 +60,7 @@ export const groupCategories = [
     icon: Mountain,
     color: "sand",
     examples: "Hiking · Travel · Cycling",
+    image: "/images/categories/outdoors.jpg",
   },
 ] as const;
 export type CategoryId = (typeof groupCategories)[number]["id"];

@@ -1,7 +1,10 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
-test.beforeEach(async ({ request }) => {
+test.beforeEach(async ({ request, page }) => {
   await request.post("http://127.0.0.1:54329/test/reset");
+  // Playwright reuses one page across tests in a worker, so a test that
+  // resizes the viewport would otherwise leak that width into the next one.
+  await page.setViewportSize({ width: 1280, height: 800 });
 });
 async function signIn(context: BrowserContext) {
   const id = "11111111-1111-4111-8111-111111111111";
@@ -593,7 +596,7 @@ test("navigation is reachable at every viewport width", async ({
   // Regression guard: the sidebar was hidden at 900px while the bottom bar only
   // appeared at 760px, leaving 761-900px (iPad portrait) with no way to move
   // between sections.
-  const widths = [360, 600, 760, 768, 820, 880, 900, 1024, 1440];
+  const widths = [320, 360, 375, 390, 600, 760, 768, 820, 880, 900, 1024, 1440];
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/discuss");
@@ -601,6 +604,23 @@ test("navigation is reachable at every viewport width", async ({
       page.getByRole("link", { name: "People", exact: true }).first(),
       `no visible navigation at ${width}px`,
     ).toBeVisible();
+  }
+});
+
+test("no horizontal overflow at narrow phone widths", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  for (const width of [320, 375, 390]) {
+    for (const path of ["/", "/groups", "/discuss", "/book-activities", "/people"]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(path);
+      const overflows = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth + 1,
+      );
+      expect(overflows, `${path} overflows horizontally at ${width}px`).toBe(false);
+    }
   }
 });
 

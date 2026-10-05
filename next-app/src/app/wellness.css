@@ -94,7 +94,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  color: #8c9282;
+  color: #646b5e;
   font-size: 14px;
 }
 .public-footer .footer-links {
@@ -753,7 +753,7 @@ button.text-action {
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  color: #8c9282;
+  color: #646b5e;
   font-size: 14px;
 }
 .wellness-mobile-nav {

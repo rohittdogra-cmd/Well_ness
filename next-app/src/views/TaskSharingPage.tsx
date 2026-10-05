@@ -38,6 +38,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "2 people",
   },
   {
+    image: "/images/activities/backlog-blitz.jpg",
     emoji: "🧹",
     name: "Backlog Blitz",
     description:
@@ -46,6 +47,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "3–8 people",
   },
   {
+    image: "/images/activities/skill-match-assignment.jpg",
     emoji: "📋",
     name: "Skill-Match Assignment",
     description:
@@ -54,6 +56,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "Any",
   },
   {
+    image: "/images/activities/time-box-sprint.jpg",
     emoji: "⏱️",
     name: "Time-Box Sprint",
     description:
@@ -62,6 +65,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "4–15 people",
   },
   {
+    image: "/images/activities/priority-poker.jpg",
     emoji: "🎯",
     name: "Priority Poker",
     description:
@@ -70,6 +74,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "4–12 people",
   },
   {
+    image: "/images/activities/teach-to-help.jpg",
     emoji: "🧑‍🏫",
     name: "Teach-to-Help",
     description:
@@ -78,6 +83,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "2–8 people",
   },
   {
+    image: "/images/activities/async-handoff-session.jpg",
     emoji: "🌀",
     name: "Async Handoff Session",
     description:
@@ -86,6 +92,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "2–5 people",
   },
   {
+    image: "/images/activities/workload-check-in.jpg",
     emoji: "📊",
     name: "Workload Check-in",
     description:
@@ -94,6 +101,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "3–10 people",
   },
   {
+    image: "/images/activities/done-together-celebration.jpg",
     emoji: "🏁",
     name: "Done-Together Celebration",
     description:
@@ -102,6 +110,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "Any",
   },
   {
+    image: "/images/activities/blocker-standup.jpg",
     emoji: "💬",
     name: "Blocker Standup",
     description:

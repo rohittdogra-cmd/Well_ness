@@ -38,6 +38,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "4–15 people",
   },
   {
+    image: "/images/activities/game-tournament.jpg",
     emoji: "🎮",
     name: "Game Tournament",
     description:
@@ -46,6 +47,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "8–24 people",
   },
   {
+    image: "/images/activities/paint-sip.jpg",
     emoji: "🎨",
     name: "Paint & Sip",
     description:
@@ -54,6 +56,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "4–16 people",
   },
   {
+    image: "/images/activities/potluck-cook-off.jpg",
     emoji: "🍳",
     name: "Potluck Cook-Off",
     description:
@@ -62,6 +65,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "8–25 people",
   },
   {
+    image: "/images/activities/bonfire-circle.jpg",
     emoji: "🏕️",
     name: "Bonfire Circle",
     description:
@@ -70,6 +74,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "6–20 people",
   },
   {
+    image: "/images/activities/photo-walk.jpg",
     emoji: "📸",
     name: "Photo Walk",
     description:
@@ -78,6 +83,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "4–12 people",
   },
   {
+    image: "/images/activities/puzzle-relay.jpg",
     emoji: "🧩",
     name: "Puzzle Relay",
     description:
@@ -86,6 +92,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "6–20 people",
   },
   {
+    image: "/images/activities/karaoke-bash.jpg",
     emoji: "🎶",
     name: "Karaoke Bash",
     description:
@@ -94,6 +101,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "8–30 people",
   },
   {
+    image: "/images/activities/culture-exchange-hour.jpg",
     emoji: "🌍",
     name: "Culture Exchange Hour",
     description:
@@ -102,6 +110,7 @@ const ALL_SOCIAL_ACTIVITIES = [
     size: "6–18 people",
   },
   {
+    image: "/images/activities/neighbourly-picnic.jpg",
     emoji: "🏡",
     name: "Neighbourly Picnic",
     description:
