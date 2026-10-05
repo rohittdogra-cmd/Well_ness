@@ -584,3 +584,55 @@ test("dependency surface stays honest", async ({ request }) => {
   const html = await (await request.get("/")).text();
   expect(html.length).toBeGreaterThan(0);
 });
+
+test("navigation is reachable at every viewport width", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  // Regression guard: the sidebar was hidden at 900px while the bottom bar only
+  // appeared at 760px, leaving 761-900px (iPad portrait) with no way to move
+  // between sections.
+  const widths = [360, 600, 760, 768, 820, 880, 900, 1024, 1440];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/discuss");
+    await expect(
+      page.getByRole("link", { name: "People", exact: true }).first(),
+      `no visible navigation at ${width}px`,
+    ).toBeVisible();
+  }
+});
+
+test("interactive controls meet the minimum touch target size", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/discuss");
+  await expect(page.getByRole("heading", { name: "Conversations" })).toBeVisible();
+
+  const undersized = await page.evaluate(() => {
+    const out: string[] = [];
+    for (const el of document.querySelectorAll(
+      'a[href], button, input, select, textarea, [role="button"]',
+    )) {
+      // A control wrapped in a label is activated by clicking the label, so the
+      // label is the real target. Measure that rather than the input box.
+      const wrapped = el.tagName === "INPUT" ? el.closest("label") : null;
+      const target: Element = wrapped ?? el;
+      const r = target.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      // WCAG 2.2 SC 2.5.8 exempts targets sitting inline in a sentence.
+      if (el.tagName === "A" && el.closest("p, li, h1, h2, h3, h4, figcaption"))
+        continue;
+      if (r.height < 24)
+        out.push(
+          `${el.tagName.toLowerCase()}[${(el.textContent || el.getAttribute("aria-label") || el.id || "").trim().slice(0, 24)}] ${Math.round(r.width)}x${Math.round(r.height)}`,
+        );
+    }
+    return out;
+  });
+  expect(undersized, `undersized controls: ${undersized.join(", ")}`).toEqual([]);
+});

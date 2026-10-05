@@ -362,6 +362,14 @@ body {
   font-weight: 500;
   cursor: pointer;
 }
+/* A .text-action used as a button is a control, not a run of prose, so it gets
+   a real hit area. Text links keep their inline size. */
+button.text-action {
+  min-height: 32px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 8px;
+}
 .hero-small {
   display: flex;
   align-items: center;
@@ -1247,6 +1255,32 @@ body {
     display: none;
   }
 }
+/* Tablet gap fix.
+   community-design.css hides the sidebar at 900px, but the bottom navigation
+   only switched on at 760px. Between those two breakpoints the app rendered no
+   navigation at all, which covers iPad portrait (768-840px) and small laptop
+   windows: a member could not reach another section. The bottom bar now appears
+   for the whole range where the sidebar is hidden, and the footer reserves room
+   so the fixed bar never covers it. */
+@media (min-width: 761px) and (max-width: 900px) {
+  .wellness-mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    justify-content: space-around;
+    background: #f9faf4f2;
+    backdrop-filter: blur(16px);
+    border-top: 1px solid #dfe5d5;
+    padding: 8px 4px;
+  }
+  .wellness-footer {
+    padding-bottom: 100px;
+  }
+}
+
 @media (max-width: 760px) {
   .wellness-sidebar {
     display: none;
@@ -2215,10 +2249,15 @@ body {
   align-items: center;
   gap: 8px;
   font-size: 13px;
+  /* 24px is the WCAG 2.2 minimum target size; the label is the hit area, so the
+     whole row is comfortably tappable rather than just the 17px box. */
+  min-height: 24px;
+  padding: 3px 0;
+  cursor: pointer;
 }
 .checkbox-label input {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   accent-color: #38573f;
 }
 .muted,
@@ -2572,6 +2611,14 @@ body {
 .footer-links {
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
+}
+/* Footer links are navigation, not a run of prose, so the 24px target minimum
+   applies (WCAG 2.2 SC 2.5.8). */
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
 }
 .wellness-footer {
   display: flex;
@@ -3127,4 +3174,10 @@ body {
   .people-search {
     flex-direction: column;
   }
+}
+
+.page-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
 }

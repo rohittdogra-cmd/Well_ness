@@ -32,9 +32,9 @@ export function MySessionsPage() {
             <div className="w-16 h-16 rounded-2xl bg-accent/50 flex items-center justify-center mx-auto mb-5 text-3xl">
               🔐
             </div>
-            <h2 className="font-display text-2xl font-bold text-foreground mb-3">
+            <h1 className="font-display text-2xl font-bold text-foreground mb-3">
               Sign in to see your sessions
-            </h2>
+            </h1>
             <p className="text-muted-foreground mb-7 max-w-sm mx-auto">
               Create and manage your wellness sessions after signing in.
             </p>
@@ -103,6 +103,7 @@ export function MySessionsPage() {
           </TabsList>
 
           <TabsContent value="created">
+            <h2 className="sr-only">Sessions you created</h2>
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <SessionCardSkeleton key="csk1" />
@@ -140,6 +141,7 @@ export function MySessionsPage() {
           </TabsContent>
 
           <TabsContent value="joined">
+            <h2 className="sr-only">Sessions you joined</h2>
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <SessionCardSkeleton key="jsk1" />

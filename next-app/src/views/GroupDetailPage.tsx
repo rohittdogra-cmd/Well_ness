@@ -6,6 +6,7 @@ import { ConversationFeed } from "@/components/ConversationFeed";
 import { GroupIcon } from "@/components/GroupIcon";
 import { toast } from "sonner";
 import { getCategory } from "@/lib/groupCategories";
+import Image from "next/image";
 
 export function GroupDetailPage() {
   const { topic } = useParams<{ topic: string }>();
@@ -78,6 +79,11 @@ export function GroupDetailPage() {
               : "Join this group"}
         </button>
       </header>
+      {(current as any).image && (
+        <div style={{ position: "relative", width: "100%", height: "240px", marginBottom: "24px", borderRadius: "12px", overflow: "hidden", background: "#e8edea" }}>
+          <Image src={(current as any).image} alt={current.name} fill style={{ objectFit: "cover" }} />
+        </div>
+      )}
       <ConversationFeed key={current.id} group={current.id} canPost={joined} />
     </div>
   );

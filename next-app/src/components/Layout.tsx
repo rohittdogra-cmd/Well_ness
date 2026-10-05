@@ -208,6 +208,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.label}
                 aria-current={isActive(item.href) ? "page" : undefined}
               >
                 <item.icon size={20} />

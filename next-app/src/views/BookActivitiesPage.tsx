@@ -100,11 +100,18 @@ export function BookActivitiesPage() {
           </div>
         </div>
       ) : (
-        <div className="live-groups-grid">
-          {upcoming.map((s, i) => (
-            <SessionCard key={s.id.toString()} session={s} index={i} />
-          ))}
-        </div>
+        <section aria-labelledby="upcoming-activities">
+          {/* The list is a section under the page h1; without this the heading
+              order jumps straight from h1 to each card's h3. */}
+          <h2 id="upcoming-activities" className="sr-only">
+            Upcoming activities
+          </h2>
+          <div className="live-groups-grid">
+            {upcoming.map((s, i) => (
+              <SessionCard key={s.id.toString()} session={s} index={i} />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

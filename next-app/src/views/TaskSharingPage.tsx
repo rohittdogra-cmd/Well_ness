@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, Calendar, LogIn, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
+import Image from "next/image";
 import { CreateSessionModal } from "../components/CreateSessionModal";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { ProgramType } from "../hooks/useQueries";
 
 const ALL_TASK_ACTIVITIES = [
   {
+    image: "/images/activities/project-kickoff.jpg",
     emoji: "🗺️",
     name: "Project Kick-off Mapping",
     description:
@@ -18,6 +20,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "3–10 people",
   },
   {
+    image: "/images/activities/responsibility-shuffle.jpg",
     emoji: "🔁",
     name: "Weekly Responsibility Shuffle",
     description:
@@ -26,6 +29,7 @@ const ALL_TASK_ACTIVITIES = [
     size: "4–12 people",
   },
   {
+    image: "/images/activities/buddy-system.jpg",
     emoji: "🤝",
     name: "Buddy Task System",
     description:
@@ -219,6 +223,11 @@ export function TaskSharingPage() {
               data-ocid={`task_page.activity.item.${i + 1}`}
               className="group bg-card rounded-2xl border border-border/60 p-5 hover:border-[oklch(0.82_0.1_75)]/50 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-250"
             >
+              {activity.image && (
+                <div className="relative w-full h-32 mb-4 rounded-lg overflow-hidden bg-muted/30">
+                  <Image src={activity.image} alt={activity.name} fill className="object-cover" />
+                </div>
+              )}
               <div className="flex items-start gap-3 mb-3">
                 <span className="text-3xl leading-none mt-0.5 group-hover:scale-110 transition-transform duration-200">
                   {activity.emoji}

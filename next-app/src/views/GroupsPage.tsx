@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useCommunity";
 import { groupCategories, getCategory } from "@/lib/groupCategories";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export function GroupsPage() {
   const subscribeToLocation = (callback: () => void) => {
@@ -217,6 +218,11 @@ export function GroupsPage() {
                     className="subgroup-card modern-subgroup-card"
                     href={`/groups/${g.slug}`}
                   >
+                  {(g as any).image && (
+                    <div style={{ position: "relative", width: "100%", height: "140px", marginBottom: "16px", borderRadius: "8px", overflow: "hidden", background: "#e8edea" }}>
+                      <Image src={(g as any).image} alt={g.name} fill style={{ objectFit: "cover" }} />
+                    </div>
+                  )}
                   <div className="subgroup-top">
                     <span className={`subgroup-symbol ${c.color}`}>
                       <c.icon size={24} />
