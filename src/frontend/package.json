@@ -4,10 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build:skip-bindings": "vite build && pnpm copy:env",
-    "build": "vite build && pnpm copy:env",
-    "copy:env": "cp env.json dist/",
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build && cp env.json dist/",
     "typecheck": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/tsconfig.tsbuildinfo --pretty",
     "check": "biome check src",
     "fix": "biome check --write src"
