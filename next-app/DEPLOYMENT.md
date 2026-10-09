@@ -283,3 +283,20 @@ Migration `202610010001_group_categories.sql` adds persistent category assignmen
 The redesigned home and groups pages use the shared navy/teal visual system, six category tiles, filtered subgroup cards, direct member/activity/conversation actions, joined-group shortcuts, and mobile navigation. The default sender remains configured; unrestricted signup emails and real LinkedIn authentication require external provider setup and have not been verified.
 
 Redesign validation: 58 embedded-Postgres checks passed; all 15 browser scenarios passed (14 initial scenarios plus account-password setup), and category navigation passed again after removing a redundant effect. The production build passed. Changed-file lint has no remaining errors; the two bundled-image warnings are retained. Browser test accounts and screenshots use an isolated fixture service, not production identities.
+
+
+## Microsoft and passwordless registration — 9 October 2026
+
+The current GitHub-connected production app is `https://well-ness-pigf.vercel.app`, built from `scalable-backend-and-seo`. Its public configuration points to Supabase project `pclwqijgxsxzvvciilka`; the health endpoint reports the current schema. The similarly named `well-ness-pink.vercel.app` project has no Supabase environment configuration.
+
+Email access now supports both new and existing members, records the selected profile type, and requires successful email verification before opening the hub. The verification screen can resend an email after a 60-second UI cooldown; Supabase independently enforces server-side rate limits. Password signup/signin remain available. Company and student IDs mean email addresses or Microsoft identities, not unverifiable employee/roll numbers.
+
+Microsoft setup follows https://supabase.com/docs/guides/auth/social-login/auth-azure:
+
+1. Register an app in Microsoft Entra supporting accounts from any organizational directory and personal Microsoft accounts. Use Web redirect URI `https://pclwqijgxsxzvvciilka.supabase.co/auth/v1/callback`.
+2. Configure the optional `email` and `xms_edov` claims described in the Supabase guide. Keep unverified email domains disabled.
+3. Configure Azure in Supabase with the application client ID and client secret value, and tenant URL `https://login.microsoftonline.com/common`. Keep secrets in the provider dashboard, never frontend variables or Git.
+4. Set the Supabase Site URL to `https://well-ness-pigf.vercel.app` and allow its exact `/auth/callback` URL. Install both existing templates in `supabase/templates/` so numeric OTPs and cross-device confirmation links are included. Verify production SMTP delivery to non-team addresses.
+5. Test a real Microsoft work/school account and a real email registration on the deployed page, including confirmation, profile onboarding, reload, sign-out and sign-in.
+
+The Microsoft button checks the provider's real enabled state and stays disabled with an explanation until setup is complete. The OAuth request uses provider `azure`, the required `email` scope and PKCE through the existing Supabase SSR client. Local fixture tests prove request construction and UI behavior only; they cannot certify external provider configuration or real inbox delivery.

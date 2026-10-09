@@ -421,8 +421,12 @@ test("public marketing pages render for signed-out visitors", async ({
     "/meetup-activities",
   ]) {
     await page.goto(path);
-    expect(new URL(page.url()).pathname, `${path} must not redirect`).toBe(path);
-    await expect(page.getByRole("link", { name: /wellness/ }).first()).toBeVisible();
+    expect(new URL(page.url()).pathname, `${path} must not redirect`).toBe(
+      path,
+    );
+    await expect(
+      page.getByRole("link", { name: /wellness/ }).first(),
+    ).toBeVisible();
   }
 });
 
@@ -485,7 +489,9 @@ test("sitemap and robots list the public surface only", async ({ request }) => {
   const sitemap = await (await request.get("/sitemap.xml")).text();
   expect(sitemap).toContain("<urlset");
   for (const path of ["/about", "/membership", "/careers", "/contact"]) {
-    expect(sitemap, `${path} missing from sitemap`).toContain(`localhost:3101${path}<`);
+    expect(sitemap, `${path} missing from sitemap`).toContain(
+      `localhost:3101${path}<`,
+    );
   }
   expect(sitemap, "program pages belong in the sitemap").toContain(
     "localhost:3101/programs/meetup<",
@@ -578,8 +584,7 @@ test("the feed polls only the newest page", async ({ page, context }) => {
   // The first render issues the polled newest page; it must not also fetch
   // history pages, because there is nothing to page through yet.
   expect(feedCalls.length).toBeLessThanOrEqual(2);
-  for (const call of feedCalls)
-    expect(call).not.toContain("p_before=1");
+  for (const call of feedCalls) expect(call).not.toContain("p_before=1");
 });
 
 test("dependency surface stays honest", async ({ request }) => {
@@ -613,13 +618,21 @@ test("no horizontal overflow at narrow phone widths", async ({
 }) => {
   await signIn(context);
   for (const width of [320, 375, 390]) {
-    for (const path of ["/", "/groups", "/discuss", "/book-activities", "/people"]) {
+    for (const path of [
+      "/",
+      "/groups",
+      "/discuss",
+      "/book-activities",
+      "/people",
+    ]) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto(path);
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1,
       );
-      expect(overflows, `${path} overflows horizontally at ${width}px`).toBe(false);
+      expect(overflows, `${path} overflows horizontally at ${width}px`).toBe(
+        false,
+      );
     }
   }
 });
@@ -631,7 +644,9 @@ test("interactive controls meet the minimum touch target size", async ({
   await signIn(context);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/discuss");
-  await expect(page.getByRole("heading", { name: "Conversations" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Conversations" }),
+  ).toBeVisible();
 
   const undersized = await page.evaluate(() => {
     const out: string[] = [];
@@ -654,7 +669,9 @@ test("interactive controls meet the minimum touch target size", async ({
     }
     return out;
   });
-  expect(undersized, `undersized controls: ${undersized.join(", ")}`).toEqual([]);
+  expect(undersized, `undersized controls: ${undersized.join(", ")}`).toEqual(
+    [],
+  );
 });
 
 test("trust pages are public, indexed and carry metadata", async ({
@@ -698,7 +715,9 @@ test("trust pages state what anonymity does not promise", async ({
   request,
 }) => {
   const safety = await (await request.get("/safety")).text();
-  expect(safety).toMatch(/cannot be certain|not verification|not a mask|no mask/i);
+  expect(safety).toMatch(
+    /cannot be certain|not verification|not a mask|no mask/i,
+  );
 
   const privacy = await (await request.get("/privacy")).text();
   // The privacy page must not imply absolute anonymity, and must be honest that
@@ -720,7 +739,9 @@ test("Take a Moment respects reduced motion and exits cleanly", async ({
   // computed style of the real elements that carry the animation.
   const animations = await page.evaluate(() => {
     const names: string[] = [];
-    for (const el of document.querySelectorAll(".moment-orb-ring, .moment-orb")) {
+    for (const el of document.querySelectorAll(
+      ".moment-orb-ring, .moment-orb",
+    )) {
       names.push(getComputedStyle(el).animationName);
     }
     const disc = document.querySelector(".moment-orb");
@@ -750,7 +771,9 @@ test("Take a Moment uses the existing mood vocabulary", async ({
   // These must match the check_ins CHECK constraint, otherwise the write fails
   // and the private log silently stops recording.
   for (const mood of ["Great", "Good", "Okay", "Low", "Overwhelmed"])
-    await expect(group.getByRole("button", { name: new RegExp(mood) })).toBeVisible();
+    await expect(
+      group.getByRole("button", { name: new RegExp(mood) }),
+    ).toBeVisible();
 });
 
 test("dashboard surfaces requests to talk, conversations and a private week", async ({
@@ -772,13 +795,14 @@ test("dashboard surfaces requests to talk, conversations and a private week", as
   // A request to talk is the most time-sensitive thing here, so it has to be
   // visible from the dashboard rather than only from /people.
   await expect(
-    page.getByText("No one waiting on you").or(page.getByText(/would like to connect/)).first(),
+    page
+      .getByText("No one waiting on you")
+      .or(page.getByText(/would like to connect/))
+      .first(),
   ).toBeVisible();
 
   // Upcoming sessions must be the next ones, not the oldest.
-  await expect(
-    page.getByText("What you have coming up"),
-  ).toBeVisible();
+  await expect(page.getByText("What you have coming up")).toBeVisible();
 });
 
 test("accepting a request to talk works from the dashboard", async ({
@@ -797,5 +821,66 @@ test("accepting a request to talk works from the dashboard", async ({
   await expect(page.getByText("Conversations you can open")).toBeVisible();
   await expect(
     page.getByRole("link", { name: /Maya.*Open chat/ }),
+  ).toBeVisible();
+});
+
+test("Microsoft uses Azure OAuth with email scope and the local callback", async ({
+  page,
+}) => {
+  await page.route("**/auth/v1/settings", (route) =>
+    route.fulfill({
+      json: { external: { azure: true, linkedin_oidc: false } },
+    }),
+  );
+  await page.route("**/auth/v1/authorize?**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>Microsoft authorization</h1>",
+    }),
+  );
+  await page.goto("/signin");
+  await page.getByRole("button", { name: "Continue with Microsoft" }).click();
+  await expect(page).toHaveURL(/auth\/v1\/authorize/);
+  const target = new URL(page.url());
+  expect(target.searchParams.get("provider")).toBe("azure");
+  expect(target.searchParams.get("scopes")).toBe("email");
+  expect(target.searchParams.get("redirect_to")).toBe(
+    "http://localhost:3101/auth/callback",
+  );
+  expect(target.searchParams.get("code_challenge")).toBeTruthy();
+});
+
+test("student email code creates an account only after verification", async ({
+  page,
+}) => {
+  await page.goto("/signin");
+  await expect(
+    page.getByRole("button", { name: "Continue with Microsoft" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Student", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Sign in or register with an email code" })
+    .click();
+  await page.getByLabel("Email address").fill("new@college.example");
+  const request = page.waitForRequest(
+    (r) => r.url().includes("/auth/v1/otp") && r.method() === "POST",
+  );
+  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  const body = (await request).postDataJSON();
+  expect(body.create_user).toBe(true);
+  expect(body.data.member_type).toBe("student");
+  await expect(
+    page.getByRole("button", { name: /Resend email in/ }),
+  ).toBeDisabled();
+  await page.getByLabel("Email verification code").fill("999999");
+  await page.getByRole("button", { name: "Verify code and continue" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "could not be verified" })).toBeVisible();
+  await expect(page).toHaveURL(/signin/);
+  await page.getByLabel("Email verification code").fill("123456");
+  await page.getByRole("button", { name: "Verify code and continue" }).click();
+  await expect(page).toHaveURL("http://localhost:3101/");
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: /Good to see you/ }),
   ).toBeVisible();
 });

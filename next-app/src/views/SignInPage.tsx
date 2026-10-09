@@ -17,9 +17,7 @@ import {
   Trophy,
   MessageCircle,
   LoaderCircle,
-  Zap,
-  Globe,
-  Sparkles,
+  Grid2X2,
 } from "lucide-react";
 import { getSupabase, isConfigured } from "@/lib/supabase/client";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
@@ -31,7 +29,11 @@ const stagger = {
 };
 const fadeUp = {
   hidden: { opacity: 0, y: 25 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" as const },
+  },
 };
 const fadeIn = {
   hidden: { opacity: 0 },
@@ -50,12 +52,16 @@ export function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [sent, setSent] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [code, setCode] = useState("");
   const [linkedIn, setLinkedIn] = useState<"loading" | "ready" | "unavailable">(
     "loading",
   );
+  const [microsoft, setMicrosoft] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
   const expired = useSyncExternalStore(
     subscribe,
     () => new URLSearchParams(window.location.search).has("error"),
@@ -75,14 +81,23 @@ export function SignInPage() {
         if (!r.ok) throw new Error();
         return r.json();
       })
-      .then((data) =>
-        setLinkedIn(data.external?.linkedin_oidc ? "ready" : "unavailable"),
-      )
+      .then((data) => {
+        setLinkedIn(data.external?.linkedin_oidc ? "ready" : "unavailable");
+        setMicrosoft(data.external?.azure ? "ready" : "unavailable");
+      })
       .catch(() => {
-        if (!controller.signal.aborted) setLinkedIn("unavailable");
+        if (!controller.signal.aborted) {
+          setLinkedIn("unavailable");
+          setMicrosoft("unavailable");
+        }
       });
     return () => controller.abort();
   }, []);
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = window.setTimeout(() => setResendIn(resendIn - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendIn]);
   function changeMode(value: typeof mode) {
     setMode(value);
     setSent(false);
@@ -119,24 +134,61 @@ export function SignInPage() {
         else {
           setOtpType("signup");
           setSent(true);
+          setResendIn(60);
         }
       } else {
         const { error } = await auth.signInWithOtp({
           email: address,
           options: {
-            shouldCreateUser: false,
+            shouldCreateUser: true,
+            data: { member_type: audience },
             emailRedirectTo: window.location.origin + "/auth/callback",
           },
         });
         if (error) throw error;
         setOtpType("email");
         setSent(true);
+        setResendIn(60);
       }
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
           : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function resend() {
+    if (busy || resendIn > 0) return;
+    setBusy(true);
+    setError("");
+    try {
+      const auth = getSupabase().auth;
+      const address = email.trim().toLowerCase();
+      const redirect = window.location.origin + "/auth/callback";
+      const { error } =
+        otpType === "signup"
+          ? await auth.resend({
+              type: "signup",
+              email: address,
+              options: { emailRedirectTo: redirect },
+            })
+          : await auth.signInWithOtp({
+              email: address,
+              options: {
+                shouldCreateUser: true,
+                emailRedirectTo: redirect,
+                data: { member_type: audience },
+              },
+            });
+      if (error) throw error;
+      setCode("");
+      setResendIn(60);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Unable to resend. Please try again.",
       );
     } finally {
       setBusy(false);
@@ -162,18 +214,23 @@ export function SignInPage() {
       setBusy(false);
     }
   }
-  async function oauth() {
+  async function oauth(provider: "azure" | "linkedin_oidc") {
     setBusy(true);
     setError("");
     try {
       const { error } = await getSupabase().auth.signInWithOAuth({
-        provider: "linkedin_oidc",
-        options: { redirectTo: window.location.origin + "/auth/callback" },
+        provider,
+        options: {
+          redirectTo: window.location.origin + "/auth/callback",
+          ...(provider === "azure" ? { scopes: "email" } : {}),
+        },
       });
       if (error) throw error;
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "LinkedIn sign-in is unavailable.",
+        e instanceof Error
+          ? e.message
+          : "Provider sign-in is unavailable. Please try email access.",
       );
       setBusy(false);
     }
@@ -305,13 +362,17 @@ export function SignInPage() {
         >
           <span className="eyebrow">LET&apos;S MAKE ROOM FOR YOU</span>
           <h2>
-            {sent
-              ? "Check your inbox."
-              : mode === "signup"
-                ? "Find where you belong."
-                : mode === "code"
-                  ? "One code. You\u2019re in."
-                  : <>Welcome to <span className="gradient-text-warm">your hub</span>.</>}
+            {sent ? (
+              "Check your inbox."
+            ) : mode === "signup" ? (
+              "Find where you belong."
+            ) : mode === "code" ? (
+              "One code. You\u2019re in."
+            ) : (
+              <>
+                Welcome to <span className="gradient-text-warm">your hub</span>.
+              </>
+            )}
           </h2>
           <p className="auth-subtitle">
             {sent
@@ -319,7 +380,7 @@ export function SignInPage() {
               : mode === "signup"
                 ? "Create your account and make your first connection."
                 : mode === "code"
-                  ? "Use your account email to get a sign-in code or link."
+                  ? "Sign in or create an account with your work or student email. No password needed."
                   : "Good company is just a sign-in away."}
           </p>
           {!isConfigured() ? (
@@ -357,6 +418,16 @@ export function SignInPage() {
               </p>
               <button
                 className="text-action"
+                disabled={busy || resendIn > 0}
+                onClick={resend}
+              >
+                {resendIn > 0
+                  ? `Resend email in ${resendIn}s`
+                  : "Resend verification email"}
+              </button>
+              <button
+                className="text-action"
+                disabled={busy}
                 onClick={() => {
                   setSent(false);
                   setError("");
@@ -389,14 +460,38 @@ export function SignInPage() {
               </div>
               <button
                 className="linkedin-button"
-                onClick={oauth}
+                onClick={() => oauth("azure")}
+                disabled={busy || microsoft !== "ready"}
+              >
+                <Grid2X2 size={21} aria-hidden="true" />
+                {microsoft === "loading"
+                  ? "Checking Microsoft…"
+                  : "Continue with Microsoft"}
+                <ArrowRight
+                  size={18}
+                  aria-hidden="true"
+                  style={{ marginLeft: "auto" }}
+                />
+              </button>
+              <p className="provider-status">
+                {microsoft === "unavailable"
+                  ? "Microsoft sign-in is not configured yet. Use your work or student email below."
+                  : "Use your Microsoft work, school, or personal account."}
+              </p>
+              <button
+                className="linkedin-button"
+                onClick={() => oauth("linkedin_oidc")}
                 disabled={busy || linkedIn !== "ready"}
               >
                 <Linkedin size={21} />
                 {linkedIn === "loading"
                   ? "Checking LinkedIn\u2026"
                   : "Continue with LinkedIn"}
-                <ArrowRight size={18} aria-hidden="true" style={{ marginLeft: "auto" }} />
+                <ArrowRight
+                  size={18}
+                  aria-hidden="true"
+                  style={{ marginLeft: "auto" }}
+                />
               </button>
               {linkedIn === "unavailable" && (
                 <p className="provider-status">
@@ -414,6 +509,7 @@ export function SignInPage() {
                 </label>
                 <input
                   id="email"
+                  disabled={busy}
                   type="email"
                   autoComplete="email"
                   placeholder={
@@ -510,6 +606,15 @@ export function SignInPage() {
                   </button>
                 )}
               </div>
+              {mode !== "code" && (
+                <button
+                  className="text-action"
+                  disabled={busy}
+                  onClick={() => changeMode("code")}
+                >
+                  Sign in or register with an email code
+                </button>
+              )}
               {mode === "signup" && (
                 <p className="auth-help">
                   Use an email you can access. Your profile type is
