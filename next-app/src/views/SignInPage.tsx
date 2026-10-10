@@ -99,6 +99,7 @@ export function SignInPage() {
     return () => window.clearTimeout(timer);
   }, [resendIn]);
   function changeMode(value: typeof mode) {
+    if (busy) return;
     setMode(value);
     setSent(false);
     setCode("");
@@ -108,11 +109,17 @@ export function SignInPage() {
   }
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
+    if (mode !== "signin" && resendIn > 0) {
+      setError(`Please wait ${resendIn}s before requesting another email.`);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       const auth = getSupabase().auth;
       const address = email.trim().toLowerCase();
+      setEmail(address);
       if (mode === "signin") {
         const { error } = await auth.signInWithPassword({
           email: address,
@@ -196,6 +203,7 @@ export function SignInPage() {
   }
   async function verify(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError("");
     try {
@@ -396,6 +404,7 @@ export function SignInPage() {
                 <input
                   className="code-input"
                   id="email-code"
+                  disabled={busy}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   pattern="[0-9]{6,10}"
@@ -412,9 +421,9 @@ export function SignInPage() {
                 </button>
               </form>
               <p className="auth-help">
-                Open the email link to continue automatically. The code is a
-                backup if you would rather finish here. New accounts verify
-                their email once.
+                Enter the code from your latest email. Check your spam folder
+                if it has not arrived. If the email only contains a sign-in
+                link, use that link to continue.
               </p>
               <button
                 className="text-action"
@@ -596,12 +605,12 @@ export function SignInPage() {
                 {mode === "signin" ? (
                   <>
                     New here?{" "}
-                    <button onClick={() => changeMode("signup")}>
+                    <button disabled={busy} onClick={() => changeMode("signup")}>
                       Create an account
                     </button>
                   </>
                 ) : (
-                  <button onClick={() => changeMode("signin")}>
+                  <button disabled={busy} onClick={() => changeMode("signin")}>
                     <ArrowLeft size={15} /> Back to sign in
                   </button>
                 )}

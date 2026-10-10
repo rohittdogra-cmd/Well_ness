@@ -16,6 +16,17 @@ export function useProfileQuery() {
     queryKey: ["profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      const { isConfigured } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        return {
+          name: "Local Dev",
+          avatar: 1,
+          bio: "Just building the app locally.",
+          interests: ["coding", "coffee"],
+          availability: ["weekends"],
+          goal: "Testing things out",
+        } as LocalProfile;
+      }
       const { data, error } = await getSupabase()
         .from("profiles")
         .select("name,avatar,bio,interests,availability,goal")

@@ -33,6 +33,7 @@ const Context = createContext<
 >(undefined);
 export function useInternetIdentity() {
   const context = useContext(Context);
+
   if (!context) throw new Error("Auth provider missing");
   return context;
 }

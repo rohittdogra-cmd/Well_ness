@@ -15,7 +15,7 @@ export const groupCategories = [
     icon: Trophy,
     color: "mint",
     examples: "Football · Cricket · Badminton",
-    image: "/images/categories/sports.jpg",
+    image: "/images/categories/sports.jpg", // Generated
   },
   {
     id: "wellbeing",
@@ -24,7 +24,7 @@ export const groupCategories = [
     icon: HeartPulse,
     color: "rose",
     examples: "Yoga · Mindfulness · Fitness",
-    image: "/images/categories/wellbeing.jpg",
+    image: "/images/categories/wellbeing.jpg", // Generated
   },
   {
     id: "arts",
@@ -51,7 +51,7 @@ export const groupCategories = [
     icon: Coffee,
     color: "peach",
     examples: "Coffee · Cooking · Board games",
-    image: "/images/categories/social.jpg",
+    image: "/images/categories/social.jpg", // Generated
   },
   {
     id: "outdoors",

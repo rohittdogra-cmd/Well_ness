@@ -1,0 +1,81 @@
+import { Group } from "@/hooks/useCommunity";
+
+export const MOCK_GROUPS: Group[] = [
+  // Sports
+  { id: 1, slug: "cricket", name: "Cricket", description: "Weekend cricket lovers", category: "sports", member_count: 104, joined: true, image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800&q=80" },
+  { id: 2, slug: "football", name: "Football", description: "Turf football fans", category: "sports", member_count: 205, joined: true, image: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80" },
+  { id: 3, slug: "badminton", name: "Badminton", description: "Indoor badminton players", category: "sports", member_count: 53, joined: false, image: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&q=80" },
+  { id: 4, slug: "basketball", name: "Basketball", description: "Hoops and dunks", category: "sports", member_count: 82, joined: false, image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80" },
+  { id: 5, slug: "tennis", name: "Lawn Tennis", description: "Tennis enthusiasts", category: "sports", member_count: 45, joined: false, image: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80" },
+  { id: 6, slug: "table-tennis", name: "Table Tennis", description: "Ping pong heroes", category: "sports", member_count: 110, joined: false, image: "https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=800&q=80" },
+  { id: 7, slug: "swimming", name: "Swimming", description: "Morning laps", category: "sports", member_count: 70, joined: false, image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800&q=80" },
+  { id: 8, slug: "volleyball", name: "Volleyball", description: "Beach and indoor volleyball", category: "sports", member_count: 65, joined: false, image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&q=80" },
+  { id: 9, slug: "hockey", name: "Hockey", description: "Field hockey players", category: "sports", member_count: 32, joined: false, image: "https://images.unsplash.com/photo-1580748141549-71748dbe0bdc?w=800&q=80" },
+  { id: 10, slug: "chess", name: "Chess Masters", description: "Strategic minds", category: "sports", member_count: 90, joined: false, image: "https://images.unsplash.com/photo-1529699211952-734e80c4d42b?w=800&q=80" },
+  { id: 11, slug: "snooker", name: "Snooker & Pool", description: "Billiards enthusiasts", category: "sports", member_count: 40, joined: false, image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80" },
+  { id: 12, slug: "athletics", name: "Athletics", description: "Track and field", category: "sports", member_count: 22, joined: false, image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&q=80" },
+
+  // Wellbeing
+  { id: 13, slug: "yoga-sessions", name: "Yoga Sessions", description: "Daily morning yoga", category: "wellbeing", member_count: 150, joined: true, image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80" },
+  { id: 14, slug: "morning-walks", name: "Morning Walks", description: "Early risers walking group", category: "wellbeing", member_count: 85, joined: false, image: "https://images.unsplash.com/photo-1536922246289-88c42f957773?w=800&q=80" },
+  { id: 15, slug: "evening-walks", name: "Evening Walks", description: "Post-work unwinding walks", category: "wellbeing", member_count: 112, joined: false, image: "https://images.unsplash.com/photo-1517650862521-d580d5348145?w=800&q=80" },
+  { id: 16, slug: "night-walks", name: "Night Walks", description: "Late night safe walks", category: "wellbeing", member_count: 45, joined: false, image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80" },
+  { id: 17, slug: "meditation", name: "Meditation", description: "Find your inner peace", category: "wellbeing", member_count: 200, joined: false, image: "https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=800&q=80" },
+  { id: 18, slug: "gym-buddies", name: "Gym Buddies", description: "Find a spotter", category: "wellbeing", member_count: 310, joined: false, image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80" },
+  { id: 19, slug: "crossfit", name: "Crossfit", description: "High intensity workouts", category: "wellbeing", member_count: 65, joined: false, image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80" },
+  { id: 20, slug: "zumba", name: "Zumba", description: "Dance your calories away", category: "wellbeing", member_count: 140, joined: false, image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80" },
+  { id: 21, slug: "mental-health", name: "Mental Health Check-in", description: "Safe space to talk", category: "wellbeing", member_count: 280, joined: true, image: "https://images.unsplash.com/photo-1520694478166-daaaaec95b69?w=800&q=80" },
+  { id: 22, slug: "pilates", name: "Pilates", description: "Core strength and flexibility", category: "wellbeing", member_count: 88, joined: false, image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80" },
+  { id: 23, slug: "nutrition", name: "Nutrition Talk", description: "Healthy eating habits", category: "wellbeing", member_count: 95, joined: false, image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80" },
+  { id: 24, slug: "running-club", name: "Running Club", description: "Marathon prep and jogs", category: "wellbeing", member_count: 175, joined: false, image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80" },
+
+  // Social
+  { id: 25, slug: "sutta-breaks", name: "Sutta Breaks", description: "Quick office sutta breaks", category: "social", member_count: 450, joined: true, image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80" },
+  { id: 26, slug: "sutta-meetup", name: "Sutta Meetups", description: "Smoking areas networking", category: "social", member_count: 320, joined: false, image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80" },
+  { id: 27, slug: "cyber-hub-cafes", name: "Cyber Hub Cafes", description: "Connect over Cyber Hub", category: "social", member_count: 510, joined: true, image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80" },
+  { id: 28, slug: "sec-29-pubs", name: "Sector 29 Pubs", description: "Brewery hopping in Sec 29", category: "social", member_count: 480, joined: false, image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&q=80" },
+  { id: 29, slug: "house-parties", name: "House Parties", description: "Weekend BYOB house parties", category: "social", member_count: 600, joined: false, image: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=800&q=80" },
+  { id: 30, slug: "office-gossips", name: "Office Gossips", description: "Spill the tea", category: "social", member_count: 850, joined: false, image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" },
+  { id: 31, slug: "board-games", name: "Board Game Geeks", description: "Catan, Monopoly, D&D", category: "social", member_count: 120, joined: false, image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80" },
+  { id: 32, slug: "karaoke", name: "Karaoke Nights", description: "Sing your heart out", category: "social", member_count: 145, joined: false, image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80" },
+  { id: 33, slug: "movie-buffs", name: "Movie Buffs", description: "Weekend cinema plans", category: "social", member_count: 340, joined: false, image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80" },
+  { id: 34, slug: "clubbing", name: "Weekend Clubbing", description: "VIP tables and dancing", category: "social", member_count: 420, joined: false, image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800&q=80" },
+  { id: 35, slug: "foodies", name: "Gurgaon Foodies", description: "Exploring street food", category: "social", member_count: 550, joined: false, image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80" },
+  { id: 36, slug: "standup", name: "Standup Comedy", description: "Open mics and shows", category: "social", member_count: 210, joined: false, image: "https://images.unsplash.com/photo-1585699324551-f6c309eedeca?w=800&q=80" },
+
+  // Outdoors
+  { id: 37, slug: "aravali-treks", name: "Aravali Treks", description: "Morning treks in Aravalis", category: "outdoors", member_count: 180, joined: true, image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80" },
+  { id: 38, slug: "cycling", name: "Cycling Club", description: "Gwal Pahari cycling rides", category: "outdoors", member_count: 220, joined: false, image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80" },
+  { id: 39, slug: "long-drives", name: "Long Drives", description: "Midnight highway drives", category: "outdoors", member_count: 340, joined: false, image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80" },
+  { id: 40, slug: "photo-walks", name: "Photography Walks", description: "Capture the city", category: "outdoors", member_count: 110, joined: false, image: "https://images.unsplash.com/photo-1516802273409-68526ee1bdd6?w=800&q=80" },
+  { id: 41, slug: "camping", name: "Camping Enthusiasts", description: "Weekend getaways", category: "outdoors", member_count: 195, joined: false, image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80" },
+  { id: 42, slug: "biker-gang", name: "Biker Gang", description: "Sunday morning rides", category: "outdoors", member_count: 275, joined: false, image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&q=80" },
+  { id: 43, slug: "heritage-walks", name: "Heritage Walks", description: "Exploring monuments", category: "outdoors", member_count: 85, joined: false, image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&q=80" },
+  { id: 44, slug: "picnic", name: "Picnic Planners", description: "Lodhi garden picnics", category: "outdoors", member_count: 140, joined: false, image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80" },
+  { id: 45, slug: "bird-watching", name: "Bird Watching", description: "Sultanpur bird sanctuary", category: "outdoors", member_count: 65, joined: false, image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800&q=80" },
+  { id: 46, slug: "golfing", name: "Golfing", description: "DLF Golf Course meetups", category: "outdoors", member_count: 95, joined: false, image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80" },
+
+  // Arts
+  { id: 47, slug: "music-jamming", name: "Music Jamming", description: "Jam sessions in basement", category: "arts", member_count: 155, joined: true, image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80" },
+  { id: 48, slug: "painting", name: "Painting", description: "Canvas and colors", category: "arts", member_count: 110, joined: false, image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&q=80" },
+  { id: 49, slug: "pottery", name: "Pottery", description: "Clay art workshops", category: "arts", member_count: 85, joined: false, image: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800&q=80" },
+  { id: 50, slug: "drama-club", name: "Drama Club", description: "Theatre enthusiasts", category: "arts", member_count: 130, joined: false, image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80" },
+  { id: 51, slug: "dance-crew", name: "Dance Crew", description: "Hip hop and freestyle", category: "arts", member_count: 210, joined: false, image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&q=80" },
+  { id: 52, slug: "poetry", name: "Poetry Reading", description: "Spoken word poetry", category: "arts", member_count: 95, joined: false, image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80" },
+  { id: 53, slug: "digital-art", name: "Digital Art", description: "Procreate and design", category: "arts", member_count: 165, joined: false, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80" },
+  { id: 54, slug: "filmmaking", name: "Film Making", description: "Indie short films", category: "arts", member_count: 140, joined: false, image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&q=80" },
+  { id: 55, slug: "origami", name: "Origami", description: "Paper folding art", category: "arts", member_count: 45, joined: false, image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80" },
+  { id: 56, slug: "sculpting", name: "Sculpting", description: "3D art and models", category: "arts", member_count: 35, joined: false, image: "https://images.unsplash.com/photo-1618666012174-83b441c0bc76?w=800&q=80" },
+
+  // Learning
+  { id: 57, slug: "startup-founders", name: "Startup Founders", description: "Networking for founders", category: "learning", member_count: 450, joined: true, image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80" },
+  { id: 58, slug: "coding", name: "Coding Bootcamp", description: "Learn to code together", category: "learning", member_count: 620, joined: false, image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80" },
+  { id: 59, slug: "languages", name: "Language Exchange", description: "Learn Spanish, French", category: "learning", member_count: 240, joined: false, image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80" },
+  { id: 60, slug: "public-speaking", name: "Public Speaking", description: "Toastmasters style", category: "learning", member_count: 180, joined: false, image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80" },
+  { id: 61, slug: "finance", name: "Finance & Stocks", description: "Investing discussions", category: "learning", member_count: 850, joined: false, image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80" },
+  { id: 62, slug: "book-club", name: "Book Club", description: "Monthly book reviews", category: "learning", member_count: 320, joined: false, image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80" },
+  { id: 63, slug: "ai-ml", name: "AI & ML Group", description: "Deep learning talks", category: "learning", member_count: 530, joined: false, image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80" },
+  { id: 64, slug: "design", name: "Design Thinking", description: "UI/UX & Product", category: "learning", member_count: 290, joined: false, image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80" },
+  { id: 65, slug: "upsc", name: "UPSC Prep", description: "Civil services prep", category: "learning", member_count: 410, joined: false, image: "https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?w=800&q=80" },
+  { id: 66, slug: "careers", name: "Career Counseling", description: "Resume reviews & mocks", category: "learning", member_count: 380, joined: false, image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80" },
+];

@@ -45,6 +45,7 @@ const nav = [
   { label: "People", href: "/people", icon: Users },
   { label: "Activities", href: "/book-activities", icon: Compass },
   { label: "My calendar", href: "/my-sessions", icon: CalendarDays },
+  { label: "Therapy", href: "/therapy", icon: Heart },
 ];
 export function Layout({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "/";

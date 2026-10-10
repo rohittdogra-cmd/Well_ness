@@ -8,6 +8,7 @@ import {
 import { getSupabase } from "@/lib/supabase/client";
 import { rpc } from "@/lib/backend";
 import { useInternetIdentity } from "./useInternetIdentity";
+import { MOCK_GROUPS } from "@/lib/mockGroups";
 
 /** A group as the directory needs it: counts and membership resolved in Postgres. */
 export type Group = {
@@ -18,6 +19,7 @@ export type Group = {
   category: string;
   member_count: number;
   joined: boolean;
+  image?: string;
 };
 
 export type Reply = {
@@ -54,6 +56,19 @@ export function useGroups(
     enabled: !!user,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
+      // MOCK FOR LOCALHOST
+      try {
+        const { isConfigured } = await import("@/lib/supabase/client");
+        if (!isConfigured()) {
+          let filtered = MOCK_GROUPS;
+          if (category) filtered = filtered.filter(g => g.category === category);
+          if (joinedOnly) filtered = filtered.filter(g => g.joined);
+          if (search) filtered = filtered.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.description.toLowerCase().includes(search.toLowerCase()));
+          
+          return filtered.slice(pageParam, pageParam + GROUPS_PER_PAGE);
+        }
+      } catch (e) {}
+
       let query = getSupabase()
         .from("group_summaries")
         .select("*")
@@ -92,6 +107,15 @@ export function useGroup(slug: string | undefined) {
     queryKey: ["group", slug, user?.id],
     enabled: !!user && !!slug,
     queryFn: async () => {
+      // MOCK FOR LOCALHOST
+      try {
+        const { isConfigured } = await import("@/lib/supabase/client");
+        if (!isConfigured()) {
+          const found = MOCK_GROUPS.find(g => g.slug === slug);
+          return (found ?? null) as Group | null;
+        }
+      } catch (e) {}
+
       const { data, error } = await getSupabase()
         .from("group_summaries")
         .select("*")

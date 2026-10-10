@@ -884,3 +884,36 @@ test("student email code creates an account only after verification", async ({
     page.getByRole("heading", { name: /Good to see you/ }),
   ).toBeVisible();
 });
+
+test("returning to the email form preserves the send cooldown", async ({ page }) => {
+  let sends = 0;
+  page.on("request", (request) => {
+    if (request.url().includes("/auth/v1/otp") && request.method() === "POST") sends++;
+  });
+  await page.goto("/signin");
+  await page.getByRole("button", { name: "Sign in or register with an email code" }).click();
+  await page.getByLabel("Email address").fill("Alex@Example.test");
+  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await expect(page.getByText("We sent a verification email to alex@example.test.")).toBeVisible();
+  await page.getByRole("button", { name: "Back to sign in" }).click();
+  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "before requesting another email" })).toBeVisible();
+  expect(sends).toBe(1);
+});
+
+test("failed code delivery stays on the email form and allows retry", async ({ page }) => {
+  await page.route("**/auth/v1/otp**", (route) => route.fulfill({
+    status: 429,
+    contentType: "application/json",
+    body: JSON.stringify({ code: "over_email_send_rate_limit", msg: "Email rate limit exceeded" }),
+  }));
+  await page.goto("/signin");
+  await page.getByRole("button", { name: "Sign in or register with an email code" }).click();
+  await page.getByLabel("Email address").fill("alex@example.test");
+  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Email rate limit exceeded" })).toBeVisible();
+  await expect(page.getByLabel("Email verification code")).toHaveCount(0);
+  await page.unroute("**/auth/v1/otp**");
+  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await expect(page.getByLabel("Email verification code")).toBeVisible();
+});

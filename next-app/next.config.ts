@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
       { source: "/index.html", destination: "/", permanent: true },
     ];
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

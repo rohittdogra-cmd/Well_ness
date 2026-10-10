@@ -155,7 +155,7 @@ export function HomePage() {
               className="chat-card card-1" 
               variants={floatAnim} 
               whileHover={{ scale: 1.05 }}
-              onClick={() => router.push('/groups/health-wellness')}
+              onClick={() => router.push('/groups/cyber-hub-cafes')}
               style={{ cursor: "pointer" }}
             >
               <div className="icon">☕</div>
@@ -183,7 +183,7 @@ export function HomePage() {
               className="chat-card card-3" 
               variants={floatAnim} 
               whileHover={{ scale: 1.05 }}
-              onClick={() => router.push('/groups/music')}
+              onClick={() => router.push('/groups/coding')}
               style={{ cursor: "pointer" }}
             >
               <div className="icon">📚</div>
