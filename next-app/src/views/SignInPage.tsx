@@ -41,7 +41,7 @@ const fadeIn = {
 };
 
 export function SignInPage() {
-  const { user, isInitializing } = useInternetIdentity();
+  const { user, isInitializing, mockLogin } = useInternetIdentity();
   const router = useRouter();
   const [audience, setAudience] = useState<"professional" | "student">(
     "professional",
@@ -72,7 +72,11 @@ export function SignInPage() {
   }, [user, isInitializing, router]);
   useEffect(() => {
     const controller = new AbortController();
-    if (!isConfigured()) return;
+    if (!isConfigured()) {
+      setLinkedIn("ready");
+      setMicrosoft("ready");
+      return;
+    }
     fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`, {
       headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY! },
       signal: controller.signal,
@@ -116,6 +120,12 @@ export function SignInPage() {
     }
     setBusy(true);
     setError("");
+    if (!isConfigured()) {
+      const address = (email.trim() || "alex@company.com").toLowerCase();
+      mockLogin(address, audience);
+      router.replace("/");
+      return;
+    }
     try {
       const auth = getSupabase().auth;
       const address = email.trim().toLowerCase();
@@ -206,6 +216,11 @@ export function SignInPage() {
     if (busy) return;
     setBusy(true);
     setError("");
+    if (!isConfigured()) {
+      mockLogin(email.trim() || "alex@company.com", audience);
+      router.replace("/");
+      return;
+    }
     try {
       const { error } = await getSupabase().auth.verifyOtp({
         email: email.trim().toLowerCase(),
@@ -225,6 +240,14 @@ export function SignInPage() {
   async function oauth(provider: "azure" | "linkedin_oidc") {
     setBusy(true);
     setError("");
+    if (!isConfigured()) {
+      mockLogin(
+        `${provider === "azure" ? "user" : "member"}@${audience === "student" ? "college.edu" : "company.com"}`,
+        audience,
+      );
+      router.replace("/");
+      return;
+    }
     try {
       const { error } = await getSupabase().auth.signInWithOAuth({
         provider,
@@ -391,11 +414,60 @@ export function SignInPage() {
                   ? "Sign in or create an account with your work or student email. No password needed."
                   : "Good company is just a sign-in away."}
           </p>
-          {!isConfigured() ? (
-            <p role="status">
-              Sign-in is being configured. Please check back shortly.
-            </p>
-          ) : sent ? (
+          {!isConfigured() && (
+            <div
+              style={{
+                background: "rgba(20, 184, 166, 0.08)",
+                border: "1px solid rgba(20, 184, 166, 0.25)",
+                borderRadius: "12px",
+                padding: "14px 16px",
+                marginBottom: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontWeight: 600,
+                  color: "var(--teal-700, #0f766e)",
+                  fontSize: "14px",
+                }}
+              >
+                <span>⚡ Preview & Demo Mode</span>
+              </div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "13px",
+                  color: "var(--sand-800, #374151)",
+                  lineHeight: "1.4",
+                }}
+              >
+                Enter any email below or click quick demo to explore all features instantly without waiting for backend setup.
+              </p>
+              <button
+                type="button"
+                className="wellness-button"
+                style={{
+                  alignSelf: "flex-start",
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  marginTop: "4px",
+                }}
+                onClick={() => {
+                  mockLogin("alex@company.com", audience);
+                  router.replace("/");
+                }}
+              >
+                Continue with Demo Account <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
+          {sent ? (
             <>
               <form onSubmit={verify}>
                 <label className="field-label" htmlFor="email-code">

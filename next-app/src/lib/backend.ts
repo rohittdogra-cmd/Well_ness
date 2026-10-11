@@ -8,7 +8,7 @@
 // key, list reads go through the `*_summaries` views that compute participant
 // counts and "have I joined" flags server-side, and administrative counters come
 // from aggregate functions in a single round trip.
-import { getSupabase } from "./supabase/client";
+import { getSupabase, isConfigured } from "./supabase/client";
 import { accountId } from "@/hooks/useInternetIdentity";
 import {
   type backendInterface,
@@ -19,6 +19,8 @@ import {
   type ActivityLog,
   type AdminStats,
   type SessionListOptions,
+  ProgramType,
+  ProviderType,
   UserRole,
 } from "@/backend.types";
 
@@ -102,10 +104,242 @@ export async function rpc(
   name: string,
   args: Record<string, unknown> = {},
 ): Promise<any> {
+  if (!isConfigured()) {
+    if (name === "list_connections") return [];
+    if (name === "find_members") {
+      return [
+        { id: "22222222-2222-4222-8222-222222222222", name: "Maya Sharma", avatar: 1, bio: "Lunch walks and book discussions.", interests: ["Books", "Walking", "Yoga"] },
+        { id: "33333333-3333-4333-8333-333333333333", name: "Samir Patel", avatar: 2, bio: "Tech & badminton enthusiast.", interests: ["Badminton", "Tech", "Cycling"] },
+        { id: "44444444-4444-4444-8444-444444444444", name: "Jordan Lee", avatar: 3, bio: "Morning runner & coffee explorer.", interests: ["Running", "Coffee", "Football"] },
+      ];
+    }
+    if (name === "group_category_counts") {
+      return { sports: 12, wellbeing: 12, social: 12, outdoors: 10, arts: 10 };
+    }
+    if (name === "get_feed") return [];
+    if (name === "is_admin") return true;
+    if (name === "admin_stats") {
+      return { total_users: 120, total_sessions: 45, total_groups: 48, total_posts: 310 };
+    }
+    return 1;
+  }
   return result(getSupabase().rpc(name, args));
 }
 
+function createMockBackend(userId: string): backendInterface {
+  const uid = userId;
+  const sessions: Session[] = [
+    {
+      id: 1n,
+      title: "Lunchtime Walk & Reset",
+      description: "Take a step back from screens. Fresh air, casual walk, and reset.",
+      creator: accountId(uid),
+      participants: [accountId(uid), accountId("22222222-2222-4222-8222-222222222222")],
+      participantCount: 2n,
+      joined: true,
+      createdAt: ns(new Date().toISOString()),
+      dateTime: ns(new Date(Date.now() + 86400000).toISOString()),
+      maxParticipants: 8n,
+      programType: ProgramType.meetup,
+      spaceName: "Garden Courtyard",
+      location: "Courtyard Gate 2",
+    },
+    {
+      id: 2n,
+      title: "Evening Badminton Friendly",
+      description: "Rackets, shuttles, and quick 15-minute sets for all skill levels.",
+      creator: accountId("33333333-3333-4333-8333-333333333333"),
+      participants: [accountId("33333333-3333-4333-8333-333333333333")],
+      participantCount: 1n,
+      joined: false,
+      createdAt: ns(new Date().toISOString()),
+      dateTime: ns(new Date(Date.now() + 172800000).toISOString()),
+      maxParticipants: 6n,
+      programType: ProgramType.badminton,
+      spaceName: "Indoor Sports Court",
+      location: "Level 1 Sports Hub",
+    },
+    {
+      id: 3n,
+      title: "Morning Vinyasa Yoga",
+      description: "Guided 30-minute stretch to start the day balanced and clear-headed.",
+      creator: accountId("44444444-4444-4444-8444-444444444444"),
+      participants: [accountId("44444444-4444-4444-8444-444444444444")],
+      participantCount: 1n,
+      joined: false,
+      createdAt: ns(new Date().toISOString()),
+      dateTime: ns(new Date(Date.now() + 259200000).toISOString()),
+      maxParticipants: 12n,
+      programType: ProgramType.exercise,
+      spaceName: "Wellness Studio",
+      location: "Block B, Room 302",
+    },
+  ];
+
+  const providers: ProviderApplication[] = [
+    {
+      id: 1n,
+      name: "Dr. Sarah Jenkins",
+      description: "Licensed Clinical Psychologist specializing in stress management and workplace burnout.",
+      providerType: ProviderType.psychologist,
+      submittedAt: ns(new Date().toISOString()),
+      isApproved: true,
+      isRejected: false,
+    },
+    {
+      id: 2n,
+      name: "FitPulse Corporate Athletics",
+      description: "Certified trainers conducting group mobility, badminton coaching, and functional fitness.",
+      providerType: ProviderType.sportsCompany,
+      submittedAt: ns(new Date().toISOString()),
+      isApproved: true,
+      isRejected: false,
+    },
+  ];
+
+  return {
+    _initializeAccessControlWithSecret: async () => {},
+    assignCallerUserRole: async () => {},
+    isCallerAdmin: async () => true,
+    getCallerUserRole: async () => UserRole.admin,
+    getCallerUserProfile: async () => ({ name: "Alex Member" }),
+    getUserProfile: async () => ({ name: "Community Member" }),
+    saveCallerUserProfile: async () => {},
+
+    listSessions: async (opts) => {
+      let filtered = [...sessions];
+      if (opts?.type) filtered = filtered.filter((s) => s.programType === opts.type);
+      return filtered;
+    },
+    getAllSessions: async () => sessions,
+    getSessionsByProgramType: async (type) =>
+      sessions.filter((s) => s.programType === type),
+    getSession: async (id) =>
+      sessions.find((s) => s.id === id) || sessions[0],
+    getMySessions: async () => [
+      sessions.filter((s) => s.creator.toString() === uid),
+      sessions.filter((s) => s.joined),
+    ],
+    createSession: async (title, description, type, date, capacity, space, location) => {
+      const newSession: Session = {
+        id: BigInt(sessions.length + 1),
+        title,
+        description,
+        creator: accountId(uid),
+        participants: [accountId(uid)],
+        participantCount: 1n,
+        joined: true,
+        createdAt: ns(new Date().toISOString()),
+        dateTime: date,
+        maxParticipants: capacity,
+        programType: type,
+        spaceName: space ?? undefined,
+        location: location ?? undefined,
+      };
+      sessions.push(newSession);
+      return newSession.id;
+    },
+    joinSession: async (id) => {
+      const s = sessions.find((x) => x.id === id);
+      if (s) {
+        s.joined = true;
+        s.participantCount = (s.participantCount ?? 0n) + 1n;
+      }
+    },
+    leaveSession: async (id) => {
+      const s = sessions.find((x) => x.id === id);
+      if (s) {
+        s.joined = false;
+        const count = s.participantCount ?? 0n;
+        s.participantCount = count > 0n ? count - 1n : 0n;
+      }
+    },
+    deleteSession: async (id) => {
+      const idx = sessions.findIndex((x) => x.id === id);
+      if (idx !== -1) sessions.splice(idx, 1);
+    },
+    updateSession: async () => {},
+
+    getAllTasks: async () => [],
+    getTask: async (id) => ({
+      id,
+      sessionId: 1n,
+      title: "Sample task",
+      description: "Description",
+      assignedTo: undefined,
+      completed: false,
+      createdAt: ns(new Date().toISOString()),
+    }),
+    getTasksBySession: async () => [],
+    getTasksForUser: async () => [],
+    createTask: async () => 1n,
+    markTaskComplete: async () => {},
+
+    getAllProviders: async () => providers,
+    getApprovedProviders: async () => providers.filter((p) => p.isApproved),
+    getPendingProviders: async () => providers.filter((p) => !p.isApproved && !p.isRejected),
+    getProvider: async (id) =>
+      providers.find((p) => p.id === id) || providers[0],
+    submitProviderApplication: async (type, name, description) => {
+      const newApp: ProviderApplication = {
+        id: BigInt(providers.length + 1),
+        name,
+        description,
+        providerType: type,
+        submittedAt: ns(new Date().toISOString()),
+        isApproved: false,
+        isRejected: false,
+      };
+      providers.push(newApp);
+      return newApp.id;
+    },
+    approveProvider: async () => {},
+    rejectProvider: async () => {},
+
+    getAllBookings: async () => [],
+    getBookingsForProvider: async () => [],
+    getBookingsForUser: async () => [],
+    getBooking: async (id) => ({
+      id,
+      providerId: 1n,
+      userId: accountId(uid),
+      bookingTime: ns(new Date().toISOString()),
+      isConfirmed: true,
+      createdAt: ns(new Date().toISOString()),
+      user: accountId(uid),
+    }),
+    bookProvider: async () => 1n,
+    cancelBooking: async () => {},
+
+    getAllUserProfiles: async () => [
+      { principal: accountId(uid), name: "Alex Member", sessionsCreated: 1n, sessionsJoined: 2n },
+      { principal: accountId("22222222-2222-4222-8222-222222222222"), name: "Maya Sharma", sessionsCreated: 2n, sessionsJoined: 4n },
+    ],
+    getAdminStats: async () => ({
+      totalTasks: 12n,
+      completedTasks: 8n,
+      sessionsByType: [
+        [ProgramType.meetup, 15n],
+        [ProgramType.badminton, 12n],
+        [ProgramType.exercise, 10n],
+      ],
+      totalBookings: 24n,
+      rejectedProviders: 0n,
+      approvedProviders: 2n,
+      totalProviders: 2n,
+      totalUsers: 140n,
+      totalSessions: 37n,
+      pendingProviders: 0n,
+    }),
+    getAllActivityLogs: async () => [],
+    getActivityLogsForUser: async () => [],
+  };
+}
+
 export function createBackend(userId: string): backendInterface {
+  if (!isConfigured()) {
+    return createMockBackend(userId);
+  }
   const db = getSupabase();
   const uid = userId;
 

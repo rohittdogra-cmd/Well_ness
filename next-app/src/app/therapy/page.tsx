@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { TherapyPage } from "../../views/TherapyPage";
-import { pageMetadata } from "@/lib/metadata";
+import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata("/therapy", {
   title: "Anonymous Therapy",

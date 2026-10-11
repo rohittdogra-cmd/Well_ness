@@ -38,6 +38,11 @@ export function useMoodWeek(userId: string | undefined) {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const days = Array.from({ length: 7 }, (_, i) => isoDay(6 - i));
+      const { isConfigured } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        const sampleMoods = ["Good", "Great", "Okay", "Good", "Great", "Good", "Great"];
+        return days.map((day, idx) => ({ day, mood: sampleMoods[idx % sampleMoods.length] }));
+      }
       const { data, error } = await getSupabase()
         .from("check_ins")
         .select("day,mood")
