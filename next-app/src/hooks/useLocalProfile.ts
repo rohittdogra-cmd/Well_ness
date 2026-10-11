@@ -19,7 +19,10 @@ export function useProfileQuery() {
       const { isConfigured } = await import("@/lib/supabase/client");
       if (!isConfigured()) {
         if (typeof window !== "undefined") {
-          const stored = localStorage.getItem("wellness_local_profile");
+          const stored =
+            (user?.id
+              ? localStorage.getItem(`wellness_local_profile_${user.id}`)
+              : null) || localStorage.getItem("wellness_local_profile");
           if (stored) {
             try {
               return JSON.parse(stored) as LocalProfile;
@@ -29,7 +32,10 @@ export function useProfileQuery() {
           }
         }
         return {
-          name: user?.user_metadata?.name || user?.email?.split("@")[0] || "Alex Member",
+          name:
+            user?.user_metadata?.name ||
+            user?.email?.split("@")[0] ||
+            "Alex Member",
           avatar: 1,
           bio: "Here for mindful meetups, community sports, and wellness.",
           interests: ["Cricket", "Yoga", "Mindfulness"],
@@ -62,6 +68,10 @@ export async function saveLocalProfile(profile: LocalProfile, userId: string) {
   const { isConfigured } = await import("@/lib/supabase/client");
   if (!isConfigured()) {
     if (typeof window !== "undefined") {
+      localStorage.setItem(
+        `wellness_local_profile_${userId}`,
+        JSON.stringify(profile),
+      );
       localStorage.setItem("wellness_local_profile", JSON.stringify(profile));
     }
     return;

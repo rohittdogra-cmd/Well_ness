@@ -917,3 +917,42 @@ test("failed code delivery stays on the email form and allows retry", async ({ p
   await page.getByRole("button", { name: "Send sign-in email" }).click();
   await expect(page.getByLabel("Email verification code")).toBeVisible();
 });
+
+test("user logging in through code can set a password and recall account with same user ID", async ({ page }) => {
+  await page.goto("/signin");
+  await page.getByRole("button", { name: "Sign in or register with an email code" }).click();
+  await page.getByLabel("Email address").fill("alex@example.test");
+  await page.getByRole("button", { name: "Send sign-in email" }).click();
+
+  // Verify that the code verification screen displays the linked User ID and password field
+  await expect(page.getByLabel("Email verification code")).toBeVisible();
+  await expect(page.getByText(/User ID:/)).toBeVisible();
+  await expect(page.getByLabel(/Create a password/)).toBeVisible();
+
+  // Enter verification code and create a password
+  await page.getByLabel("Email verification code").fill("123456");
+  await page.getByLabel(/Create a password/).fill("Correct-password1");
+  await page.getByRole("button", { name: "Verify code and continue" }).click();
+
+  // Lands on home page
+  await expect(page).toHaveURL("http://localhost:3101/");
+  await expect(page.getByRole("heading", { name: /Good to see you/ })).toBeVisible();
+
+  // Visit account page to check user ID
+  await page.goto("/account");
+  await expect(page.getByRole("heading", { name: "Make signing in simpler." })).toBeVisible();
+  await expect(page.getByText(/User ID:/)).toBeVisible();
+
+  // Sign out
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page).toHaveURL(/signin/);
+
+  // Now sign back in using email & password
+  await page.getByLabel("Email address").fill("alex@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("Correct-password1");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL("http://localhost:3101/");
+  await expect(page.getByRole("heading", { name: /Good to see you/ })).toBeVisible();
+});
+

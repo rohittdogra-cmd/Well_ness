@@ -18,9 +18,22 @@ import {
   MessageCircle,
   LoaderCircle,
   Grid2X2,
+  KeyRound,
+  Sparkles,
+  Copy,
+  Check,
 } from "lucide-react";
 import { getSupabase, isConfigured } from "@/lib/supabase/client";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import {
+  deterministicIdForEmail,
+  getStoredAccountByEmail,
+  saveStoredAccount,
+  getLastLoginEmail,
+  setLastLoginEmail,
+  removeStoredAccount,
+  type StoredAccount,
+} from "@/lib/authAccounts";
 const subscribe = () => () => {};
 
 const stagger = {
@@ -51,6 +64,10 @@ export function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [createPassword, setCreatePassword] = useState("");
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [savedAccount, setSavedAccount] = useState<StoredAccount | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
   const [sent, setSent] = useState(false);
   const [resendIn, setResendIn] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -102,6 +119,20 @@ export function SignInPage() {
     const timer = window.setTimeout(() => setResendIn(resendIn - 1), 1000);
     return () => window.clearTimeout(timer);
   }, [resendIn]);
+  useEffect(() => {
+    const lastEmail = getLastLoginEmail();
+    if (lastEmail) {
+      const acc = getStoredAccountByEmail(lastEmail);
+      if (acc) {
+        setSavedAccount(acc);
+      }
+    }
+  }, []);
+
+  const displayUserId = email.trim()
+    ? (getStoredAccountByEmail(email.trim())?.id || deterministicIdForEmail(email.trim()))
+    : (savedAccount?.id || "11111111-1111-4111-8111-111111111111");
+
   function changeMode(value: typeof mode) {
     if (busy) return;
     setMode(value);
@@ -109,6 +140,7 @@ export function SignInPage() {
     setCode("");
     setError("");
     setPassword("");
+    setCreatePassword("");
     setOtpType("email");
   }
   async function submit(e: React.FormEvent) {
@@ -120,15 +152,71 @@ export function SignInPage() {
     }
     setBusy(true);
     setError("");
+    const address = (email.trim() || "alex@company.com").toLowerCase();
+
     if (!isConfigured()) {
-      const address = (email.trim() || "alex@company.com").toLowerCase();
-      mockLogin(address, audience);
-      router.replace("/");
-      return;
+      const stored = getStoredAccountByEmail(address);
+      if (mode === "signin") {
+        if (stored?.password && password && stored.password !== password) {
+          setError(
+            "Incorrect password. Please try again or use email access to sign in.",
+          );
+          setBusy(false);
+          return;
+        }
+        const uid = stored?.id || deterministicIdForEmail(address);
+        saveStoredAccount({
+          id: uid,
+          email: address,
+          password: stored?.password || password || undefined,
+          memberType: stored?.memberType || audience,
+          name: stored?.name || address.split("@")[0],
+          createdAt: stored?.createdAt || new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+        });
+        setLastLoginEmail(address);
+        mockLogin(
+          address,
+          stored?.memberType || audience,
+          uid,
+          stored?.password || password,
+        );
+        router.replace("/");
+        return;
+      } else if (mode === "signup") {
+        if (stored?.password) {
+          setError(
+            "An account with this email already exists. Please sign in.",
+          );
+          setBusy(false);
+          return;
+        }
+        const uid = stored?.id || deterministicIdForEmail(address);
+        saveStoredAccount({
+          id: uid,
+          email: address,
+          password: password.trim(),
+          memberType: audience,
+          name: address.split("@")[0],
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+        });
+        setLastLoginEmail(address);
+        mockLogin(address, audience, uid, password.trim());
+        router.replace("/");
+        return;
+      } else {
+        // mode === "code"
+        setEmail(address);
+        setOtpType("email");
+        setSent(true);
+        setResendIn(60);
+        setBusy(false);
+        return;
+      }
     }
     try {
       const auth = getSupabase().auth;
-      const address = email.trim().toLowerCase();
       setEmail(address);
       if (mode === "signin") {
         const { error } = await auth.signInWithPassword({
@@ -136,6 +224,18 @@ export function SignInPage() {
           password,
         });
         if (error) throw error;
+        const { data: userData } = await auth.getUser();
+        if (userData?.user) {
+          saveStoredAccount({
+            id: userData.user.id,
+            email: address,
+            memberType: audience,
+            name: userData.user.user_metadata?.name || address.split("@")[0],
+            createdAt: userData.user.created_at,
+            lastLoginAt: new Date().toISOString(),
+          });
+          setLastLoginEmail(address);
+        }
         router.replace("/");
       } else if (mode === "signup") {
         const { data, error } = await auth.signUp({
@@ -147,8 +247,21 @@ export function SignInPage() {
           },
         });
         if (error) throw error;
-        if (data.session) router.replace("/");
-        else {
+        if (data.session) {
+          if (data.user) {
+            saveStoredAccount({
+              id: data.user.id,
+              email: address,
+              password,
+              memberType: audience,
+              name: address.split("@")[0],
+              createdAt: data.user.created_at,
+              lastLoginAt: new Date().toISOString(),
+            });
+            setLastLoginEmail(address);
+          }
+          router.replace("/");
+        } else {
           setOtpType("signup");
           setSent(true);
           setResendIn(60);
@@ -214,20 +327,65 @@ export function SignInPage() {
   async function verify(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (createPassword.trim() && createPassword.trim().length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
     setBusy(true);
     setError("");
+    const address = (email.trim() || "alex@company.com").toLowerCase();
+    const pwdToSet = createPassword.trim() || undefined;
+
     if (!isConfigured()) {
-      mockLogin(email.trim() || "alex@company.com", audience);
+      const existing = getStoredAccountByEmail(address);
+      const userId = existing?.id || deterministicIdForEmail(address);
+      saveStoredAccount({
+        id: userId,
+        email: address,
+        password: pwdToSet !== undefined ? pwdToSet : existing?.password,
+        memberType: audience,
+        name: existing?.name || address.split("@")[0],
+        createdAt: existing?.createdAt || new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      });
+      setLastLoginEmail(address);
+      mockLogin(
+        address,
+        audience,
+        userId,
+        pwdToSet !== undefined ? pwdToSet : existing?.password,
+      );
       router.replace("/");
       return;
     }
     try {
-      const { error } = await getSupabase().auth.verifyOtp({
-        email: email.trim().toLowerCase(),
+      const { data, error } = await getSupabase().auth.verifyOtp({
+        email: address,
         token: code.trim(),
         type: otpType,
       });
       if (error) throw error;
+
+      if (pwdToSet) {
+        try {
+          await getSupabase().auth.updateUser({ password: pwdToSet });
+        } catch (err) {
+          console.warn("Could not set password immediately after OTP:", err);
+        }
+      }
+
+      const authedId = data?.user?.id || deterministicIdForEmail(address);
+      saveStoredAccount({
+        id: authedId,
+        email: address,
+        password: pwdToSet,
+        memberType: audience,
+        name: address.split("@")[0],
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      });
+      setLastLoginEmail(address);
+
       router.replace("/");
     } catch {
       setError(
@@ -487,6 +645,100 @@ export function SignInPage() {
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                 />
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background: "rgba(20, 184, 166, 0.08)",
+                    border: "1px solid rgba(20, 184, 166, 0.25)",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    margin: "16px 0 14px",
+                    fontSize: "12px",
+                    color: "var(--teal-700, #0f766e)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <KeyRound size={16} />
+                    <span>
+                      User ID: <code style={{ fontFamily: "monospace", fontWeight: 600 }}>{displayUserId.slice(0, 18)}…</code>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "inherit",
+                      padding: "2px 6px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                    }}
+                    onClick={() => {
+                      navigator.clipboard?.writeText(displayUserId);
+                      setCopiedId(true);
+                      setTimeout(() => setCopiedId(false), 2000);
+                    }}
+                  >
+                    {copiedId ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedId ? "Copied" : "Copy ID"}
+                  </button>
+                </div>
+
+                <div style={{ marginBottom: "18px" }}>
+                  <label
+                    className="field-label"
+                    htmlFor="code-password"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span>Create a password</span>
+                    <span style={{ fontSize: "12px", fontWeight: "normal", color: "#6a7d88" }}>
+                      (Recommended)
+                    </span>
+                  </label>
+                  <div className="password-field">
+                    <input
+                      id="code-password"
+                      type={showCreatePassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      minLength={8}
+                      disabled={busy}
+                      value={createPassword}
+                      onChange={(e) => setCreatePassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showCreatePassword ? "Hide password" : "Show password"}
+                      aria-pressed={showCreatePassword}
+                      onClick={() => setShowCreatePassword(!showCreatePassword)}
+                    >
+                      {showCreatePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#6a7d88",
+                      margin: "6px 0 0",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    Set a password now so we save your User ID and password. You can recall and sign in directly anytime.
+                  </p>
+                </div>
+
                 <button className="wellness-button auth-submit" disabled={busy}>
                   {busy ? "Verifying\u2026" : "Verify code and continue"}
                   <ArrowRight size={18} />
@@ -513,6 +765,7 @@ export function SignInPage() {
                   setSent(false);
                   setError("");
                   setCode("");
+                  setCreatePassword("");
                 }}
               >
                 <ArrowLeft size={16} /> Back to sign in
@@ -520,6 +773,111 @@ export function SignInPage() {
             </>
           ) : (
             <>
+              {savedAccount && mode === "signin" && (
+                <div
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0.02) 100%)",
+                    border: "1px solid rgba(20, 184, 166, 0.25)",
+                    borderRadius: "14px",
+                    padding: "14px 16px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "var(--teal-700, #0f766e)",
+                      }}
+                    >
+                      <Sparkles size={14} />
+                      <span>Welcome Back · Saved ID</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeStoredAccount(savedAccount.email);
+                        setSavedAccount(null);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        fontSize: "11px",
+                        color: "#6a7d88",
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Forget
+                    </button>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontWeight: 600,
+                          fontSize: "14px",
+                          color: "#112d3d",
+                        }}
+                      >
+                        {savedAccount.email}
+                      </p>
+                      <p
+                        style={{
+                          margin: "2px 0 0",
+                          fontSize: "11px",
+                          color: "#60727d",
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        User ID: {savedAccount.id.slice(0, 18)}…
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="wellness-button"
+                      style={{ padding: "8px 14px", fontSize: "13px", flexShrink: 0 }}
+                      onClick={() => {
+                        setEmail(savedAccount.email);
+                        if (savedAccount.password) {
+                          setPassword(savedAccount.password);
+                        }
+                        if (!isConfigured()) {
+                          mockLogin(
+                            savedAccount.email,
+                            savedAccount.memberType,
+                            savedAccount.id,
+                            savedAccount.password,
+                          );
+                          router.replace("/");
+                        }
+                      }}
+                    >
+                      Recall &amp; Sign In <ArrowRight size={15} />
+                    </button>
+                  </div>
+                </div>
+              )}
               <div
                 className="audience-switch"
                 aria-label="Choose your community"

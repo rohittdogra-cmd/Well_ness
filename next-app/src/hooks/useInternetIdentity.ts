@@ -14,6 +14,13 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { getSupabase, isConfigured } from "@/lib/supabase/client";
 
+import {
+  deterministicIdForEmail,
+  getStoredAccountByEmail,
+  saveStoredAccount,
+  setLastLoginEmail,
+} from "@/lib/authAccounts";
+
 export const accountId = (id: string) =>
   ({
     toText: () => id,
@@ -26,7 +33,12 @@ const Context = createContext<
       user?: User;
       identity?: { getPrincipal: () => Principal };
       login: () => void;
-      mockLogin: (email?: string, memberType?: string) => void;
+      mockLogin: (
+        email?: string,
+        memberType?: string,
+        customId?: string,
+        password?: string,
+      ) => void;
       clear: () => Promise<void>;
       isInitializing: boolean;
       isLoggingIn: boolean;
@@ -49,19 +61,46 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
   const qc = useQueryClient();
   const currentUser = useRef<string | undefined>(undefined);
 
-  function mockLogin(email = "alex@example.com", memberType = "professional") {
+  function mockLogin(
+    email = "alex@example.com",
+    memberType = "professional",
+    customId?: string,
+    password?: string,
+  ) {
+    const normEmail = email.trim().toLowerCase();
+    const existing = getStoredAccountByEmail(normEmail);
+    const userId = customId || existing?.id || deterministicIdForEmail(normEmail);
+
     const mockUser: User = {
-      id: "11111111-1111-4111-8111-111111111111",
+      id: userId,
       aud: "authenticated",
       role: "authenticated",
-      email,
+      email: normEmail,
       email_confirmed_at: new Date().toISOString(),
       app_metadata: { provider: "email", providers: ["email"] },
-      user_metadata: { member_type: memberType, name: email.split("@")[0] },
-      created_at: new Date().toISOString(),
+      user_metadata: {
+        member_type: memberType || existing?.memberType || "professional",
+        name: existing?.name || normEmail.split("@")[0],
+      },
+      created_at: existing?.createdAt || new Date().toISOString(),
     };
+
+    saveStoredAccount({
+      id: userId,
+      email: normEmail,
+      password: password !== undefined ? password : existing?.password,
+      memberType:
+        (memberType as "professional" | "student") ||
+        existing?.memberType ||
+        "professional",
+      name: mockUser.user_metadata.name,
+      createdAt: mockUser.created_at,
+      lastLoginAt: new Date().toISOString(),
+    });
+
     if (typeof window !== "undefined") {
       localStorage.setItem("wellness_mock_session", JSON.stringify(mockUser));
+      setLastLoginEmail(normEmail);
     }
     setUser(mockUser);
     setInitializing(false);
