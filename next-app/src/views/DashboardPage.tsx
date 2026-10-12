@@ -49,7 +49,6 @@ import { useLocalProfile } from "../hooks/useLocalProfile";
 import {
   ActivityLogType,
   useActivityLogsForUser,
-  useIsAdmin,
   useMyBookings,
   useMySessions,
   useSaveUserProfile,
@@ -206,13 +205,12 @@ function QuickActionLink({ action }: { action: QuickAction }) {
 }
 
 export function DashboardPage() {
-  const { identity, login, isLoggingIn, user } = useInternetIdentity();
+  const { identity, login, isLoggingIn, isInitializing, user } = useInternetIdentity();
   const isAuthenticated = !!identity || !!user;
   const localProfile = useLocalProfile();
 
-  const { data: isAdminQuery, isLoading: adminLoading } = useIsAdmin();
   const isEmailAdmin = user?.email ? isAdminEmail(user.email) : false;
-  const isAdmin = isAdminQuery === true || isEmailAdmin;
+  const isAdmin = isEmailAdmin;
 
   const { data: profile, isLoading: profileLoading } = useUserProfile();
   const { data: mySessions, isLoading: sessionsLoading } = useMySessions();
@@ -351,7 +349,7 @@ export function DashboardPage() {
     );
   }
 
-  if (adminLoading && !user) {
+  if (isInitializing && !user) {
     return (
       <main className="min-h-screen bg-background pt-24 pb-16 px-4">
         <div className="container max-w-6xl mx-auto">

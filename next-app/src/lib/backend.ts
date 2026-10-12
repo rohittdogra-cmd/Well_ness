@@ -293,7 +293,7 @@ function createMockBackend(userId: string): backendInterface {
   ];
 
   return {
-    isCallerAdmin: async () => true,
+    isCallerAdmin: async () => false,
     getCallerUserProfile: async () => ({ name: "Alex Member" }),
     saveCallerUserProfile: async () => {},
 
@@ -632,7 +632,7 @@ export function createBackend(userId: string): backendInterface {
       } catch {
         // ignore
       }
-      return true;
+      return false;
     },
 
     getCallerUserProfile: async () =>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
-import { useIsAdmin } from "@/hooks/useQueries";
 import { AdminDashboardView } from "@/views/AdminDashboardPage";
 import Link from "next/link";
 import { Shield, Lock, ArrowRight, Loader2, KeyRound } from "lucide-react";
@@ -11,19 +10,18 @@ import { isAdminEmail, isValidAdminCredentials } from "@/lib/authAccounts";
 
 export default function AdminPage() {
   const { user, isInitializing, mockLogin } = useInternetIdentity();
-  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
 
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPass, setAdminPass] = useState("");
   const [error, setError] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
 
-  // If user is authenticated and is admin, render dashboard
-  if (user && (isAdmin || isAdminEmail(user.email))) {
+  // If user is authenticated and is an authorized admin, render dashboard
+  if (user && isAdminEmail(user.email)) {
     return <AdminDashboardView />;
   }
 
-  // If user is authenticated but NOT an admin, block access
+  // If user is authenticated but NOT an admin, strictly block access
   if (user && !isAdminEmail(user.email)) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-background px-4 py-16">
@@ -33,7 +31,7 @@ export default function AdminPage() {
           </div>
           <h1 className="text-xl font-bold text-foreground">Access Restricted</h1>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Your corporate account ({user.email}) does not have administrative privileges.
+            Your account ({user.email}) does not have administrative privileges. Only authorized platform administrators may access this portal.
           </p>
           <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold w-full">
             <Link href="/">Return to stress-unwind</Link>
@@ -43,7 +41,7 @@ export default function AdminPage() {
     );
   }
 
-  if (user && adminLoading) {
+  if (isInitializing) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">

@@ -139,16 +139,14 @@ export function useSaveUserProfile() {
 // ─── Admin Queries ───────────────────────────────────────────────
 
 export function useIsAdmin() {
-  const { actor, isFetching } = useActor();
   const { user } = useInternetIdentity();
   return useQuery<boolean>({
     queryKey: ["is-admin", user?.email],
     queryFn: async () => {
-      if (user?.email && isAdminEmail(user.email)) return true;
-      if (!actor) return false;
-      return actor.isCallerAdmin();
+      if (!user?.email) return false;
+      return isAdminEmail(user.email);
     },
-    enabled: !isFetching,
+    staleTime: 60_000,
   });
 }
 
