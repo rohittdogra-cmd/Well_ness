@@ -709,7 +709,7 @@ export function SignInPage() {
                   lineHeight: "1.45",
                 }}
               >
-                Sign in using your corporate email address. You can set or enter your password below to access your wellness workspace.
+                Sign in using your corporate email address. You can set or enter your password below to access your stress unwind workspace.
               </p>
             </div>
           )}

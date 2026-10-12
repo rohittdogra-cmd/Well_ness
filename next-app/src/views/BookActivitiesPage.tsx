@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Search } from "lucide-react";
+import Link from "next/link";
+import { Search, MessageCircle } from "lucide-react";
 import { useUpcomingSessions, ProgramType } from "@/hooks/useQueries";
 import { CreateSessionModal } from "@/components/CreateSessionModal";
 import { SessionCard } from "@/components/SessionCard";
@@ -46,6 +47,64 @@ export function BookActivitiesPage() {
           alt="Friends walking along a sunny park path"
         />
       </header>
+
+      {/* Live Peer Activities & Unique ID Community Banner */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, rgba(8, 127, 121, 0.08) 0%, rgba(20, 184, 166, 0.05) 100%)",
+          border: "1px solid rgba(8, 127, 121, 0.2)",
+          borderRadius: "16px",
+          padding: "16px 20px",
+          marginBottom: "20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "#087f79",
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MessageCircle size={18} />
+          </div>
+          <div>
+            <strong style={{ fontSize: "14px", color: "#0f766e", display: "block" }}>
+              Community &amp; Post Activities Board
+            </strong>
+            <span style={{ fontSize: "12px", color: "#475569" }}>
+              Post random activities or thoughts, connect with peers, and text directly to collaborate and unwind.
+            </span>
+          </div>
+        </div>
+        <Link
+          href="/community"
+          style={{
+            background: "#087f79",
+            color: "white",
+            padding: "8px 16px",
+            borderRadius: "10px",
+            fontSize: "12px",
+            fontWeight: 650,
+            textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
+        >
+          Open Community Board ↗
+        </Link>
+      </div>
       <div className="group-toolbar">
         <label className="search-field">
           <Search size={18} />

@@ -72,6 +72,7 @@ import {
   isAdminEmail,
 } from "@/lib/authAccounts";
 import { isConfigured, getSupabase } from "@/lib/supabase/client";
+import { getShortUniqueId } from "@/lib/uniqueId";
 
 const LOADING_SKELETON_KEYS = ["sk-a", "sk-b", "sk-c", "sk-d"];
 
@@ -410,6 +411,8 @@ export function DashboardPage() {
     user?.email?.split("@")[0] ||
     "Wellness Member";
 
+  const myUniqueId = getShortUniqueId(user?.email || memberId || "alex@company.com");
+
   return (
     <main
       className="min-h-screen bg-background pt-24 pb-16 px-4"
@@ -437,8 +440,16 @@ export function DashboardPage() {
                     </h1>
                   )}
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    {user?.email || "Here’s your wellness activity and community at a glance."}
+                    {user?.email || "Here’s your stress unwind activity and community at a glance."}
                   </p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <Link
+                      href="/community"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:text-teal-900 bg-teal-500/10 hover:bg-teal-500/20 px-3 py-1 rounded-full border border-teal-500/20 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" /> Community Board &amp; Direct Texting →
+                    </Link>
+                  </div>
                 </div>
               </div>
 

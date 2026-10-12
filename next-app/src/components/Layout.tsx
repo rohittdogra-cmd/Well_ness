@@ -27,6 +27,7 @@ import { isAuthPath, isPublicPath } from "../lib/routes";
 import { isAdminEmail } from "../lib/authAccounts";
 const publicNav = [
   { label: "Activities & Calendar", href: "/book-activities" },
+  { label: "Community & Posts", href: "/community" },
   { label: "Groups", href: "/groups" },
   { label: "Therapy", href: "/therapy" },
   { label: "About", href: "/about" },
@@ -45,7 +46,8 @@ const trustNav = [
 const nav = [
   { label: "Home", href: "/", icon: House },
   { label: "Activities & Calendar", href: "/book-activities", icon: CalendarDays },
-  { label: "Groups & Community", href: "/groups", icon: Users },
+  { label: "Community & Posts", href: "/community", icon: MessageCircle },
+  { label: "Groups & Circles", href: "/groups", icon: Users },
   { label: "Therapy & Support", href: "/therapy", icon: Heart },
   { label: "My Profile", href: "/dashboard", icon: User },
 ];
@@ -211,11 +213,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 {path.startsWith("/admin")
                   ? "Admin Dashboard"
                   : nav.find((item) => isActive(item.href))?.label ||
-                    "Your wellness hub"}
+                    "stress unwind"}
                 <small>
                   {path.startsWith("/admin")
                     ? "Live Website Control Center"
-                    : "Make room for connection"}
+                    : "Make room for connection & stress relief"}
                 </small>
               </span>
               <div className="account-actions">
