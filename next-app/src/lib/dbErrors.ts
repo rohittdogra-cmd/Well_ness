@@ -7,7 +7,7 @@
  * health check and by the client-side error boundary.
  */
 
-export const SCHEMA_MIGRATION = "202610020001_scale_and_index.sql";
+export const SCHEMA_MIGRATION = "202610030001_hardening.sql";
 
 /** The schema is installed but this caller is not allowed to see the row. */
 const PERMISSION_ERRORS = new Set(["42501", "PGRST301"]);

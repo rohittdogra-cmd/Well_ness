@@ -61,7 +61,13 @@ export function SessionDetailPage() {
   const sessionId = /^[0-9]{1,15}$/.test(id) ? BigInt(id) : 0n;
 
   const { data: session, isLoading: sessionLoading } = useSession(sessionId);
-  const { data: tasks, isLoading: tasksLoading } = useTasksBySession(sessionId);
+  const {
+    tasks,
+    isLoading: tasksLoading,
+    hasNextPage: hasMoreTasks,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useTasksBySession(sessionId);
   const { identity, login, isLoggingIn } = useInternetIdentity();
 
   const joinMutation = useJoinSession();
@@ -455,6 +461,21 @@ export function SessionDetailPage() {
                       </div>
                     </motion.div>
                   ))}
+                  {hasMoreTasks && (
+                    <div className="flex justify-center pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isFetchingNextPage}
+                        onClick={() => void fetchNextPage()}
+                      >
+                        {isFetchingNextPage
+                          ? "Loading…"
+                          : "Load more tasks"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -2,7 +2,13 @@
 
 import type { Principal } from "@dfinity/principal";
 import type { SessionListOptions } from "../backend.types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import type { DefaultError, InfiniteData, QueryKey } from "@tanstack/react-query";
 import {
   type ActivityLog,
   ActivityLogType,
@@ -168,17 +174,41 @@ export function useAllUserProfilesAdmin() {
 
 // ─── Task Queries ────────────────────────────────────────────────
 
+/**
+ * The task board for one session.
+ *
+ * Paged so a long-running session's task list does not stop at the first 300
+ * rows without saying so.
+ */
 export function useTasksBySession(sessionId: bigint | null) {
   const { actor, isFetching } = useActor();
-  return useQuery<Task[]>({
+  const query = useInfiniteQuery<
+    Task[],
+    DefaultError,
+    InfiniteData<Task>,
+    QueryKey,
+    bigint | undefined
+  >({
     queryKey: ["tasks", sessionId?.toString()],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!actor || sessionId === null) return [];
-      return actor.getTasksBySession(sessionId);
+      return pageParam === undefined
+        ? actor.getTasksBySession(sessionId)
+        : actor.getMoreTasks(sessionId, pageParam);
     },
+    initialPageParam: undefined,
+    getNextPageParam: (last) =>
+      last.length === TASK_PAGE ? last[last.length - 1].id : undefined,
     enabled: !!actor && !isFetching && sessionId !== null,
   });
+  return {
+    ...query,
+    /** Every task loaded so far, flattened across pages. */
+    tasks: query.data?.pages.flat() ?? [],
+  };
 }
+
+const TASK_PAGE = 300;
 
 // ─── Provider Queries ───────────────────────────────────────────
 
@@ -190,20 +220,45 @@ export function usePendingProviders() {
       if (!actor) return [];
       return actor.getPendingProviders();
     },
+    staleTime: 60_000,
     enabled: !!actor && !isFetching,
   });
 }
 
+const PROVIDER_PAGE = 200;
+
+/**
+ * Every provider application.
+ *
+ * Paged for the same reason as bookings: the administrator review queue used
+ * to stop at a hard-coded 300 rows with no indication that anything was hidden.
+ */
 export function useAllProviders() {
   const { actor, isFetching } = useActor();
-  return useQuery<ProviderApplication[]>({
+  const query = useInfiniteQuery<
+    ProviderApplication[],
+    DefaultError,
+    InfiniteData<ProviderApplication>,
+    QueryKey,
+    bigint | undefined
+  >({
     queryKey: ["providers", "all"],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!actor) return [];
-      return actor.getAllProviders();
+      return pageParam === undefined
+        ? actor.getAllProviders()
+        : actor.getMoreProviders(pageParam);
     },
+    initialPageParam: undefined,
+    getNextPageParam: (last) =>
+      last.length === PROVIDER_PAGE ? last[last.length - 1].id : undefined,
     enabled: !!actor && !isFetching,
   });
+  return {
+    ...query,
+    /** Every row loaded so far, flattened across pages. */
+    providers: query.data?.pages.flat() ?? [],
+  };
 }
 
 export function useApproveProvider() {
@@ -238,14 +293,35 @@ export function useRejectProvider() {
 
 // ─── Activity Log Queries ────────────────────────────────────────
 
+const ACTIVITY_PAGE = 200;
+
+/**
+ * The administrator activity feed.
+ *
+ * Each page is a keyset read ordered by primary key, so paging back through
+ * history cannot duplicate or skip a row because something was written while
+ * the reader was scrolling. Previously this was a fixed newest-200 read and
+ * older history was simply unreachable.
+ */
 export function useAllActivityLogs() {
   const { actor, isFetching } = useActor();
-  return useQuery<ActivityLog[]>({
+  return useInfiniteQuery<
+    ActivityLog[],
+    DefaultError,
+    InfiniteData<ActivityLog>,
+    QueryKey,
+    bigint | undefined
+  >({
     queryKey: ["activity-logs", "all"],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!actor) return [];
-      return actor.getAllActivityLogs();
+      return pageParam === undefined
+        ? actor.getAllActivityLogs()
+        : actor.getMoreActivityLogs(pageParam);
     },
+    initialPageParam: undefined,
+    getNextPageParam: (last) =>
+      last.length === ACTIVITY_PAGE ? last[last.length - 1].id : undefined,
     enabled: !!actor && !isFetching,
   });
 }
@@ -264,14 +340,34 @@ export function useActivityLogsForUser(user: Principal | null) {
 
 // ─── Booking Queries ────────────────────────────────────────────
 
+const BOOKING_PAGE = 200;
+
+/**
+ * Every booking, for the administrator reports and the CSV export.
+ *
+ * Paged by primary key so the export can reach past the first page instead of
+ * silently truncating. Before this, `getAllBookings` returned a fixed 200 rows
+ * and the export wrote them all out as if they were everything.
+ */
 export function useAllBookings() {
   const { actor, isFetching } = useActor();
-  return useQuery<ProviderBooking[]>({
+  return useInfiniteQuery<
+    ProviderBooking[],
+    DefaultError,
+    InfiniteData<ProviderBooking>,
+    QueryKey,
+    bigint | undefined
+  >({
     queryKey: ["bookings", "all"],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!actor) return [];
-      return actor.getAllBookings();
+      return pageParam === undefined
+        ? actor.getAllBookings()
+        : actor.getMoreBookings(pageParam);
     },
+    initialPageParam: undefined,
+    getNextPageParam: (last) =>
+      last.length === BOOKING_PAGE ? last[last.length - 1].id : undefined,
     enabled: !!actor && !isFetching,
   });
 }

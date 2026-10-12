@@ -39,6 +39,12 @@ export interface AdminStats {
     totalUsers: bigint;
     totalSessions: bigint;
     pendingProviders: bigint;
+    /** Appointments an administrator or the provider has confirmed. */
+    confirmedBookings: bigint;
+    totalGroups: bigint;
+    totalPosts: bigint;
+    /** Appointments per provider, keyed by provider id as a string. */
+    bookingsByProvider: Array<[string, bigint]>;
 }
 export interface ActivityLog {
     id: bigint;
@@ -105,11 +111,6 @@ export enum ProviderType {
     sportsCompany = "sportsCompany",
     psychologist = "psychologist"
 }
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
-}
 export interface SessionListOptions {
     /** Restrict to one wellness program. */
     type?: ProgramType | null;
@@ -117,11 +118,12 @@ export interface SessionListOptions {
     upcoming?: boolean;
     /** Upper bound on returned rows. */
     limit?: number;
+    /** Resume after this `(date_time, id)` pair; omit for the first page. */
+    before?: { dateTime: bigint; id: bigint };
 }
 export interface backendInterface {
     listSessions(options?: SessionListOptions): Promise<Array<Session>>;
     approveProvider(providerId: bigint): Promise<void>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bookProvider(providerId: bigint, bookingTime: Time): Promise<bigint>;
     cancelBooking(bookingId: bigint): Promise<void>;
     createSession(title: string, description: string, programType: ProgramType, dateTime: bigint, maxParticipants: bigint, spaceName: string | null, location: string | null): Promise<bigint>;
@@ -140,7 +142,6 @@ export interface backendInterface {
     getBookingsForProvider(providerId: bigint): Promise<Array<ProviderBooking>>;
     getBookingsForUser(user: Principal): Promise<Array<ProviderBooking>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
     getMySessions(): Promise<[Array<Session>, Array<Session>]>;
     getPendingProviders(): Promise<Array<ProviderApplication>>;
     getProvider(providerId: bigint): Promise<ProviderApplication>;
@@ -149,7 +150,18 @@ export interface backendInterface {
     getTask(taskId: bigint): Promise<Task>;
     getTasksBySession(sessionId: bigint): Promise<Array<Task>>;
     getTasksForUser(user: Principal): Promise<Array<Task>>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
+    /**
+     * The next page of the administrator activity feed, older than `before`.
+     * Keyset paging on the primary key, so rows written during the read cannot
+     * duplicate or skip.
+     */
+    getMoreActivityLogs(before: bigint): Promise<Array<ActivityLog>>;
+    /** The next page of every booking, older than the `before` id. */
+    getMoreBookings(before: bigint): Promise<Array<ProviderBooking>>;
+    /** The next page of provider applications, older than the `before` id. */
+    getMoreProviders(before: bigint): Promise<Array<ProviderApplication>>;
+    /** The next page of a session's tasks, older than the `before` id. */
+    getMoreTasks(sessionId: bigint, before: bigint): Promise<Array<Task>>;
     isCallerAdmin(): Promise<boolean>;
     joinSession(sessionId: bigint): Promise<void>;
     leaveSession(sessionId: bigint): Promise<void>;
@@ -158,5 +170,4 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitProviderApplication(providerType: ProviderType, name: string, description: string): Promise<bigint>;
     updateSession(sessionId: bigint, title: string | null, description: string | null, dateTime: bigint | null, maxParticipants: bigint | null, spaceName: string | null, location: string | null): Promise<void>;
-    _initializeAccessControlWithSecret(token: string): Promise<void>;
 }

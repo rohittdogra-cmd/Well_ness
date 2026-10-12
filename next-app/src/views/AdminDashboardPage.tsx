@@ -43,16 +43,15 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { csvDocument, downloadCsv } from "@/lib/csv";
 import { ActivityLogType, ProviderType } from "../backend.types";
 import {
-  useActivityLogsForUser,
   useAdminStats,
   useAllActivityLogs,
   useAllBookings,
   useAllProviders,
   useAllUserProfilesAdmin,
   useApproveProvider,
-  usePendingProviders,
   useRejectProvider,
 } from "../hooks/useQueries";
 import type {
@@ -570,15 +569,19 @@ function ProviderCard({
 }
 
 function ProviderReviewTab() {
-  const { data: allProviders, isLoading } = useAllProviders();
+  const {
+    providers: allProviders,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAllProviders();
   const approveMutation = useApproveProvider();
   const rejectMutation = useRejectProvider();
 
-  const pending = (allProviders ?? []).filter(
-    (p) => !p.isApproved && !p.isRejected,
-  );
-  const approved = (allProviders ?? []).filter((p) => p.isApproved);
-  const rejected = (allProviders ?? []).filter((p) => p.isRejected);
+  const pending = allProviders.filter((p) => !p.isApproved && !p.isRejected);
+  const approved = allProviders.filter((p) => p.isApproved);
+  const rejected = allProviders.filter((p) => p.isRejected);
 
   const handleApprove = async (id: bigint) => {
     try {
@@ -733,16 +736,38 @@ function ProviderReviewTab() {
           </CardContent>
         </Card>
       )}
+
+      {/* The queue used to stop at a fixed 300 rows with no indication that
+          older applications were simply not shown. */}
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            disabled={isFetchingNextPage}
+            onClick={() => void fetchNextPage()}
+          >
+            {isFetchingNextPage
+              ? "Loading…"
+              : `Load more applications (${allProviders.length} shown)`}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Activity Logs Tab ───────────────────────────────────────────
 function ActivityLogsTab() {
-  const { data: logs, isLoading } = useAllActivityLogs();
+  const {
+    data: pages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAllActivityLogs();
   const [filter, setFilter] = useState<string>("all");
 
-  const filtered = (logs ?? [])
+  const filtered = (pages?.pages.flat() ?? [])
     .filter((l) => (filter === "all" ? true : l.activityType === filter))
     .sort((a, b) => Number(b.createdAt - a.createdAt));
 
@@ -834,16 +859,34 @@ function ActivityLogsTab() {
           )}
         </CardContent>
       </Card>
+
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            disabled={isFetchingNextPage}
+            onClick={() => void fetchNextPage()}
+          >
+            {isFetchingNextPage ? "Loading…" : "Load older activity"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Booking Reports Tab ─────────────────────────────────────────
 function BookingReportsTab() {
-  const { data: bookings, isLoading } = useAllBookings();
+  const {
+    data: pages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAllBookings();
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const allBookings: ProviderBooking[] = bookings ?? [];
+  const allBookings: ProviderBooking[] = pages?.pages.flat() ?? [];
   const filtered = allBookings
     .filter((b) => {
       if (statusFilter === "confirmed") return b.isConfirmed;
@@ -857,25 +900,28 @@ function BookingReportsTab() {
   const pendingCount = allBookings.filter((b) => !b.isConfirmed).length;
 
   const exportCSV = () => {
-    const rows = [
+    if (!filtered.length) {
+      toast.error("There are no bookings to export.");
+      return;
+    }
+    // toISOString(), not toLocaleString(): the localised form contains a comma
+    // ("11/3/2026, 9:00:00 AM") which shifted every following column.
+    const csv = csvDocument([
       ["Booking ID", "User", "Provider ID", "Booking Time", "Status"],
       ...filtered.map((b) => [
         b.id.toString(),
         b.user.toString(),
         b.providerId.toString(),
-        new Date(Number(b.bookingTime / 1_000_000n)).toLocaleString(),
+        new Date(Number(b.bookingTime / 1_000_000n)).toISOString(),
         b.isConfirmed ? "Confirmed" : "Pending",
       ]),
-    ];
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "bookings.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV downloaded!");
+    ]);
+    downloadCsv("bookings.csv", csv);
+    toast.success(
+      filtered.length === allBookings.length
+        ? `Exported ${filtered.length} bookings.`
+        : `Exported ${filtered.length} of ${allBookings.length} bookings.`,
+    );
   };
 
   return (
@@ -923,10 +969,20 @@ function BookingReportsTab() {
         </Select>
         {!isLoading && (
           <Badge variant="secondary" className="text-xs">
-            {filtered.length} bookings
+            {filtered.length} of {allBookings.length} bookings
           </Badge>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {hasNextPage && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? "Loading…" : "Load more"}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -1027,32 +1083,33 @@ function BookingReportsTab() {
 
 // ─── Provider Performance Tab ─────────────────────────────────────
 function ProviderPerformanceTab() {
-  const { data: bookings, isLoading: bookingsLoading } = useAllBookings();
-  const { data: providers, isLoading: providersLoading } = useAllProviders();
+  const { providers, isLoading: providersLoading } = useAllProviders();
+  const { data: stats } = useAdminStats();
 
-  const isLoading = bookingsLoading || providersLoading;
-  const allBookings: ProviderBooking[] = bookings ?? [];
-  const approvedProviders = (providers ?? []).filter((p) => p.isApproved);
+  const isLoading = providersLoading;
+  const approvedProviders = providers.filter((p) => p.isApproved);
 
-  // Count bookings per provider
-  const bookingCounts = allBookings.reduce<Record<string, number>>((acc, b) => {
-    const key = b.providerId.toString();
-    acc[key] = (acc[key] ?? 0) + 1;
-    return acc;
-  }, {});
+  // `admin_stats` already groups bookings by provider across every row. This
+  // used to recount one truncated page of bookings in the browser, so any
+  // provider outside that page showed zero.
+  const bookingCounts = new Map<string, number>(
+    (stats?.bookingsByProvider ?? []).map(([id, count]) => [
+      id,
+      Number(count),
+    ]),
+  );
+  const totalBookings = Number(stats?.totalBookings ?? 0);
 
   const ranked = [...approvedProviders].sort((a, b) => {
-    const aCount = bookingCounts[a.id.toString()] ?? 0;
-    const bCount = bookingCounts[b.id.toString()] ?? 0;
+    const aCount = bookingCounts.get(a.id.toString()) ?? 0;
+    const bCount = bookingCounts.get(b.id.toString()) ?? 0;
     return bCount - aCount;
   });
 
   const maxBookings = ranked.reduce(
-    (m, p) => Math.max(m, bookingCounts[p.id.toString()] ?? 0),
+    (m, p) => Math.max(m, bookingCounts.get(p.id.toString()) ?? 0),
     1,
   );
-
-  const totalBookings = allBookings.length;
 
   return (
     <div className="space-y-6">
@@ -1121,7 +1178,7 @@ function ProviderPerformanceTab() {
             </div>
           ) : (
             ranked.map((provider) => {
-              const count = bookingCounts[provider.id.toString()] ?? 0;
+              const count = bookingCounts.get(provider.id.toString()) ?? 0;
               const pct = Math.round((count / maxBookings) * 100);
               const isPsych =
                 provider.providerType === ProviderType.psychologist;

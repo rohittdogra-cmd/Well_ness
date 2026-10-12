@@ -22,12 +22,23 @@ import {
  */
 export type SchemaStatus = "current" | "missing" | "unknown";
 
+/** Long enough for a cold connection, short enough to fail a deployment check. */
+const PROBE_TIMEOUT_MS = 5000;
+
 export async function inspectSchema(db: SupabaseClient): Promise<{
   schema: SchemaStatus;
   detail?: string;
 }> {
+  // Bounded, so an unreachable database fails the check in seconds instead of
+  // holding the request open until the platform's own timeout.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   try {
-    const { error } = await db.from("group_summaries").select("id").limit(1);
+    const { error } = await db
+      .from("group_summaries")
+      .select("id")
+      .limit(1)
+      .abortSignal(controller.signal);
     if (!error) return { schema: "current" };
     if (isMissingSchemaError(error))
       return {
@@ -37,8 +48,15 @@ export async function inspectSchema(db: SupabaseClient): Promise<{
     // Any other failure still proves the relation resolved, which is all this
     // probe is asking.
     if (isPermissionError(error)) return { schema: "current" };
-    return { schema: "unknown" };
+    return { schema: "unknown", detail: "The schema probe returned an error." };
   } catch {
-    return { schema: "unknown" };
+    return {
+      schema: "unknown",
+      detail: controller.signal.aborted
+        ? `Supabase did not respond within ${PROBE_TIMEOUT_MS / 1000}s.`
+        : "Supabase could not be reached.",
+    };
+  } finally {
+    clearTimeout(timer);
   }
 }

@@ -4,12 +4,12 @@ import { useState } from "react";
 import {
   useInfiniteQuery,
   useMutation,
-  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { getSupabase } from "@/lib/supabase/client";
 import { rpc } from "@/lib/backend";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useMyConnections, type Connection } from "@/hooks/useConnections";
 import { Mascot } from "@/components/Mascot";
 
 type Member = {
@@ -18,15 +18,6 @@ type Member = {
   avatar: number;
   bio: string;
   interests: string[];
-};
-type Connection = {
-  id: number;
-  requester: string;
-  recipient: string;
-  status: string;
-  member_id: string;
-  name: string;
-  avatar: number;
 };
 type Message = { id: number; sender: string; body: string; created_at: string };
 
@@ -48,13 +39,9 @@ export function PeoplePage() {
     getNextPageParam: (last, pages) =>
       last.length === 30 ? pages.length * 30 : undefined,
   });
-  const connections = useQuery({
-    queryKey: ["connections", user?.id],
-    enabled: !!user,
-    queryFn: async () => (await rpc("list_connections", {})) as Connection[],
-    refetchInterval: 10000,
-    refetchIntervalInBackground: false,
-  });
+  // Same query key as `useMyConnections`, so this shares one cache entry
+  // instead of running a second poll of the same RPC on a second timer.
+  const connections = useMyConnections();
   const action = useMutation({
     mutationFn: ({
       name,
@@ -265,7 +252,10 @@ function Chat({
     },
     getNextPageParam: (last) =>
       last.length === 50 ? last[last.length - 1].id : undefined,
-    refetchInterval: 5000,
+    // 15s, not 5s: this refetches every loaded page of the thread on each tick,
+    // so the cost grows with how far back the conversation has been read. It
+    // still only runs while the tab is focused.
+    refetchInterval: 15000,
     refetchIntervalInBackground: false,
   });
   const send = useMutation({
@@ -284,7 +274,7 @@ function Chat({
     >
       <h3>Chat with {connection.name}</h3>
       <small>
-        Private to the two of you. Updates every 5 seconds while this page is
+        Private to the two of you. Updates every 15 seconds while this page is
         active.
       </small>
       {messages.error && (

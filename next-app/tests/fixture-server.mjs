@@ -288,8 +288,27 @@ createServer(async (req, res) => {
       data = profile;
     } else data = profile;
   }
-  // ── Group directory: server-side filtering, search and paging ─────────────
-  else if (path === "/rest/v1/rpc/create_group") {
+  // ── Group directory: filtering, search and paging run in one function ────
+  // The client used to build a PostgREST `or=(name.ilike.%x%,...)` string by
+  // hand. It now calls `search_groups`, so search terms arrive as bound
+  // parameters and a comma in the input is just text to match.
+  else if (path === "/rest/v1/rpc/search_groups") {
+    const category = body.p_category;
+    const joined = body.p_joined;
+    const needle = (body.p_search ?? "").toLowerCase();
+    const from = Number(body.p_offset ?? 0);
+    const to = Number(body.p_limit ?? 24);
+    let rows = [...groups].sort((a, b) =>
+      a.name === b.name ? a.id - b.id : a.name < b.name ? -1 : 1,
+    );
+    if (category) rows = rows.filter((g) => g.category === category);
+    if (joined) rows = rows.filter((g) => g.joined);
+    if (needle)
+      rows = rows.filter((g) =>
+        `${g.name} ${g.description}`.toLowerCase().includes(needle),
+      );
+    data = rows.slice(from, from + to);
+  } else if (path === "/rest/v1/rpc/create_group") {
     const group = {
       id: nextGroupId++,
       slug: "new-subgroup",
@@ -302,30 +321,12 @@ createServer(async (req, res) => {
     groups.push(group);
     data = group.id;
   } else if (path === "/rest/v1/group_summaries" || path === "/rest/v1/groups") {
-    const category = eq("category");
-    const joined = eq("joined");
+    // Only `useGroup(slug)` still reads the view directly; the directory list
+    // goes through search_groups.
     const slug = eq("slug");
-    const or = params.get("or");
     const from = Number(params.get("offset") ?? "0");
     const to = Number(params.get("limit") ?? "50");
-    let rows = [...groups];
-    if (slug) rows = rows.filter((g) => g.slug === slug);
-    if (category) rows = rows.filter((g) => g.category === category);
-    if (joined === "true") rows = rows.filter((g) => g.joined);
-    if (or) {
-      // or=(name.ilike.%music%,description.ilike.%music%)
-      const needle = or
-        .split(",")[0]
-        .split(".ilike.")
-        .pop()
-        .replace(/%/g, "")
-        .toLowerCase();
-      rows = needle
-        ? rows.filter((g) =>
-            `${g.name} ${g.description}`.toLowerCase().includes(needle),
-          )
-        : rows;
-    }
+    const rows = slug ? groups.filter((g) => g.slug === slug) : [...groups];
     const sliced = rows.slice(from, from + to);
     data = wantsObject ? (sliced[0] ?? null) : sliced;
   } else if (path === "/rest/v1/rpc/group_category_counts")
@@ -356,6 +357,8 @@ createServer(async (req, res) => {
     posts = [p, ...posts];
     data = p.id;
   } else if (path === "/rest/v1/rpc/is_admin") data = false;
+  else if (path === "/rest/v1/rpc/get_hidden_posts") data = [];
+  else if (path === "/rest/v1/rpc/restore_post") data = null;
   else if (path === "/rest/v1/check_ins") {
     // A week of check-ins so the dashboard mood strip has real rows to read.
     if (req.method === "POST" || req.method === "PATCH" || req.method === "PUT") {
@@ -373,7 +376,21 @@ createServer(async (req, res) => {
     } else data = null;
   }
   // ── Activities: session_summaries carries participant_count and joined ─────
-  else if (path === "/rest/v1/session_summaries" || path === "/rest/v1/sessions") {
+  else if (path === "/rest/v1/rpc/session_summaries_page") {
+    // Sessions are paged in the database with a real (date_time, id) cursor.
+    const upcoming = Boolean(body.p_upcoming);
+    const rows = upcoming
+      ? [session].filter((s) => new Date(s.date_time) >= new Date())
+      : [session];
+    const from = Number(body.p_limit ?? 200);
+    data = rows.slice(0, from);
+  } else if (path === "/rest/v1/rpc/session_roster") {
+    data = [{ user_id: id }];
+  } else if (path === "/rest/v1/rpc/my_sessions") {
+    // One function returns everything the caller created or joined, so the
+    // client no longer sends a few hundred ids back in an `in.(...)` filter.
+    data = [{ ...session }];
+  } else if (path === "/rest/v1/session_summaries" || path === "/rest/v1/sessions") {
     const type = eq("program_type");
     const wanted = eq("id");
     const matches =
@@ -387,9 +404,7 @@ createServer(async (req, res) => {
         ? null
         : [];
   } else if (path === "/rest/v1/session_members") {
-    // My Sessions asks for `select=session_id`; the roster asks for `user_id`.
-    data =
-      params.get("select") === "session_id" ? [{ session_id: 1 }] : [{ user_id: id }];
+    data = [{ user_id: id }];
   } else if (path === "/rest/v1/tasks") data = [];
   else if (path === "/rest/v1/providers") data = [];
   else if (path === "/rest/v1/provider_bookings") data = [];

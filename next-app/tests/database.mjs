@@ -374,6 +374,115 @@ await as(null);
 await denied("select submit_contact_request('Anon','A message that is long enough.')");
 
 // ── Group creation validation returns readable messages ───────────────────
+// search_groups takes the term as a bound parameter, so filter metacharacters
+// in it are matched as text instead of being parsed as PostgREST filter syntax.
+await as(alice);
+assert.equal(
+  (await db.query("select * from search_groups('Cricket')")).rows.length,
+  1,
+);
+checks++;
+assert.equal((await db.query("select * from search_groups('zzz')")).rows.length, 0);
+checks++;
+// The exact input that used to break the hand-built `or=(...)` filter.
+for (const hostile of ["a,b", "a)%20or%20(1.eq.1", "%", "_", "',(select+1)"]) {
+  assert.equal(
+    (await db.query("select * from search_groups($1)", [hostile])).rows.length,
+    0,
+  );
+  checks++;
+}
+// Joined-only filters on the caller's own membership, resolved by the view.
+const joined = (
+  await db.query("select slug from search_groups(null,null,true) order by slug")
+).rows.map((r) => r.slug);
+const aliceGroup = (
+  await db.query("select slug from groups where id=$1", [gid])
+).rows[0].slug;
+assert.ok(joined.includes(aliceGroup), "alice created a group");
+checks++;
+assert.ok(!joined.includes("cricket"), "alice never joined cricket");
+checks++;
+
+// Paging is a real cursor, not a fixed ceiling.
+await as(alice);
+const page = (await db.query("select * from session_summaries_page(null,true)")).rows;
+assert.ok(page.length >= 1);
+checks++;
+const cursor = page[page.length - 1];
+const nextPage = (
+  await db.query("select * from session_summaries_page(null,true,$1,$2,10)", [
+    cursor.date_time,
+    cursor.id,
+  ])
+).rows;
+assert.equal(nextPage.length, 0);
+checks++;
+// my_sessions is one call now, not a members read plus a giant `in.(...)`.
+assert.ok((await db.query("select * from my_sessions()")).rows.length >= 1);
+checks++;
+assert.equal((await db.query("select * from session_roster($1,10)", [sid])).rows.length >= 1, true);
+checks++;
+
+// ── Moderation is reversible ──────────────────────────────────────────────
+// `moderate_post` hid the post above, which also resolved its report and so
+// removed it from `get_reports`. It used to have no way back at all.
+await as(bob);
+await denied("select restore_post($1)", [post]);
+await denied("select get_hidden_posts()");
+await as(admin);
+const hidden = await scalar("select get_hidden_posts() as value");
+assert.equal(hidden.length, 1);
+assert.equal(hidden[0].id, post);
+checks += 2;
+await db.query("select restore_post($1)", [post]);
+// `posts` has no direct grant to authenticated, so visibility is read back the
+// same way a member would see it: through the feed.
+assert.equal((await scalar("select get_hidden_posts() as value")).length, 0);
+checks++;
+const restored = await scalar("select get_feed($1) as value", [gid]);
+assert.equal(restored.length, 1);
+assert.equal(restored[0].id, post);
+checks += 2;
+
+// ── Write paths without a ceiling now have one ─────────────────────────────
+await as(admin);
+for (let i = 0; i < 20; i++)
+  await db.query(
+    "select create_session($1,$2,'meetup',now()+interval '3 days',4,null,null)",
+    [`Spam session ${i}`, "Rate limit probe"],
+  );
+await denied(
+  "select create_session('Another','Over the daily ceiling','meetup',now()+interval '4 days',4,null,null)",
+);
+checks += 2;
+await as(bob);
+// Direct messages are the one unbounded write that had no ceiling at all:
+// unlimited rows per accepted connection, and no notification, so harassment
+// was silent. Sends until the database refuses rather than hard-coding a count.
+let sent = 0;
+for (; sent < 200; sent++) {
+  try {
+    await db.query("select send_direct_message($1,$2)", [cid, `Message ${sent}`]);
+  } catch {
+    break;
+  }
+}
+assert.ok(sent > 0 && sent < 200, `direct messages were capped at ${sent}`);
+checks++;
+await denied("select send_direct_message($1,$2)", [cid, "Over the rate"]);
+await as(alice);
+for (let i = 0; i < 5; i++)
+  await db.query(
+    "select apply_provider('psychologist',$1,$2)",
+    [`Provider ${i}`, "Application description long enough to pass"],
+  );
+await denied(
+  "select apply_provider('psychologist','One too many','Application description long enough to pass')",
+);
+checks++;
+
+// ── Group creation validation returns readable messages ───────────────────
 await as(bob);
 await denied("select create_group(' ','Missing name','sports')");
 await denied(
@@ -383,6 +492,6 @@ await as(null);
 await denied("select create_group('Anon group','No access','sports')");
 
 console.log(
-  `PASS: ${checks} database checks covering migrations, RLS, anonymity, membership, reactions, moderation, capacity, ownership, notifications, appointments, audit history, connection consent, private messages, summary views, admin aggregates and rate limiting.`,
+  `PASS: ${checks} database checks covering migrations, RLS, anonymity, membership, reactions, reversible moderation, capacity, ownership, notifications, appointments, audit history, connection consent, private messages, summary views, bounded paging, admin aggregates and rate limiting.`,
 );
 await db.close();

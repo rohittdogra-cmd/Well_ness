@@ -8,6 +8,11 @@
 // key, list reads go through the `*_summaries` views that compute participant
 // counts and "have I joined" flags server-side, and administrative counters come
 // from aggregate functions in a single round trip.
+//
+// Lists long enough to outgrow one response are paged by primary key rather
+// than truncated. The former behaviour — a hard-coded `.limit(200)` — meant the
+// booking export silently wrote out 200 rows and called it every booking, and
+// the activity feed could never reach anything older.
 import { getSupabase, isConfigured } from "./supabase/client";
 import { accountId } from "@/hooks/useInternetIdentity";
 import {
@@ -21,13 +26,27 @@ import {
   type SessionListOptions,
   ProgramType,
   ProviderType,
-  UserRole,
 } from "@/backend.types";
 
 /** Hard ceiling on any single list read, so one request can never pull a whole table. */
 const MAX_ROWS = 500;
-const cap = (requested: number | undefined, fallback: number, max = MAX_ROWS) =>
-  Math.min(Math.max(requested ?? fallback, 1), max);
+/** Rows per page when a caller pages through a list instead of asking for all of it. */
+export const PAGE_SIZE = 200;
+
+/**
+ * Clamps a caller-supplied page size.
+ *
+ * `Math.max(NaN, 1)` is `NaN`, and `.limit(NaN)` is not a number at all, so the
+ * result is rounded to an integer *after* the bound is applied. Anything that is
+ * not a finite number falls back rather than propagating.
+ */
+const cap = (requested: number | undefined, fallback: number, max = MAX_ROWS) => {
+  const value = Number(requested);
+  return Math.min(
+    Math.max(Number.isFinite(value) ? Math.trunc(value) : fallback, 1),
+    max,
+  );
+};
 
 const ns = (date: string) => BigInt(new Date(date).getTime()) * 1_000_000n;
 const iso = (time: bigint) => new Date(Number(time / 1_000_000n)).toISOString();
@@ -119,8 +138,21 @@ export async function rpc(
     if (name === "get_feed") return [];
     if (name === "is_admin") return true;
     if (name === "admin_stats") {
-      return { total_users: 120, total_sessions: 45, total_groups: 48, total_posts: 310 };
+      // `bookings_by_provider` and `confirmed_bookings` are read by the
+      // provider-performance view, which previously counted one truncated page
+      // of bookings in the browser instead.
+      return {
+        total_users: 120, total_sessions: 45, total_groups: 48, total_posts: 310,
+        total_bookings: 3, confirmed_bookings: 2,
+        bookings_by_provider: { "1": 2, "2": 1 },
+      };
     }
+    // Bounded reads added with the paging work. Returning a scalar here would
+    // break every `.map()` the caller does on the result.
+    if (name === "search_groups") return [];
+    if (name === "session_summaries_page" || name === "my_sessions") return [];
+    if (name === "session_roster") return [{ user_id: args.userId }];
+    if (name === "get_hidden_posts") return [];
     return 1;
   }
   return result(getSupabase().rpc(name, args));
@@ -198,12 +230,8 @@ function createMockBackend(userId: string): backendInterface {
   ];
 
   return {
-    _initializeAccessControlWithSecret: async () => {},
-    assignCallerUserRole: async () => {},
     isCallerAdmin: async () => true,
-    getCallerUserRole: async () => UserRole.admin,
     getCallerUserProfile: async () => ({ name: "Alex Member" }),
-    getUserProfile: async () => ({ name: "Community Member" }),
     saveCallerUserProfile: async () => {},
 
     listSessions: async (opts) => {
@@ -330,11 +358,36 @@ function createMockBackend(userId: string): backendInterface {
       totalUsers: 140n,
       totalSessions: 37n,
       pendingProviders: 0n,
+      confirmedBookings: 16n,
+      totalGroups: 48n,
+      totalPosts: 310n,
+      // The provider-performance view reads these instead of counting one
+      // truncated page of bookings in the browser.
+      bookingsByProvider: [
+        ["1", 14n],
+        ["2", 10n],
+      ],
     }),
     getAllActivityLogs: async () => [],
     getActivityLogsForUser: async () => [],
+    getMoreActivityLogs: async () => [],
+    getMoreBookings: async () => [],
+    getMoreProviders: async () => [],
+    getMoreTasks: async () => [],
   };
 }
+
+/**
+ * A "before this id" cursor.
+ *
+ * Every list below is ordered by its primary key, so paging is keyset rather
+ * than offset: the new page cannot shift or duplicate rows because something
+ * else was written while the reader was scrolling. `undefined` means first page.
+ */
+export type Cursor = bigint | undefined;
+
+const beforeId = (query: any, cursor: Cursor) =>
+  cursor === undefined ? query : query.lt("id", cursor.toString());
 
 export function createBackend(userId: string): backendInterface {
   if (!isConfigured()) {
@@ -344,16 +397,21 @@ export function createBackend(userId: string): backendInterface {
   const uid = userId;
 
   // ── Sessions ───────────────────────────────────────────────────────────
+  // Paged in Postgres so the cursor is a real `(date_time, id)` row value.
+  // Building this filter in the browser meant interpolating two values into a
+  // PostgREST `or()` string, which a caller could rewrite.
   const listSessions = async (options: SessionListOptions = {}) => {
-    let query = db
-      .from("session_summaries")
-      .select("*")
-      .order("date_time", { ascending: true })
-      .limit(cap(options.limit, 200));
-    if (options.type) query = query.eq("program_type", options.type);
-    if (options.upcoming)
-      query = query.gte("date_time", new Date().toISOString());
-    return (await result<Row[]>(query)).map((r) => sessionFromRow(r));
+    const before = options.before;
+    const page = await result<Row[]>(
+      db.rpc("session_summaries_page", {
+        p_type: options.type ?? null,
+        p_upcoming: options.upcoming ?? false,
+        p_before_date: before ? iso(before.dateTime) : null,
+        p_before_id: before ? before.id.toString() : null,
+        p_limit: cap(options.limit, PAGE_SIZE),
+      }),
+    );
+    return page.map((r) => sessionFromRow(r));
   };
 
   const getSession = async (id: bigint) => {
@@ -366,12 +424,9 @@ export function createBackend(userId: string): backendInterface {
     );
     if (!summary) throw new Error("This record is no longer available.");
     // Only the detail view shows the roster, so only it pays for the member ids.
+    // The database bounds it: the browser never decided how many to ask for.
     const roster = await result<Row[]>(
-      db
-        .from("session_members")
-        .select("user_id")
-        .eq("session_id", id.toString())
-        .order("user_id"),
+      db.rpc("session_roster", { p_session: id.toString(), p_limit: MAX_ROWS }),
     );
     return sessionFromRow(
       summary,
@@ -381,39 +436,71 @@ export function createBackend(userId: string): backendInterface {
   };
 
   // ── Tasks ──────────────────────────────────────────────────────────────
-  const listTasks = async (options: { sessionId?: bigint; user?: string } = {}) => {
-    let query = db.from("tasks").select("*").order("id").limit(300);
+  const listTasks = async (
+    options: {
+      sessionId?: bigint;
+      user?: string;
+      before?: Cursor;
+      limit?: number;
+    } = {},
+  ) => {
+    let query = db.from("tasks").select("*").order("id").limit(cap(options.limit, PAGE_SIZE));
     if (options.sessionId)
       query = query.eq("session_id", options.sessionId.toString());
     if (options.user) query = query.eq("assigned_to", options.user);
+    query = beforeId(query, options.before);
     return (await result<Row[]>(query)).map(taskFromRow);
   };
 
   // ── Providers ──────────────────────────────────────────────────────────
-  const listProviders = async (status?: "approved" | "pending" | "rejected") => {
-    let query = db.from("providers").select("*").order("id").limit(300);
-    if (status) query = query.eq("status", status);
+  const listProviders = async (
+    options: { status?: "approved" | "pending" | "rejected"; before?: Cursor; limit?: number } = {},
+  ) => {
+    let query = db
+      .from("providers")
+      .select("*")
+      .order("id")
+      .limit(cap(options.limit, PAGE_SIZE));
+    if (options.status) query = query.eq("status", options.status);
+    query = beforeId(query, options.before);
     return (await result<Row[]>(query)).map(providerFromRow);
   };
 
   // ── Appointments ───────────────────────────────────────────────────────
-  const listBookings = async (options: {
-    user?: string;
-    providerId?: bigint;
-    confirmed?: boolean;
-    limit?: number;
-  } = {}) => {
+  // Ordered by id rather than booking_time so the cursor is the primary key.
+  // Views that care about the appointment date sort once, in the browser.
+  const listBookings = async (
+    options: {
+      user?: string;
+      providerId?: bigint;
+      confirmed?: boolean;
+      before?: Cursor;
+      limit?: number;
+    } = {},
+  ) => {
     let query = db
       .from("provider_bookings")
       .select("*")
-      .order("booking_time", { ascending: false })
-      .limit(cap(options.limit, 200));
+      .order("id", { ascending: false })
+      .limit(cap(options.limit, PAGE_SIZE));
     if (options.user) query = query.eq("user_id", options.user);
     if (options.providerId)
       query = query.eq("provider_id", options.providerId.toString());
     if (options.confirmed !== undefined)
       query = query.eq("confirmed", options.confirmed);
+    query = beforeId(query, options.before);
     return (await result<Row[]>(query)).map(bookingFromRow);
+  };
+
+  const listActivityLogs = async (options: { user?: string; before?: Cursor; limit?: number } = {}) => {
+    let query = db
+      .from("activity_logs")
+      .select("*")
+      .order("id", { ascending: false })
+      .limit(cap(options.limit, PAGE_SIZE));
+    if (options.user) query = query.eq("user_id", options.user);
+    query = beforeId(query, options.before);
+    return (await result<Row[]>(query)).map(logFromRow);
   };
 
   const requireAdmin = async () => {
@@ -422,15 +509,7 @@ export function createBackend(userId: string): backendInterface {
   };
 
   const actor: backendInterface = {
-    _initializeAccessControlWithSecret: async () => {
-      throw new Error("Manage administrator access in Supabase.");
-    },
-    assignCallerUserRole: async () => {
-      throw new Error("Manage administrator access in Supabase.");
-    },
     isCallerAdmin: () => result(db.rpc("is_admin")),
-    getCallerUserRole: async () =>
-      (await result(db.rpc("is_admin"))) ? UserRole.admin : UserRole.user,
 
     getCallerUserProfile: async () =>
       result(
@@ -438,15 +517,6 @@ export function createBackend(userId: string): backendInterface {
           .from("profiles")
           .select("name")
           .eq("id", uid)
-          .maybeSingle(),
-      ),
-
-    getUserProfile: async (user) =>
-      result(
-        db
-          .from("profiles")
-          .select("name")
-          .eq("id", user.toString())
           .maybeSingle(),
       ),
 
@@ -469,35 +539,21 @@ export function createBackend(userId: string): backendInterface {
       listSessions({ type, upcoming: true }),
     getSession,
     getMySessions: async () => {
-      const created = await result<Row[]>(
-        db
-          .from("session_summaries")
-          .select("*")
-          .eq("creator", uid)
-          .order("date_time", { ascending: true })
-          .limit(200),
+      // Previously this read the member ids, then sent every one of them back
+      // as `id=in.(...)`. At a few hundred sessions that is a ~19 KB query
+      // string, which 414s at the edge. The database already knows which
+      // sessions belong to this caller, so it does the join.
+      const rows = await result<Row[]>(
+        db.rpc("my_sessions", {
+          p_before_date: null,
+          p_before_id: null,
+          p_limit: PAGE_SIZE,
+        }),
       );
-      const memberships = await result<Row[]>(
-        db
-          .from("session_members")
-          .select("session_id")
-          .eq("user_id", uid)
-          .limit(500),
-      );
-      const ids = memberships.map((m) => String(m.session_id));
-      const joined = ids.length
-        ? await result<Row[]>(
-            db
-              .from("session_summaries")
-              .select("*")
-              .in("id", ids)
-              .order("date_time", { ascending: true })
-              .limit(500),
-          )
-        : [];
+      const sessions = rows.map((r) => sessionFromRow(r));
       return [
-        created.map((r) => sessionFromRow(r)),
-        joined.map((r) => sessionFromRow(r)),
+        sessions.filter((s) => s.creator.toString() === uid),
+        sessions.filter((s) => s.creator.toString() !== uid),
       ] as [Session[], Session[]];
     },
     createSession: async (
@@ -576,8 +632,8 @@ export function createBackend(userId: string): backendInterface {
 
     // ── Providers ────────────────────────────────────────────────────────
     getAllProviders: () => listProviders(),
-    getApprovedProviders: () => listProviders("approved"),
-    getPendingProviders: () => listProviders("pending"),
+    getApprovedProviders: () => listProviders({ status: "approved" }),
+    getPendingProviders: () => listProviders({ status: "pending" }),
     getProvider: async (id) => {
       const [row] = await result<Row[]>(
         db.from("providers").select("*").eq("id", id.toString()).limit(1),
@@ -647,12 +703,14 @@ export function createBackend(userId: string): backendInterface {
     getAdminStats: async (): Promise<AdminStats> => {
       await requireAdmin();
       const s = await result<Row>(db.rpc("admin_stats"));
+      const pairs = (raw: unknown) =>
+        Object.entries((raw ?? {}) as Record<string, number>).map(
+          ([key, count]) => [key, BigInt(count)] as [string, bigint],
+        );
       return {
         totalTasks: BigInt(s.total_tasks ?? 0),
         completedTasks: BigInt(s.completed_tasks ?? 0),
-        sessionsByType: Object.entries(
-          (s.sessions_by_type ?? {}) as Record<string, number>,
-        ).map(([type, count]) => [type, BigInt(count)] as [string, bigint]),
+        sessionsByType: pairs(s.sessions_by_type),
         totalBookings: BigInt(s.total_bookings ?? 0),
         rejectedProviders: BigInt(s.rejected_providers ?? 0),
         approvedProviders: BigInt(s.approved_providers ?? 0),
@@ -660,25 +718,22 @@ export function createBackend(userId: string): backendInterface {
         totalUsers: BigInt(s.total_users ?? 0),
         totalSessions: BigInt(s.total_sessions ?? 0),
         pendingProviders: BigInt(s.pending_providers ?? 0),
+        // `admin_stats` already computed these; the provider-performance view
+        // used to group a single truncated page of bookings in the browser.
+        confirmedBookings: BigInt(s.confirmed_bookings ?? 0),
+        totalGroups: BigInt(s.total_groups ?? 0),
+        totalPosts: BigInt(s.total_posts ?? 0),
+        bookingsByProvider: pairs(s.bookings_by_provider),
       };
     },
-    getAllActivityLogs: () =>
-      result<Row[]>(
-        db
-          .from("activity_logs")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(200),
-      ).then((rows) => rows.map(logFromRow)),
-    getActivityLogsForUser: async (user) =>
-      result<Row[]>(
-        db
-          .from("activity_logs")
-          .select("*")
-          .eq("user_id", user.toString())
-          .order("created_at", { ascending: false })
-          .limit(200),
-      ).then((rows) => rows.map(logFromRow)),
+    getAllActivityLogs: () => listActivityLogs(),
+    getActivityLogsForUser: (user) =>
+      listActivityLogs({ user: user.toString() }),
+    getMoreActivityLogs: (before) => listActivityLogs({ before }),
+    getMoreBookings: (before) => listBookings({ before }),
+    getMoreProviders: (before) => listProviders({ before }),
+    getMoreTasks: (sessionId, before) =>
+      listTasks({ sessionId, before }),
   };
   return actor;
 }

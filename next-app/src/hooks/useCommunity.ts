@@ -57,32 +57,26 @@ export function useGroups(
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       // MOCK FOR LOCALHOST
-      try {
-        const { isConfigured } = await import("@/lib/supabase/client");
-        if (!isConfigured()) {
-          let filtered = MOCK_GROUPS;
-          if (category) filtered = filtered.filter(g => g.category === category);
-          if (joinedOnly) filtered = filtered.filter(g => g.joined);
-          if (search) filtered = filtered.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.description.toLowerCase().includes(search.toLowerCase()));
-          
-          return filtered.slice(pageParam, pageParam + GROUPS_PER_PAGE);
-        }
-      } catch (e) {}
+      const { isConfigured } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        let filtered = MOCK_GROUPS;
+        if (category) filtered = filtered.filter(g => g.category === category);
+        if (joinedOnly) filtered = filtered.filter(g => g.joined);
+        if (search) filtered = filtered.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.description.toLowerCase().includes(search.toLowerCase()));
 
-      let query = getSupabase()
-        .from("group_summaries")
-        .select("*")
-        .order("name", { ascending: true })
-        .range(pageParam, pageParam + GROUPS_PER_PAGE - 1);
-      if (category) query = query.eq("category", category);
-      if (joinedOnly) query = query.eq("joined", true);
-      if (search)
-        query = query.or(
-          `name.ilike.%${search}%,description.ilike.%${search}%`,
-        );
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []) as Group[];
+        return filtered.slice(pageParam, pageParam + GROUPS_PER_PAGE);
+      }
+
+      // The search term goes through as a bound parameter. It used to be
+      // interpolated into a PostgREST `or()` filter, where a comma or a closing
+      // bracket in the input rewrote the filter instead of searching for it.
+      return (await rpc("search_groups", {
+        p_search: search || null,
+        p_category: category,
+        p_joined: joinedOnly,
+        p_limit: GROUPS_PER_PAGE,
+        p_offset: pageParam,
+      })) as Group[];
     },
     getNextPageParam: (last, pages) =>
       last.length === GROUPS_PER_PAGE ? pages.length * GROUPS_PER_PAGE : undefined,
@@ -108,13 +102,11 @@ export function useGroup(slug: string | undefined) {
     enabled: !!user && !!slug,
     queryFn: async () => {
       // MOCK FOR LOCALHOST
-      try {
-        const { isConfigured } = await import("@/lib/supabase/client");
-        if (!isConfigured()) {
-          const found = MOCK_GROUPS.find(g => g.slug === slug);
-          return (found ?? null) as Group | null;
-        }
-      } catch (e) {}
+      const { isConfigured } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        const found = MOCK_GROUPS.find(g => g.slug === slug);
+        return (found ?? null) as Group | null;
+      }
 
       const { data, error } = await getSupabase()
         .from("group_summaries")

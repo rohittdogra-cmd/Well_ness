@@ -33,27 +33,22 @@ export async function GET() {
   const db = await serverSupabase();
   const { schema, detail } = await inspectSchema(db);
 
-  // Only a positively-proven missing migration is a hard failure. An
-  // inconclusive probe reports 200 with `schema: "unknown"` rather than
-  // failing a deployment on a question we could not answer.
+  // A missing migration is a hard failure. So is an unreachable database:
+  // reporting 200 for "I could not tell" lets a deployment check pass against a
+  // project this build cannot actually use.
   const missing = schema === "missing";
+  const unknown = schema === "unknown";
 
   return NextResponse.json(
     {
-      status: missing ? "degraded" : "ok",
+      status: missing ? "degraded" : unknown ? "unreachable" : "ok",
       supabase: "configured",
       schema,
       ...(detail ? { detail } : {}),
-      ...(schema === "unknown"
-        ? {
-            detail:
-              "Supabase is configured but the schema probe was inconclusive; the public key may not reach the PostgREST API.",
-          }
-        : {}),
       ...(missing ? { migration: SCHEMA_MIGRATION } : {}),
     },
     {
-      status: missing ? 503 : 200,
+      status: missing || unknown ? 503 : 200,
       headers: { "Cache-Control": "no-store" },
     },
   );
