@@ -112,27 +112,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
                   </>
                 ) : (
-                  <>
-                    <Link
-                      href="/admin"
-                      className="wellness-button"
-                      style={{
-                        background: "rgba(20, 184, 166, 0.12)",
-                        color: "var(--teal-800)",
-                        border: "1px solid rgba(20, 184, 166, 0.35)",
-                        fontSize: "13px",
-                        padding: "7px 13px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <Shield size={14} /> Admin Panel
-                    </Link>
-                    <Link className="wellness-button" href="/signin">
-                      Sign in
-                    </Link>
-                  </>
+                  <Link className="wellness-button" href="/signin">
+                    Sign in
+                  </Link>
                 )}
               </nav>
             </header>
@@ -184,7 +166,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               ))}
 
               {/* Admin Panel link for designated admins */}
-              {(isAdminEmail(user?.email) || path.startsWith("/admin")) && (
+              {isAdminEmail(user?.email) && (
                 <Link
                   href="/admin"
                   className={`side-link ${path.startsWith("/admin") ? "active" : ""}`}

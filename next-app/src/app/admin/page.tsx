@@ -3,6 +3,7 @@
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useIsAdmin } from "@/hooks/useQueries";
 import { AdminDashboardView } from "@/views/AdminDashboardPage";
+import Link from "next/link";
 import { Shield, Lock, ArrowRight, Loader2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -20,6 +21,26 @@ export default function AdminPage() {
   // If user is authenticated and is admin, render dashboard
   if (user && (isAdmin || isAdminEmail(user.email))) {
     return <AdminDashboardView />;
+  }
+
+  // If user is authenticated but NOT an admin, block access
+  if (user && !isAdminEmail(user.email)) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-background px-4 py-16">
+        <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 shadow-xl text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8 text-amber-600" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Access Restricted</h1>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Your corporate account ({user.email}) does not have administrative privileges.
+          </p>
+          <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold w-full">
+            <Link href="/">Return to Wellness Hub</Link>
+          </Button>
+        </div>
+      </main>
+    );
   }
 
   if (user && adminLoading) {
