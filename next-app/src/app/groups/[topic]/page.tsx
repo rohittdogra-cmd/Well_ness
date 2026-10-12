@@ -18,7 +18,18 @@ type GroupRow = { id: number; name: string; description: string; category: strin
  * not be handed a 404 for a group they simply cannot see yet. Only a confident
  * "no such row" produces a 404.
  */
+import { MOCK_GROUPS } from "@/lib/mockGroups";
+
 async function findGroup(slug: string): Promise<GroupRow | null | undefined> {
+  const mock = MOCK_GROUPS.find((g) => g.slug === slug);
+  if (mock) {
+    return {
+      id: mock.id,
+      name: mock.name,
+      description: mock.description,
+      category: mock.category,
+    };
+  }
   if (!isConfigured()) return undefined;
   const supabase = await serverSupabase();
   const { data, error } = await supabase

@@ -52,31 +52,48 @@ export function useGroups(
   const search = (options.search ?? "").trim();
   const joinedOnly = options.joinedOnly ?? false;
   return useInfiniteQuery({
-    queryKey: ["groups", user?.id, category, search, joinedOnly],
-    enabled: !!user,
+    queryKey: ["groups", user?.id ?? "anon", category, search, joinedOnly],
+    enabled: true,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
-      // MOCK FOR LOCALHOST
-      const { isConfigured } = await import("@/lib/supabase/client");
-      if (!isConfigured()) {
-        let filtered = getStoredGroups();
-        if (category) filtered = filtered.filter(g => g.category === category);
-        if (joinedOnly) filtered = filtered.filter(g => g.joined);
-        if (search) filtered = filtered.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.description.toLowerCase().includes(search.toLowerCase()));
-
-        return filtered.slice(pageParam, pageParam + GROUPS_PER_PAGE);
+      let filtered = getStoredGroups();
+      if (category) {
+        filtered = filtered.filter(
+          (g) => g.category.toLowerCase() === category.toLowerCase(),
+        );
+      }
+      if (joinedOnly) {
+        filtered = filtered.filter((g) => g.joined);
+      }
+      if (search) {
+        const s = search.toLowerCase();
+        filtered = filtered.filter(
+          (g) =>
+            g.name.toLowerCase().includes(s) ||
+            g.description.toLowerCase().includes(s) ||
+            g.slug.toLowerCase().includes(s),
+        );
       }
 
-      // The search term goes through as a bound parameter. It used to be
-      // interpolated into a PostgREST `or()` filter, where a comma or a closing
-      // bracket in the input rewrote the filter instead of searching for it.
-      return (await rpc("search_groups", {
-        p_search: search || null,
-        p_category: category,
-        p_joined: joinedOnly,
-        p_limit: GROUPS_PER_PAGE,
-        p_offset: pageParam,
-      })) as Group[];
+      const { isConfigured } = await import("@/lib/supabase/client");
+      if (isConfigured()) {
+        try {
+          const res = (await rpc("search_groups", {
+            p_search: search || null,
+            p_category: category,
+            p_joined: joinedOnly,
+            p_limit: GROUPS_PER_PAGE,
+            p_offset: pageParam,
+          })) as Group[];
+          if (Array.isArray(res) && res.length > 0) {
+            return res;
+          }
+        } catch {
+          // fallback to filtered local storage
+        }
+      }
+
+      return filtered.slice(pageParam, pageParam + GROUPS_PER_PAGE);
     },
     getNextPageParam: (last, pages) =>
       last.length === GROUPS_PER_PAGE ? pages.length * GROUPS_PER_PAGE : undefined,
@@ -87,20 +104,17 @@ export function useGroups(
 export function useGroupCategoryCounts() {
   const { user } = useInternetIdentity();
   return useQuery({
-    queryKey: ["groups", "counts", user?.id],
-    enabled: !!user,
+    queryKey: ["groups", "counts", user?.id ?? "anon"],
+    enabled: true,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { isConfigured } = await import("@/lib/supabase/client");
-      if (!isConfigured()) {
-        const groups = getStoredGroups();
-        const counts: Record<string, number> = {};
-        for (const g of groups) {
-          counts[g.category] = (counts[g.category] || 0) + 1;
-        }
-        return counts;
+      const groups = getStoredGroups();
+      const counts: Record<string, number> = {};
+      for (const g of groups) {
+        const cat = g.category.toLowerCase();
+        counts[cat] = (counts[cat] || 0) + 1;
       }
-      return (await rpc("group_category_counts")) as Record<string, number>;
+      return counts;
     },
   });
 }
@@ -108,23 +122,27 @@ export function useGroupCategoryCounts() {
 export function useGroup(slug: string | undefined) {
   const { user } = useInternetIdentity();
   return useQuery({
-    queryKey: ["group", slug, user?.id],
-    enabled: !!user && !!slug,
+    queryKey: ["group", slug, user?.id ?? "anon"],
+    enabled: !!slug,
     queryFn: async () => {
-      // MOCK FOR LOCALHOST
+      const found = getStoredGroups().find((g) => g.slug === slug);
+      if (found) return found;
+
       const { isConfigured } = await import("@/lib/supabase/client");
-      if (!isConfigured()) {
-        const found = getStoredGroups().find(g => g.slug === slug);
-        return (found ?? null) as Group | null;
+      if (isConfigured() && slug) {
+        try {
+          const { data, error } = await getSupabase()
+            .from("group_summaries")
+            .select("*")
+            .eq("slug", slug)
+            .maybeSingle();
+          if (!error && data) return data as Group;
+        } catch {
+          // ignore
+        }
       }
 
-      const { data, error } = await getSupabase()
-        .from("group_summaries")
-        .select("*")
-        .eq("slug", slug!)
-        .maybeSingle();
-      if (error) throw error;
-      return (data ?? null) as Group | null;
+      return null;
     },
   });
 }

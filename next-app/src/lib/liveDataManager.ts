@@ -300,15 +300,28 @@ export function getStoredGroups(): Group[] {
       return MOCK_GROUPS;
     }
     const parsed: Group[] = JSON.parse(raw);
-    // Ensure all mock groups exist if the list is smaller
-    if (parsed.length < MOCK_GROUPS.length) {
-      const existingIds = new Set(parsed.map((g) => g.id));
-      const missing = MOCK_GROUPS.filter((g) => !existingIds.has(g.id));
-      const merged = [...parsed, ...missing];
-      localStorage.setItem(GROUPS_KEY, JSON.stringify(merged));
-      return merged;
-    }
-    return parsed;
+    const mockMap = new Map(MOCK_GROUPS.map((g) => [g.slug, g]));
+    const parsedSlugs = new Set<string>();
+
+    const updated = parsed.map((g) => {
+      parsedSlugs.add(g.slug);
+      const mock = mockMap.get(g.slug);
+      if (mock) {
+        return {
+          ...g,
+          category: mock.category,
+          image: g.image || mock.image,
+          name: g.name || mock.name,
+          description: g.description || mock.description,
+        };
+      }
+      return g;
+    });
+
+    const missing = MOCK_GROUPS.filter((g) => !parsedSlugs.has(g.slug));
+    const merged = [...updated, ...missing];
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(merged));
+    return merged;
   } catch (e) {
     console.error("Error loading groups", e);
     return MOCK_GROUPS;

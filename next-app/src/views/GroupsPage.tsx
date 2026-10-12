@@ -126,6 +126,49 @@ export function GroupsPage() {
           </button>
         </div>
       </motion.div>
+
+      {/* ─── Category Quick Filter Pills ─── */}
+      <motion.div 
+        className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none"
+        variants={fadeUp}
+        style={{ margin: "14px 0 20px" }}
+      >
+        <button
+          type="button"
+          onClick={() => setCategory("")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+            !category
+              ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+              : "bg-card text-muted-foreground border-border hover:border-emerald-500/40 hover:text-foreground"
+          }`}
+        >
+          All Categories
+        </button>
+        {groupCategories.map((c) => {
+          const isSelected = category === c.id;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategory(c.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border flex items-center gap-1.5 flex-shrink-0 ${
+                isSelected
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                  : "bg-card text-muted-foreground border-border hover:border-emerald-500/40 hover:text-foreground"
+              }`}
+            >
+              <c.icon size={13} />
+              <span>{c.name}</span>
+              {counts.data?.[c.id] !== undefined && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
+                  {counts.data[c.id]}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </motion.div>
+
       <motion.div className="section-title" variants={fadeUp}>
         <h2>{category ? chosen.name : "Explore by category"}</h2>
         {category && (
