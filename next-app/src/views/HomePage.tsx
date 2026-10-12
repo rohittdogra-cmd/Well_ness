@@ -46,7 +46,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
-    quote: "Our team used to do awkward Zoom happy hours nobody wanted to attend. Since finding Well_ness, our people organically joined Cyber Hub coffee circles and badminton games. Morale skyrocketed.",
+    quote: "Our team used to do awkward Zoom happy hours nobody wanted to attend. Since finding stress-unwind, our people organically joined Cyber Hub coffee circles and badminton games. Morale skyrocketed.",
     name: "Karan Verma",
     role: "Engineering Director · CyberCity",
     tag: "☕ Cyber Hub Cafes",
@@ -55,7 +55,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
-    quote: "Clinical therapy works best when reinforced by daily social belonging. Well_ness bridges the gap between 1-on-1 mental health consultations and informal sports or study circles. The outcomes are remarkable.",
+    quote: "Clinical therapy works best when reinforced by daily social belonging. stress-unwind bridges the gap between 1-on-1 mental health consultations and informal sports or study circles. The outcomes are remarkable.",
     name: "Dr. Sarah Jenkins, Ph.D.",
     role: "Senior Clinical Psychologist",
     tag: "🩺 Licensed Practitioner",
@@ -378,7 +378,7 @@ export function HomePage() {
         </motion.div>
       </motion.section>
 
-      {/* ─── Workplace Wellness Crisis vs. Well_ness Impact ─── */}
+      {/* ─── Workplace Wellness Crisis vs. stress-unwind Impact ─── */}
       <motion.section
         className="impact-section"
         initial={{ opacity: 0, y: 25 }}
@@ -430,12 +430,12 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* Right Column: The Well_ness Transformation */}
+          {/* Right Column: The stress-unwind Transformation */}
           <div className="impact-card transformation">
             <div className="impact-card-header">
               <div className="impact-icon-badge">✨</div>
               <div>
-                <h3>The Well_ness Transformation</h3>
+                <h3>The stress-unwind Transformation</h3>
                 <span>How our members feel better every single week</span>
               </div>
             </div>
