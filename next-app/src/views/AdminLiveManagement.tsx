@@ -37,11 +37,16 @@ import {
 import { groupCategories, getCategory } from "@/lib/groupCategories";
 import type { Group } from "@/hooks/useCommunity";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { isAdminEmail } from "@/lib/authAccounts";
 
 // ─── AUTHORIZED ADMINS BANNER ─────────────────────────────────────
 
 export function AuthorizedAdminsBanner() {
   const { user } = useInternetIdentity();
+
+  if (!isAdminEmail(user?.email)) {
+    return null;
+  }
 
   return (
     <div className="mb-6 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent border border-emerald-500/25 rounded-2xl p-5">

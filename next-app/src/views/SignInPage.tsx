@@ -1037,7 +1037,7 @@ export function SignInPage() {
               </div>
               <form onSubmit={submit}>
                 <label className="field-label" htmlFor="email">
-                  {audience === "student" ? "College / Student email" : "Corporate / Work email (or Admin email)"}
+                  {audience === "student" ? "College / Student email" : "Corporate / Work email"}
                 </label>
                 <input
                   id="email"

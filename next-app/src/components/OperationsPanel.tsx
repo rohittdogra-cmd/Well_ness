@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSupabase } from "@/lib/supabase/client";
 import { rpc } from "@/lib/backend";
 import { toast } from "sonner";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { isAdminEmail } from "@/lib/authAccounts";
 
 /** A conversation a moderator hid, with the report that led to it. */
 type HiddenPost = {
@@ -15,6 +17,9 @@ type HiddenPost = {
 };
 
 export function OperationsPanel() {
+  const { user } = useInternetIdentity();
+  if (!user || !isAdminEmail(user.email)) return null;
+
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const query = useQuery({

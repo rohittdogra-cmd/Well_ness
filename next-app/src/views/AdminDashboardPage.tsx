@@ -65,6 +65,8 @@ import {
   DoctorManagementTab,
   GroupsFormationTab,
 } from "./AdminLiveManagement";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { isAdminEmail } from "@/lib/authAccounts";
 
 const PROGRAM_COLORS: Record<string, string> = {
   meetup: "bg-emerald-500",
@@ -1236,6 +1238,13 @@ function ProviderPerformanceTab() {
 
 // ─── Main Export ─────────────────────────────────────────────────
 export function AdminDashboardView() {
+  const { user } = useInternetIdentity();
+
+  // Strict security: Never render Admin Dashboard for non-admin accounts
+  if (!user || !isAdminEmail(user.email)) {
+    return null;
+  }
+
   return (
     <main
       className="min-h-screen bg-background pt-24 pb-16 px-4"
