@@ -17,15 +17,17 @@ import {
   MessageCircle,
   Users,
   LogOut,
+  User,
+  Shield,
 } from "lucide-react";
 import { MotionConfig } from "motion/react";
 import { Mascot } from "./Mascot";
 import { useLocalProfile } from "../hooks/useLocalProfile";
 import { isAuthPath, isPublicPath } from "../lib/routes";
+import { isAdminEmail } from "../lib/authAccounts";
 const publicNav = [
+  { label: "Doctors & Therapy", href: "/therapy" },
   { label: "About", href: "/about" },
-  { label: "Membership", href: "/membership" },
-  { label: "Careers", href: "/careers" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -40,12 +42,8 @@ const trustNav = [
 
 const nav = [
   { label: "Home", href: "/", icon: House },
-  { label: "Conversations", href: "/discuss", icon: MessageCircle },
-  { label: "Groups", href: "/groups", icon: Users },
-  { label: "People", href: "/people", icon: Users },
-  { label: "Activities", href: "/book-activities", icon: Compass },
-  { label: "My calendar", href: "/my-sessions", icon: CalendarDays },
-  { label: "Therapy", href: "/therapy", icon: Heart },
+  { label: "Doctors & Therapy", href: "/therapy", icon: Heart },
+  { label: "My Dashboard", href: "/dashboard", icon: User },
 ];
 export function Layout({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "/";
@@ -53,8 +51,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { clear, user, isInitializing } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
-  const isActive = (href: string) =>
-    path === href || (href !== "/" && path.startsWith(href + "/"));
+  const isActive = (href: string) => {
+    if (href === "/dashboard") {
+      return (
+        path === "/dashboard" ||
+        path.startsWith("/dashboard/") ||
+        path === "/account" ||
+        path === "/onboarding" ||
+        path === "/my-sessions" ||
+        path === "/profile"
+      );
+    }
+    return path === href || (href !== "/" && path.startsWith(href + "/"));
+  };
   // Auth pages render their own minimal shell.
   if (isAuthPath(path) || path === "/signin")
     return (
@@ -103,9 +112,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
                   </>
                 ) : (
-                  <Link className="wellness-button" href="/signin">
-                    Sign in
-                  </Link>
+                  <>
+                    <Link
+                      href="/admin"
+                      className="wellness-button"
+                      style={{
+                        background: "rgba(20, 184, 166, 0.12)",
+                        color: "var(--teal-800)",
+                        border: "1px solid rgba(20, 184, 166, 0.35)",
+                        fontSize: "13px",
+                        padding: "7px 13px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <Shield size={14} /> Admin Panel
+                    </Link>
+                    <Link className="wellness-button" href="/signin">
+                      Sign in
+                    </Link>
+                  </>
                 )}
               </nav>
             </header>
@@ -155,14 +182,38 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {isActive(item.href) && <span className="nav-dot" />}
                 </Link>
               ))}
+
+              {/* Admin Panel link for designated admins */}
+              {(isAdminEmail(user?.email) || path.startsWith("/admin")) && (
+                <Link
+                  href="/admin"
+                  className={`side-link ${path.startsWith("/admin") ? "active" : ""}`}
+                  style={{ color: "var(--teal-700)", fontWeight: 600 }}
+                >
+                  <Shield size={19} />
+                  Admin Panel
+                  <span
+                    style={{
+                      fontSize: "9px",
+                      background: "var(--teal-600)",
+                      color: "white",
+                      padding: "1px 5px",
+                      borderRadius: "6px",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    LIVE
+                  </span>
+                </Link>
+              )}
             </nav>
 
-            <Link href="/onboarding" className="sidebar-profile">
+            <Link href="/dashboard" className="sidebar-profile">
               <Mascot variant={profile?.avatar ?? 0} />
               <span>
                 <strong>{profile?.name || "Your space awaits"}</strong>
                 <small>
-                  {profile ? "Edit your profile" : "Create your profile"}
+                  {profile ? "View your profile" : "Create your profile"}
                 </small>
               </span>
               <ArrowUpRight size={17} />
@@ -171,11 +222,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="wellness-content">
             <header className="wellness-topbar">
               <span className="topbar-label">
-                {nav.find((item) => isActive(item.href))?.label ||
-                  "Your wellness hub"}
-                <small>Make room for connection</small>
+                {path.startsWith("/admin")
+                  ? "Admin Dashboard"
+                  : nav.find((item) => isActive(item.href))?.label ||
+                    "Your wellness hub"}
+                <small>
+                  {path.startsWith("/admin")
+                    ? "Live Website Control Center"
+                    : "Make room for connection"}
+                </small>
               </span>
               <div className="account-actions">
+                {isAdminEmail(user?.email) && (
+                  <Link
+                    href="/admin"
+                    className="wellness-button"
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      gap: "6px",
+                      background: "rgba(20, 184, 166, 0.15)",
+                      color: "var(--teal-800)",
+                      border: "1px solid rgba(20, 184, 166, 0.3)",
+                    }}
+                  >
+                    <Shield size={14} /> Admin Controls
+                  </Link>
+                )}
                 <Notifications />
                 <button
                   className="signout-button"
@@ -197,9 +270,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {signingOut ? "Signing out…" : "Sign out"}
                 </button>
                 <Link
-                  href="/account"
+                  href="/dashboard"
                   className="topbar-account"
-                  title="Account settings"
+                  title="My Profile"
                 >
                   {profile ? `Hey, ${profile.name}` : "Create an account"}
                   <Mascot variant={profile?.avatar ?? 0} />
@@ -231,13 +304,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 aria-current={isActive(item.href) ? "page" : undefined}
               >
                 <item.icon size={20} />
-                <span>
-                  {item.label === "Conversations"
-                    ? "Chat"
-                    : item.label === "My calendar"
-                      ? "Calendar"
-                      : item.label}
-                </span>
+                <span>{item.label}</span>
               </Link>
             ))}
           </nav>

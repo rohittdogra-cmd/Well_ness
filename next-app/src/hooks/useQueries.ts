@@ -23,6 +23,8 @@ import {
   type UserProfileEntry,
 } from "../backend.types";
 import { useActor } from "./useActor";
+import { useInternetIdentity } from "./useInternetIdentity";
+import { isAdminEmail } from "@/lib/authAccounts";
 
 export { ActivityLogType, ProgramType, ProviderType };
 export type {
@@ -138,13 +140,15 @@ export function useSaveUserProfile() {
 
 export function useIsAdmin() {
   const { actor, isFetching } = useActor();
+  const { user } = useInternetIdentity();
   return useQuery<boolean>({
-    queryKey: ["is-admin"],
+    queryKey: ["is-admin", user?.email],
     queryFn: async () => {
+      if (user?.email && isAdminEmail(user.email)) return true;
       if (!actor) return false;
       return actor.isCallerAdmin();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !isFetching,
   });
 }
 

@@ -4,9 +4,53 @@ export interface StoredAccount {
   password?: string;
   memberType: "professional" | "student";
   name?: string;
+  role?: "admin" | "member";
   createdAt: string;
   lastLoginAt: string;
 }
+
+export const ADMIN_EMAILS: readonly string[] = [
+  "chhavi.dogra@gmail.com",
+  "chhavi0889@gmail.com",
+];
+
+export function isAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
+}
+
+export const SEEDED_ACCOUNTS: Record<string, StoredAccount> = {
+  "chhavi.dogra@gmail.com": {
+    id: "a0000001-0000-4000-8000-000000000001",
+    email: "chhavi.dogra@gmail.com",
+    password: "Stress@420",
+    memberType: "professional",
+    name: "Chhavi Dogra (Admin)",
+    role: "admin",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    lastLoginAt: "2026-01-01T00:00:00.000Z",
+  },
+  "chhavi0889@gmail.com": {
+    id: "a0000002-0000-4000-8000-000000000002",
+    email: "chhavi0889@gmail.com",
+    password: "Stress@421",
+    memberType: "professional",
+    name: "Chhavi Dogra (SuperAdmin)",
+    role: "admin",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    lastLoginAt: "2026-01-01T00:00:00.000Z",
+  },
+  "alex@company.com": {
+    id: "11111111-1111-4111-8111-111111111111",
+    email: "alex@company.com",
+    password: "password123",
+    memberType: "professional",
+    name: "Alex Rivera",
+    role: "member",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    lastLoginAt: "2026-01-01T00:00:00.000Z",
+  },
+};
 
 const STORAGE_KEY = "wellness_stored_accounts";
 const LAST_EMAIL_KEY = "wellness_last_account_email";
@@ -23,6 +67,12 @@ export function deterministicIdForEmail(email: string): string {
     norm === "alex@company.com"
   ) {
     return "11111111-1111-4111-8111-111111111111";
+  }
+  if (norm === "chhavi.dogra@gmail.com") {
+    return "a0000001-0000-4000-8000-000000000001";
+  }
+  if (norm === "chhavi0889@gmail.com") {
+    return "a0000002-0000-4000-8000-000000000002";
   }
 
   let hash1 = 0;
@@ -49,20 +99,35 @@ export function deterministicIdForEmail(email: string): string {
 }
 
 export function getStoredAccounts(): Record<string, StoredAccount> {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined") return { ...SEEDED_ACCOUNTS };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const parsed: Record<string, StoredAccount> = raw ? JSON.parse(raw) : {};
+    // Ensure seeded accounts (including both admins) exist
+    let updated = false;
+    for (const [key, val] of Object.entries(SEEDED_ACCOUNTS)) {
+      if (!parsed[key]) {
+        parsed[key] = val;
+        updated = true;
+      }
+    }
+    if (updated) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      } catch {}
+    }
+    return parsed;
   } catch (e) {
     console.error("Error reading stored accounts", e);
-    return {};
+    return { ...SEEDED_ACCOUNTS };
   }
 }
 
 export function getStoredAccountByEmail(email: string): StoredAccount | undefined {
   if (!email) return undefined;
   const accounts = getStoredAccounts();
-  return accounts[email.trim().toLowerCase()];
+  const key = email.trim().toLowerCase();
+  return accounts[key] || SEEDED_ACCOUNTS[key];
 }
 
 export function saveStoredAccount(account: StoredAccount): void {

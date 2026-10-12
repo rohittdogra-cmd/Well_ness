@@ -59,6 +59,12 @@ import type {
   ProviderBooking,
   UserProfileEntry,
 } from "../hooks/useQueries";
+import {
+  AuthorizedAdminsBanner,
+  OffersManagementTab,
+  DoctorManagementTab,
+  GroupsFormationTab,
+} from "./AdminLiveManagement";
 
 const PROGRAM_COLORS: Record<string, string> = {
   meetup: "bg-emerald-500",
@@ -1265,14 +1271,26 @@ export function AdminDashboardView() {
           </div>
         </motion.div>
 
+        {/* Authorized Admins Live Control Banner */}
+        <AuthorizedAdminsBanner />
+
         {/* Tabs */}
         <Tabs defaultValue="overview" data-ocid="admin.tab">
           <TabsList className="mb-6 flex-wrap h-auto gap-1">
             <TabsTrigger value="overview" data-ocid="admin.tab">
               Overview
             </TabsTrigger>
+            <TabsTrigger value="offers" data-ocid="admin.tab" className="font-semibold text-emerald-700">
+              🏷️ Offers &amp; Perks
+            </TabsTrigger>
+            <TabsTrigger value="doctors" data-ocid="admin.tab" className="font-semibold text-teal-700">
+              🩺 Doctor Management
+            </TabsTrigger>
+            <TabsTrigger value="groups" data-ocid="admin.tab" className="font-semibold text-emerald-700">
+              👥 Groups Formation &amp; Photos
+            </TabsTrigger>
             <TabsTrigger value="providers" data-ocid="admin.tab">
-              Provider Review
+              Provider Applications
             </TabsTrigger>
             <TabsTrigger value="activity" data-ocid="admin.tab">
               Activity Logs
@@ -1286,6 +1304,15 @@ export function AdminDashboardView() {
           </TabsList>
           <TabsContent value="overview">
             <OverviewTab />
+          </TabsContent>
+          <TabsContent value="offers">
+            <OffersManagementTab />
+          </TabsContent>
+          <TabsContent value="doctors">
+            <DoctorManagementTab />
+          </TabsContent>
+          <TabsContent value="groups">
+            <GroupsFormationTab />
           </TabsContent>
           <TabsContent value="providers">
             <ProviderReviewTab />

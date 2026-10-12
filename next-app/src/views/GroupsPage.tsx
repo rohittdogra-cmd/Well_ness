@@ -290,7 +290,34 @@ function CreateSubgroupDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>("sports");
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>("");
   const [error, setError] = useState("");
+
+  const presetImages = [
+    { label: "Turf Football", url: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80" },
+    { label: "Cricket", url: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800&q=80" },
+    { label: "Yoga / Zen", url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80" },
+    { label: "Coffee Meet", url: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80" },
+    { label: "Hiking / Aravali", url: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80" },
+    { label: "Coding / Tech", url: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80" },
+  ];
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      setError("Please select an image smaller than 3MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setImageUrl(result);
+      setImagePreview(result);
+    };
+    reader.readAsDataURL(file);
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -302,6 +329,7 @@ function CreateSubgroupDialog({
           p_name: name.trim(),
           p_description: description.trim(),
           p_category: category,
+          p_image: imagePreview || imageUrl || undefined,
         },
       });
       toast.success(`Your ${name.trim()} subgroup is live.`);
@@ -323,11 +351,12 @@ function CreateSubgroupDialog({
         if (e.target === e.currentTarget && !action.isPending) onClose();
       }}
     >
-      <form className="modal-card" onSubmit={submit}>
+      <form className="modal-card" onSubmit={submit} style={{ maxWidth: "520px" }}>
         <h2 id="create-subgroup-title">Start a subgroup</h2>
         <p className="muted">
           You will be the first member. Others can join from the directory.
         </p>
+
         <label className="field-label" htmlFor="subgroup-category">
           Main category
         </label>
@@ -342,6 +371,7 @@ function CreateSubgroupDialog({
             </option>
           ))}
         </select>
+
         <label className="field-label" htmlFor="subgroup-name">
           Subgroup name
         </label>
@@ -354,6 +384,7 @@ function CreateSubgroupDialog({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+
         <label className="field-label" htmlFor="subgroup-description">
           What brings this group together?
         </label>
@@ -361,15 +392,125 @@ function CreateSubgroupDialog({
           id="subgroup-description"
           rows={3}
           maxLength={500}
-          placeholder="Friendly weekend football games, all levels welcome."
+          placeholder="Friendly weekend games, talks or walks, all levels welcome."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
+        {/* Group Image Upload & Preset */}
+        <div style={{ marginTop: "12px", marginBottom: "14px" }}>
+          <label className="field-label" style={{ display: "block", marginBottom: "6px" }}>
+            Group Cover Image
+          </label>
+
+          {imagePreview && (
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "130px",
+                borderRadius: "10px",
+                overflow: "hidden",
+                marginBottom: "10px",
+                border: "1px solid #d1d5db",
+              }}
+            >
+              <img
+                src={imagePreview}
+                alt="Preview"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setImagePreview("");
+                  setImageUrl("");
+                }}
+                style={{
+                  position: "absolute",
+                  top: "6px",
+                  right: "6px",
+                  background: "rgba(0,0,0,0.6)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "24px",
+                  height: "24px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <label
+              style={{
+                cursor: "pointer",
+                padding: "8px 14px",
+                background: "rgba(20, 184, 166, 0.1)",
+                color: "var(--teal-700)",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: 600,
+                border: "1px dashed var(--teal-500)",
+                display: "inline-block",
+              }}
+            >
+              Upload image from device
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleFileUpload}
+              />
+            </label>
+            <span style={{ fontSize: "12px", color: "#6b7280" }}>or pick a preset:</span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "6px",
+              marginTop: "8px",
+            }}
+          >
+            {presetImages.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => {
+                  setImageUrl(p.url);
+                  setImagePreview(p.url);
+                }}
+                style={{
+                  padding: "6px 8px",
+                  fontSize: "11px",
+                  borderRadius: "6px",
+                  border: imagePreview === p.url ? "2px solid var(--teal-600)" : "1px solid #e5e7eb",
+                  background: imagePreview === p.url ? "rgba(20, 184, 166, 0.1)" : "#f9fafb",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {error && (
           <p role="alert" className="signin-error">
             {error}
           </p>
         )}
+
         <div className="composer-actions">
           <button
             type="button"

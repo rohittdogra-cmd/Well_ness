@@ -15,6 +15,12 @@ export const PUBLIC_PATHS = [
   "/coming-soon",
   "/contact",
   "/signin",
+  "/admin",
+  "/therapy",
+  "/groups",
+  "/book-activities",
+  "/dashboard",
+  "/psychologists",
   // Trust surfaces: readable before signing in, and linked from the footer.
   "/how-it-works",
   "/safety",
@@ -42,6 +48,7 @@ export const PRIVATE_PATHS = [
   "/my-sessions",
   "/onboarding",
   "/people",
+  "/profile",
   "/psychologists",
   "/sessions",
 ] as const;

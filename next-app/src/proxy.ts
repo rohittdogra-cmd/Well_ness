@@ -30,18 +30,23 @@ import { isPrivatePath } from "@/lib/routes";
  */
 function contentSecurityPolicy() {
   const origin = supabaseOrigin();
+  const production = process.env.NODE_ENV === "production";
   const connect = origin
     ? ["'self'", origin, "wss://*.supabase.co"]
     : ["'self'", "https://*.supabase.co", "wss://*.supabase.co"];
+  if (!production) {
+    connect.push("ws:", "wss:", "http:", "https:");
+  }
   // `api.dicebear.com` serves the generated avatars used across the UI.
+  // `images.unsplash.com` serves doctor/specialist and group profile images.
   const images = [
     "'self'",
     "data:",
     "blob:",
     origin || "https://*.supabase.co",
     "https://api.dicebear.com",
+    "https://images.unsplash.com",
   ];
-  const production = process.env.NODE_ENV === "production";
   return [
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline'${production ? "" : " 'unsafe-eval'"}`,
@@ -49,7 +54,7 @@ function contentSecurityPolicy() {
     `img-src ${images.join(" ")}`,
     "font-src 'self' data:",
     `connect-src ${connect.join(" ")}`,
-    "frame-ancestors 'none'",
+    production ? "frame-ancestors 'none'" : "frame-ancestors *",
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
@@ -60,7 +65,7 @@ function contentSecurityPolicy() {
 
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
+  ...(process.env.NODE_ENV === "production" ? { "X-Frame-Options": "DENY" } : {}),
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy":
     "camera=(), microphone=(), geolocation=(), interest-cohort=()",

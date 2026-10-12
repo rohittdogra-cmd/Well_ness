@@ -8,7 +8,7 @@ import {
 import { getSupabase } from "@/lib/supabase/client";
 import { rpc } from "@/lib/backend";
 import { useInternetIdentity } from "./useInternetIdentity";
-import { MOCK_GROUPS } from "@/lib/mockGroups";
+import { getStoredGroups, addLiveGroup } from "@/lib/liveDataManager";
 
 /** A group as the directory needs it: counts and membership resolved in Postgres. */
 export type Group = {
@@ -59,7 +59,7 @@ export function useGroups(
       // MOCK FOR LOCALHOST
       const { isConfigured } = await import("@/lib/supabase/client");
       if (!isConfigured()) {
-        let filtered = MOCK_GROUPS;
+        let filtered = getStoredGroups();
         if (category) filtered = filtered.filter(g => g.category === category);
         if (joinedOnly) filtered = filtered.filter(g => g.joined);
         if (search) filtered = filtered.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.description.toLowerCase().includes(search.toLowerCase()));
@@ -90,8 +90,18 @@ export function useGroupCategoryCounts() {
     queryKey: ["groups", "counts", user?.id],
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () =>
-      (await rpc("group_category_counts")) as Record<string, number>,
+    queryFn: async () => {
+      const { isConfigured } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        const groups = getStoredGroups();
+        const counts: Record<string, number> = {};
+        for (const g of groups) {
+          counts[g.category] = (counts[g.category] || 0) + 1;
+        }
+        return counts;
+      }
+      return (await rpc("group_category_counts")) as Record<string, number>;
+    },
   });
 }
 
@@ -104,7 +114,7 @@ export function useGroup(slug: string | undefined) {
       // MOCK FOR LOCALHOST
       const { isConfigured } = await import("@/lib/supabase/client");
       if (!isConfigured()) {
-        const found = MOCK_GROUPS.find(g => g.slug === slug);
+        const found = getStoredGroups().find(g => g.slug === slug);
         return (found ?? null) as Group | null;
       }
 
@@ -191,8 +201,18 @@ export type CommunityAction = {
 export function useCommunityAction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, args }: CommunityAction) =>
-      rpc(name, args ?? {}) as Promise<unknown>,
+    mutationFn: async ({ name, args }: CommunityAction) => {
+      const { isConfigured } = await import("@/lib/supabase/client");
+      if (!isConfigured() && name === "create_group" && args) {
+        return addLiveGroup({
+          name: String(args.p_name || ""),
+          description: String(args.p_description || ""),
+          category: String(args.p_category || "sports"),
+          image: args.p_image ? String(args.p_image) : undefined,
+        });
+      }
+      return rpc(name, args ?? {}) as Promise<unknown>;
+    },
     onSuccess: async (_data, action) => {
       const invalidations: Promise<unknown>[] = [
         qc.invalidateQueries({ queryKey: ["feed"] }),

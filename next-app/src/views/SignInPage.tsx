@@ -32,6 +32,7 @@ import {
   getLastLoginEmail,
   setLastLoginEmail,
   removeStoredAccount,
+  isAdminEmail,
   type StoredAccount,
 } from "@/lib/authAccounts";
 const subscribe = () => () => {};
@@ -165,10 +166,11 @@ export function SignInPage() {
           return;
         }
         const uid = stored?.id || deterministicIdForEmail(address);
+        const finalPass = password || stored?.password || undefined;
         saveStoredAccount({
           id: uid,
           email: address,
-          password: stored?.password || password || undefined,
+          password: finalPass,
           memberType: stored?.memberType || audience,
           name: stored?.name || address.split("@")[0],
           createdAt: stored?.createdAt || new Date().toISOString(),
@@ -179,18 +181,15 @@ export function SignInPage() {
           address,
           stored?.memberType || audience,
           uid,
-          stored?.password || password,
+          finalPass,
         );
-        router.replace("/");
+        if (isAdminEmail(address)) {
+          router.replace("/admin");
+        } else {
+          router.replace("/");
+        }
         return;
       } else if (mode === "signup") {
-        if (stored?.password) {
-          setError(
-            "An account with this email already exists. Please sign in.",
-          );
-          setBusy(false);
-          return;
-        }
         const uid = stored?.id || deterministicIdForEmail(address);
         saveStoredAccount({
           id: uid,
@@ -203,7 +202,11 @@ export function SignInPage() {
         });
         setLastLoginEmail(address);
         mockLogin(address, audience, uid, password.trim());
-        router.replace("/");
+        if (isAdminEmail(address)) {
+          router.replace("/admin");
+        } else {
+          router.replace("/");
+        }
         return;
       } else {
         // mode === "code"
@@ -572,12 +575,12 @@ export function SignInPage() {
                   ? "Sign in or create an account with your work or student email. No password needed."
                   : "Good company is just a sign-in away."}
           </p>
-          {!isConfigured() && (
+          {!isConfigured() && audience === "professional" && (
             <div
               style={{
-                background: "rgba(20, 184, 166, 0.08)",
+                background: "linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(13, 148, 136, 0.03) 100%)",
                 border: "1px solid rgba(20, 184, 166, 0.25)",
-                borderRadius: "12px",
+                borderRadius: "14px",
                 padding: "14px 16px",
                 marginBottom: "20px",
                 display: "flex",
@@ -589,40 +592,39 @@ export function SignInPage() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px",
+                  justifyContent: "space-between",
                   fontWeight: 600,
-                  color: "var(--teal-700, #0f766e)",
-                  fontSize: "14px",
+                  color: "var(--teal-800, #0f766e)",
+                  fontSize: "13px",
                 }}
               >
-                <span>⚡ Preview & Demo Mode</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <ShieldCheck size={17} />
+                  <span>Corporate Employee Login</span>
+                </div>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    background: "var(--teal-600)",
+                    color: "white",
+                    padding: "2px 8px",
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  SECURE AUTH
+                </span>
               </div>
               <p
                 style={{
                   margin: 0,
-                  fontSize: "13px",
+                  fontSize: "12px",
                   color: "var(--sand-800, #374151)",
-                  lineHeight: "1.4",
+                  lineHeight: "1.45",
                 }}
               >
-                Enter any email below or click quick demo to explore all features instantly without waiting for backend setup.
+                Sign in using your corporate email address. You can set or enter your password below to access your wellness workspace.
               </p>
-              <button
-                type="button"
-                className="wellness-button"
-                style={{
-                  alignSelf: "flex-start",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  marginTop: "4px",
-                }}
-                onClick={() => {
-                  mockLogin("alex@company.com", audience);
-                  router.replace("/");
-                }}
-              >
-                Continue with Demo Account <ArrowRight size={16} />
-              </button>
             </div>
           )}
           {sent ? (
@@ -944,7 +946,7 @@ export function SignInPage() {
               </div>
               <form onSubmit={submit}>
                 <label className="field-label" htmlFor="email">
-                  Email address
+                  {audience === "student" ? "College / Student email" : "Corporate / Work email (or Admin email)"}
                 </label>
                 <input
                   id="email"
@@ -954,7 +956,7 @@ export function SignInPage() {
                   placeholder={
                     audience === "student"
                       ? "you@college.edu"
-                      : "you@company.com"
+                      : "name@company.com"
                   }
                   required
                   maxLength={254}
@@ -964,7 +966,9 @@ export function SignInPage() {
                 {mode !== "code" && (
                   <>
                     <label className="field-label" htmlFor="password">
-                      {mode === "signup" ? "Create a password" : "Password"}
+                      {mode === "signup"
+                        ? "Create a password (saved for all next logins)"
+                        : "Password (or enter new password to save)"}
                     </label>
                     <div className="password-field">
                       <input
