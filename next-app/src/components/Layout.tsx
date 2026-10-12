@@ -26,7 +26,9 @@ import { useLocalProfile } from "../hooks/useLocalProfile";
 import { isAuthPath, isPublicPath } from "../lib/routes";
 import { isAdminEmail } from "../lib/authAccounts";
 const publicNav = [
-  { label: "Doctors & Therapy", href: "/therapy" },
+  { label: "Activities & Calendar", href: "/book-activities" },
+  { label: "Groups", href: "/groups" },
+  { label: "Therapy", href: "/therapy" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
@@ -42,8 +44,10 @@ const trustNav = [
 
 const nav = [
   { label: "Home", href: "/", icon: House },
-  { label: "Doctors & Therapy", href: "/therapy", icon: Heart },
-  { label: "My Dashboard", href: "/dashboard", icon: User },
+  { label: "Activities & Calendar", href: "/book-activities", icon: CalendarDays },
+  { label: "Groups & Community", href: "/groups", icon: Users },
+  { label: "Therapy & Support", href: "/therapy", icon: Heart },
+  { label: "My Profile", href: "/dashboard", icon: User },
 ];
 export function Layout({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "/";

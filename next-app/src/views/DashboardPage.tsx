@@ -5,29 +5,67 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "motion/react";
 import {
-  ShieldCheck,
-  Stethoscope,
-  Tag,
-  KeyRound,
+  BarChart2,
+  BookMarked,
+  CalendarDays,
   CalendarCheck,
   Clock,
   Copy,
   Check,
   Eye,
   EyeOff,
-  Sparkles,
-  ArrowRight,
-  Shield,
-  LogIn,
+  KeyRound,
   Loader2,
   Lock,
+  LogIn,
+  MessageCircle,
+  Pencil,
+  Save,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  Stethoscope,
+  Tag,
   UserCheck,
+  Users,
+  Zap,
+  ArrowRight,
+  ArrowUpRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
-import { useLocalProfile } from "@/hooks/useLocalProfile";
-import { useLiveOffers, type LiveOffer } from "@/lib/liveDataManager";
-import { getStoredAppointments, type BookedAppointment } from "./HomePage";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { SessionCard, SessionCardSkeleton } from "../components/SessionCard";
+import { OperationsPanel } from "../components/OperationsPanel";
+import { AdminDashboardView } from "./AdminDashboardPage";
+
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { useLocalProfile } from "../hooks/useLocalProfile";
+import {
+  ActivityLogType,
+  useActivityLogsForUser,
+  useIsAdmin,
+  useMyBookings,
+  useMySessions,
+  useSaveUserProfile,
+  useUserProfile,
+} from "../hooks/useQueries";
+import {
+  acceptedConnections,
+  pendingForYou,
+  pendingFromYou,
+  useMyConnections,
+  useRespondToConnection,
+} from "../hooks/useConnections";
+import { useGroups } from "../hooks/useCommunity";
+import { moodLabel, moodWeight, useMoodWeek } from "../hooks/useMood";
+import { useLiveOffers } from "@/lib/liveDataManager";
+import { getStoredAppointments, type BookedAppointment } from "@/lib/appointments";
 import {
   getStoredAccountByEmail,
   saveStoredAccount,
@@ -35,17 +73,167 @@ import {
   isAdminEmail,
 } from "@/lib/authAccounts";
 import { isConfigured, getSupabase } from "@/lib/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const LOADING_SKELETON_KEYS = ["sk-a", "sk-b", "sk-c", "sk-d"];
+
+const ACTIVITY_LOG_LABELS: Record<ActivityLogType, string> = {
+  [ActivityLogType.sessionCreated]: "Session Created",
+  [ActivityLogType.sessionJoined]: "Session Joined",
+  [ActivityLogType.sessionLeft]: "Session Left",
+  [ActivityLogType.taskCreated]: "Task Created",
+  [ActivityLogType.taskCompleted]: "Task Completed",
+  [ActivityLogType.providerBooked]: "Provider Booked",
+};
+
+const ACTIVITY_LOG_COLORS: Record<ActivityLogType, string> = {
+  [ActivityLogType.sessionCreated]:
+    "bg-emerald-500/15 text-emerald-700 border-emerald-200",
+  [ActivityLogType.sessionJoined]:
+    "bg-blue-500/15 text-blue-700 border-blue-200",
+  [ActivityLogType.sessionLeft]:
+    "bg-orange-500/15 text-orange-700 border-orange-200",
+  [ActivityLogType.taskCreated]:
+    "bg-purple-500/15 text-purple-700 border-purple-200",
+  [ActivityLogType.taskCompleted]:
+    "bg-teal-500/15 text-teal-700 border-teal-200",
+  [ActivityLogType.providerBooked]:
+    "bg-rose-500/15 text-rose-700 border-rose-200",
+};
+
+function formatTs(ns: bigint) {
+  return new Date(Number(ns / 1_000_000n)).toLocaleString();
+}
+
+type QuickAction = {
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  color: string;
+  ocid: string;
+} & (
+  | { kind: "programs"; type: string }
+  | {
+      kind: "link";
+      href:
+        | "/therapy"
+        | "/psychologists"
+        | "/membership"
+        | "/my-sessions"
+        | "/dashboard"
+        | "/about"
+        | "/contact"
+        | "/careers"
+        | "/coming-soon"
+        | "/signin";
+    }
+);
+
+const quickActions: QuickAction[] = [
+  {
+    icon: Users,
+    label: "Browse Programs",
+    description: "Explore all wellness programs",
+    kind: "programs",
+    type: "meetup",
+    color: "bg-emerald-500/10 text-emerald-600",
+    ocid: "dashboard.programs_link",
+  },
+  {
+    icon: Stethoscope,
+    label: "Book Therapist",
+    description: "Schedule a confidential session",
+    kind: "link",
+    href: "/therapy",
+    color: "bg-blue-500/10 text-blue-600",
+    ocid: "dashboard.psychologists_link",
+  },
+  {
+    icon: MessageCircle,
+    label: "Join Discussion",
+    description: "Anonymous peer conversations",
+    kind: "link",
+    href: "/my-sessions",
+    color: "bg-purple-500/10 text-purple-600",
+    ocid: "dashboard.discuss_link",
+  },
+  {
+    icon: Zap,
+    label: "View Membership",
+    description: "Manage your plan and billing",
+    kind: "link",
+    href: "/membership",
+    color: "bg-amber-500/10 text-amber-600",
+    ocid: "dashboard.membership_link",
+  },
+];
+
+function QuickActionLink({ action }: { action: QuickAction }) {
+  const inner = (
+    <>
+      <div
+        className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${action.color}`}
+      >
+        <action.icon className="w-4 h-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
+          {action.label}
+        </p>
+        <p className="text-xs text-muted-foreground truncate">
+          {action.description}
+        </p>
+      </div>
+    </>
+  );
+  const cls =
+    "flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors group";
+  if (action.kind === "programs") {
+    return (
+      <Link
+        href={`/programs/${action.type}`}
+        data-ocid={action.ocid}
+        className={cls}
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <Link href={action.href} data-ocid={action.ocid} className={cls}>
+      {inner}
+    </Link>
+  );
+}
 
 export function DashboardPage() {
   const { identity, login, isLoggingIn, user } = useInternetIdentity();
-  const profile = useLocalProfile();
+  const isAuthenticated = !!identity || !!user;
+  const localProfile = useLocalProfile();
+
+  const { data: isAdminQuery, isLoading: adminLoading } = useIsAdmin();
+  const isEmailAdmin = user?.email ? isAdminEmail(user.email) : false;
+  const isAdmin = isAdminQuery === true || isEmailAdmin;
+
+  const { data: profile, isLoading: profileLoading } = useUserProfile();
+  const { data: mySessions, isLoading: sessionsLoading } = useMySessions();
+  const memberId = identity ? identity.getPrincipal().toString() : user?.id;
+  const { data: activityLogs, isLoading: logsLoading } = useActivityLogsForUser(
+    identity ? identity.getPrincipal() : null,
+  );
+  const { data: connections, isLoading: connectionsLoading } = useMyConnections();
+  const respond = useRespondToConnection();
+  const { data: myGroups } = useGroups({ joinedOnly: true });
+  const { data: moodWeek } = useMoodWeek(memberId);
+  const { data: myBookings, isLoading: bookingsLoading } = useMyBookings(
+    identity ? identity.getPrincipal() : null,
+  );
+  const saveProfileMutation = useSaveUserProfile();
   const { activeOffers } = useLiveOffers();
 
-  const [activeTab, setActiveTab] = useState<string>("appointments");
+  // State
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
   const [appointments, setAppointments] = useState<BookedAppointment[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState(false);
@@ -89,7 +277,7 @@ export function DashboardPage() {
 
     setSavingPassword(true);
     try {
-      const normEmail = (user?.email || "alex@company.com").toLowerCase();
+      const normEmail = (user?.email || "employee@company.com").toLowerCase();
       const existing = getStoredAccountByEmail(normEmail);
       const uid = user?.id || existing?.id || deterministicIdForEmail(normEmail);
 
@@ -118,22 +306,35 @@ export function DashboardPage() {
     }
   }
 
-  if (!user && !identity) {
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) return;
+    try {
+      await saveProfileMutation.mutateAsync({ name: nameInput.trim() });
+      toast.success("Profile updated!");
+      setEditingName(false);
+      setNameInput("");
+    } catch {
+      toast.error("Failed to save profile");
+    }
+  };
+
+  if (!isAuthenticated) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-background px-4 py-20">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md bg-card border border-border p-8 rounded-3xl shadow-lg"
+          data-ocid="dashboard.error_state"
         >
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-6">
             <ShieldCheck className="w-8 h-8 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold font-display text-foreground mb-2">
+          <h2 className="text-2xl font-display font-bold text-foreground mb-3">
             Employee Wellness Dashboard
           </h2>
-          <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
-            Please sign in with your corporate email address to view your booked doctor appointments, health allowances, and account details.
+          <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+            Your personal wellness dashboard tracks sessions, progress, bookings, and community groups. Sign in with your corporate email to get started.
           </p>
           <Button
             size="lg"
@@ -150,121 +351,615 @@ export function DashboardPage() {
     );
   }
 
-  const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Employee Member";
-  const isAdmin = user?.email ? isAdminEmail(user.email) : false;
+  if (adminLoading && !user) {
+    return (
+      <main className="min-h-screen bg-background pt-24 pb-16 px-4">
+        <div className="container max-w-6xl mx-auto">
+          <div className="space-y-6" data-ocid="dashboard.loading_state">
+            <Skeleton className="h-40 w-full rounded-3xl" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {LOADING_SKELETON_KEYS.map((k) => (
+                <Skeleton key={k} className="h-24 w-full rounded-xl" />
+              ))}
+            </div>
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Administrators get the Live Admin Dashboard
+  if (isAdmin) {
+    return (
+      <>
+        <AdminDashboardView />
+        <OperationsPanel />
+      </>
+    );
+  }
+
+  // Regular user calculations
+  const createdSessions = mySessions?.[0] ?? [];
+  const joinedSessions = mySessions?.[1] ?? [];
+  const allMySessions = [
+    ...new Map(
+      [...createdSessions, ...joinedSessions].map((s) => [s.id.toString(), s]),
+    ).values(),
+  ].sort((a, b) => Number(a.dateTime - b.dateTime));
+
+  const now = Date.now();
+  const upcomingSessions = allMySessions
+    .filter((s) => Number(s.dateTime / 1_000_000n) > now)
+    .slice(0, 3);
+
+  const incoming = pendingForYou(connections, memberId);
+  const outgoing = pendingFromYou(connections, memberId);
+  const openThreads = acceptedConnections(connections, memberId);
+
+  const recentLogs = [...(activityLogs ?? [])]
+    .sort((a, b) => Number(b.createdAt - a.createdAt))
+    .slice(0, 10);
+
+  const recentBookings = [...(myBookings ?? [])]
+    .sort((a, b) => Number(b.bookingTime - a.bookingTime))
+    .slice(0, 5);
+
+  const displayName =
+    profile?.name ||
+    localProfile?.name ||
+    user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    "Wellness Member";
 
   return (
-    <main className="min-h-screen bg-background pt-20 pb-16 px-4">
-      <div className="container max-w-5xl mx-auto space-y-8">
-        {/* ─── Profile & Account Header ─── */}
-        <section className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent rounded-3xl p-6 sm:p-8 border border-emerald-500/25 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-700 font-bold text-xl shadow-xs">
-                {displayName.charAt(0).toUpperCase()}
+    <main
+      className="min-h-screen bg-background pt-24 pb-16 px-4"
+      data-ocid="dashboard.page"
+    >
+      <div className="container max-w-5xl mx-auto space-y-6">
+        {/* Welcome banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent rounded-3xl p-6 sm:p-8 border border-emerald-500/25 shadow-xs">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-700 font-bold text-2xl shadow-xs">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  {profileLoading ? (
+                    <Skeleton className="h-8 w-56 mb-1" />
+                  ) : (
+                    <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+                      Welcome back, <span className="text-emerald-700">{displayName}</span> 👋
+                    </h1>
+                  )}
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                    {user?.email || "Here’s your wellness activity and community at a glance."}
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-                    {displayName}
-                  </h1>
-                  <Badge
+              <div className="flex items-center gap-2">
+                {!profile?.name && !editingName && (
+                  <Button
                     variant="outline"
-                    className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-xs font-semibold"
+                    size="sm"
+                    className="rounded-xl text-xs"
+                    onClick={() => setEditingName(true)}
+                    data-ocid="dashboard.edit_button"
                   >
-                    {isAdmin ? "Platform Administrator" : "Corporate Member"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-                  {user?.email}
+                    <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                    Set display name
+                  </Button>
+                )}
+                {profile?.name && !editingName && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-xl text-xs text-muted-foreground"
+                    onClick={() => {
+                      setNameInput(profile.name);
+                      setEditingName(true);
+                    }}
+                    data-ocid="dashboard.edit_button"
+                  >
+                    <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                    Edit name
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {editingName && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="mt-4 flex items-center gap-2 max-w-sm"
+                data-ocid="dashboard.panel"
+              >
+                <Input
+                  placeholder="Your display name"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                  className="rounded-xl text-xs"
+                  autoFocus
+                  data-ocid="dashboard.input"
+                />
+                <Button
+                  size="sm"
+                  className="rounded-xl flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handleSaveName}
+                  disabled={saveProfileMutation.isPending || !nameInput.trim()}
+                  data-ocid="dashboard.save_button"
+                >
+                  {saveProfileMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-xl text-xs"
+                  onClick={() => setEditingName(false)}
+                  data-ocid="dashboard.cancel_button"
+                >
+                  Cancel
+                </Button>
+              </motion.div>
+            )}
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-5 border-t border-emerald-500/20">
+              <div className="bg-background/80 rounded-xl p-3 border border-border">
+                <p className="text-xs text-muted-foreground">Sessions Created</p>
+                <p className="text-xl font-bold text-foreground mt-0.5">
+                  {sessionsLoading ? "—" : createdSessions.length}
                 </p>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <Button
-                asChild
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold h-9 shadow-xs"
+              <div className="bg-background/80 rounded-xl p-3 border border-border">
+                <p className="text-xs text-muted-foreground">Sessions Joined</p>
+                <p className="text-xl font-bold text-foreground mt-0.5">
+                  {sessionsLoading ? "—" : joinedSessions.length}
+                </p>
+              </div>
+              <div className="bg-background/80 rounded-xl p-3 border border-border">
+                <p className="text-xs text-muted-foreground">Total Wellness Hours</p>
+                <p className="text-xl font-bold text-foreground mt-0.5">
+                  {sessionsLoading ? "—" : allMySessions.length}
+                </p>
+              </div>
+              <Link
+                href="/therapy"
+                className="bg-background/80 hover:bg-background rounded-xl p-3 border border-border hover:border-emerald-500/40 transition-colors group"
               >
-                <Link href="/#doctors-section">
-                  <Stethoscope className="w-3.5 h-3.5 mr-1.5" />
-                  Book Doctor Consultation
-                </Link>
-              </Button>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  asChild
-                  className="rounded-xl border-emerald-500/40 text-emerald-800 hover:bg-emerald-500/10 text-xs font-semibold h-9"
-                >
-                  <Link href="/admin">
-                    <Shield className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                    Admin Portal
-                  </Link>
-                </Button>
-              )}
+                <p className="text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Therapy &amp; Doctors</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </p>
+                <p className="text-xl font-bold text-emerald-700 mt-0.5">
+                  Book 1-on-1
+                </p>
+              </Link>
             </div>
           </div>
+        </motion.div>
 
-          {/* Quick Metrics */}
-          <div className="mt-6 pt-5 border-t border-emerald-500/20 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="bg-background/80 rounded-xl p-3 border border-border">
-              <p className="text-xs text-muted-foreground">My Consultations</p>
-              <p className="text-lg font-bold text-foreground mt-0.5">
-                {appointments.length} Scheduled
-              </p>
-            </div>
-            <div className="bg-background/80 rounded-xl p-3 border border-border">
-              <p className="text-xs text-muted-foreground">Available Corporate Perks</p>
-              <p className="text-lg font-bold text-emerald-700 mt-0.5">
-                {activeOffers.length} Live Offers
-              </p>
-            </div>
-            <div className="bg-background/80 rounded-xl p-3 border border-border">
-              <p className="text-xs text-muted-foreground">Authentication Status</p>
-              <p className="text-lg font-bold text-foreground mt-0.5 flex items-center gap-1.5">
-                <UserCheck className="w-4 h-4 text-emerald-600" /> Verified
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── Dashboard Tabs Navigation ─── */}
+        {/* ─── Tabs Navigation ─── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="rounded-2xl bg-muted/60 p-1.5 flex gap-1 w-full max-w-md">
+          <TabsList className="rounded-2xl bg-muted/60 p-1.5 flex gap-1 w-full max-w-lg">
+            <TabsTrigger
+              value="overview"
+              className="rounded-xl px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center"
+            >
+              <Users className="w-3.5 h-3.5 text-emerald-600" />
+              Community &amp; Sessions
+            </TabsTrigger>
             <TabsTrigger
               value="appointments"
               className="rounded-xl px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center"
             >
               <CalendarCheck className="w-3.5 h-3.5 text-emerald-600" />
-              My Appointments ({appointments.length})
+              Doctor Appointments ({appointments.length})
             </TabsTrigger>
             <TabsTrigger
-              value="offers"
-              className="rounded-xl px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              Perks &amp; Offers
-            </TabsTrigger>
-            <TabsTrigger
-              value="account"
+              value="security"
               className="rounded-xl px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center"
             >
               <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
-              Security &amp; Password
+              Account &amp; Password
             </TabsTrigger>
           </TabsList>
 
-          {/* ─── TAB 1: APPOINTMENTS & CONSULTATIONS ─── */}
-          <TabsContent value="appointments" className="space-y-4">
+          {/* ─── TAB 1: OVERVIEW & COMMUNITY ─── */}
+          <TabsContent value="overview" className="space-y-6">
+            {/* Your people & Mood trend */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="md:col-span-2"
+              >
+                <Card>
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="w-4 h-4 text-emerald-600" />
+                      Your People
+                    </CardTitle>
+                    <Link
+                      href="/people"
+                      className="text-xs text-emerald-700 hover:underline"
+                      data-ocid="dashboard.link"
+                    >
+                      Find more
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {connectionsLoading ? (
+                      <p className="text-xs text-muted-foreground" role="status">
+                        Loading conversations…
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {incoming.length > 0 && (
+                          <section aria-labelledby="dash-incoming">
+                            <h2
+                              id="dash-incoming"
+                              className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2"
+                            >
+                              Asked to connect with you
+                              <Badge className="rounded-full bg-emerald-600 text-[10px]">
+                                {incoming.length}
+                              </Badge>
+                            </h2>
+                            <ul className="space-y-2">
+                              {incoming.map((c) => (
+                                <li
+                                  key={c.id}
+                                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3"
+                                >
+                                  <span className="font-medium text-xs">
+                                    {c.name} would like to connect
+                                  </span>
+                                  <span className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      className="rounded-xl text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                      disabled={respond.isPending}
+                                      onClick={() =>
+                                        respond.mutate({
+                                          connectionId: c.id,
+                                          accept: true,
+                                        })
+                                      }
+                                      data-ocid="dashboard.accept_connection"
+                                    >
+                                      Accept
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="rounded-xl text-xs"
+                                      disabled={respond.isPending}
+                                      onClick={() =>
+                                        respond.mutate({
+                                          connectionId: c.id,
+                                          accept: false,
+                                        })
+                                      }
+                                    >
+                                      Decline
+                                    </Button>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        )}
+
+                        {openThreads.length > 0 ? (
+                          <section aria-labelledby="dash-threads">
+                            <h2
+                              id="dash-threads"
+                              className="text-xs font-semibold text-foreground mb-2"
+                            >
+                              Active Conversations
+                            </h2>
+                            <ul className="space-y-2">
+                              {openThreads.slice(0, 4).map((c) => (
+                                <li key={c.id}>
+                                  <Link
+                                    href="/people"
+                                    className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 hover:border-emerald-500/40 transition-colors"
+                                  >
+                                    <span className="font-medium text-xs">
+                                      {c.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                      Open chat <ArrowRight className="w-3 h-3" />
+                                    </span>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        ) : null}
+
+                        {incoming.length === 0 && openThreads.length === 0 && (
+                          <div
+                            className="text-center py-6 text-muted-foreground"
+                            data-ocid="dashboard.empty_state"
+                          >
+                            <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-30 text-emerald-600" />
+                            <p className="text-xs font-medium">
+                              No pending chat requests
+                            </p>
+                            <p className="text-[11px] mt-0.5">
+                              When colleagues ask to talk anonymously, they will appear here.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Private mood trend */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      Your Week
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className="flex items-end gap-1.5 h-24"
+                      role="img"
+                      aria-label="Mood over the last seven days"
+                    >
+                      {(moodWeek ?? []).map((d) => {
+                        const weight = moodWeight(d.mood);
+                        return (
+                          <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                            <span
+                              className={
+                                weight === 0
+                                  ? "w-full rounded-full bg-muted/40"
+                                  : "w-full rounded-full bg-emerald-600"
+                              }
+                              style={{
+                                height: `${Math.max(8, weight * 18)}px`,
+                                opacity: weight === 0 ? 1 : 0.4 + weight * 0.12,
+                              }}
+                            />
+                            <span className="text-[10px] text-muted-foreground">
+                              {d.day.slice(8)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-3 flex items-center justify-between">
+                      <span>Private check-in</span>
+                      <Link href="/take-a-moment" className="text-emerald-700 hover:underline">
+                        Take a moment →
+                      </Link>
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+
+            {/* Your groups */}
+            {(myGroups?.pages.flat().length ?? 0) > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.22 }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display text-base font-bold text-foreground flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-600" />
+                    Your Communities &amp; Groups
+                  </h2>
+                  <Link
+                    href="/groups"
+                    className="text-xs text-emerald-700 hover:underline"
+                  >
+                    Browse all groups →
+                  </Link>
+                </div>
+                <ul className="flex flex-wrap gap-2">
+                  {myGroups!.pages
+                    .flat()
+                    .slice(0, 8)
+                    .map((g) => (
+                      <li key={g.id}>
+                        <Link
+                          href={`/groups/${g.slug}`}
+                          className="inline-flex items-center gap-2 rounded-full border border-border px-3.5 py-1.5 text-xs font-medium hover:border-emerald-500/50 bg-card transition-colors shadow-2xs"
+                        >
+                          {g.name}
+                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
+                            {g.member_count}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              </motion.div>
+            )}
+
+            {/* Quick actions & Upcoming sessions */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="md:col-span-1"
+              >
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1.5">
+                    {quickActions.map((action) => (
+                      <QuickActionLink key={action.label} action={action} />
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="md:col-span-2"
+              >
+                <Card>
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4 text-emerald-600" />
+                      What you have coming up
+                    </CardTitle>
+                    <Link
+                      href="/my-sessions"
+                      className="text-xs text-emerald-700 hover:underline"
+                      data-ocid="dashboard.link"
+                    >
+                      View all
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {sessionsLoading ? (
+                      <div className="space-y-3" data-ocid="dashboard.loading_state">
+                        {["s1", "s2", "s3"].map((k) => (
+                          <SessionCardSkeleton key={k} />
+                        ))}
+                      </div>
+                    ) : upcomingSessions.length === 0 ? (
+                      <div
+                        className="text-center py-8 text-muted-foreground"
+                        data-ocid="dashboard.empty_state"
+                      >
+                        <CalendarDays className="w-8 h-8 mx-auto mb-2 opacity-30 text-emerald-600" />
+                        <p className="text-xs font-medium">Nothing planned yet</p>
+                        <p className="text-[11px] mt-0.5">
+                          Join a group activity or meet for coffee with peers
+                        </p>
+                        <Link href="/book-activities" data-ocid="dashboard.primary_button">
+                          <Button size="sm" className="mt-3 rounded-xl text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
+                            Browse Activities &amp; Calendar
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {upcomingSessions.map((session, i) => (
+                          <SessionCard
+                            key={session.id.toString()}
+                            session={session}
+                            index={i}
+                            showJoinLeave={false}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+
+            {/* Activity Timeline */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Clock className="w-4 h-4 text-emerald-600" />
+                    My Activity
+                    {!logsLoading && recentLogs.length > 0 && (
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        {recentLogs.length} recent
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {logsLoading ? (
+                    <div className="space-y-2.5" data-ocid="dashboard.loading_state">
+                      {["l1", "l2", "l3"].map((k) => (
+                        <Skeleton key={k} className="h-9 w-full rounded-lg" />
+                      ))}
+                    </div>
+                  ) : recentLogs.length === 0 ? (
+                    <div
+                      className="text-center py-6 text-muted-foreground"
+                      data-ocid="dashboard.empty_state"
+                    >
+                      <Clock className="w-7 h-7 mx-auto mb-2 opacity-30 text-emerald-600" />
+                      <p className="text-xs">No activity recorded yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentLogs.map((log, i) => (
+                        <motion.div
+                          key={log.id.toString()}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.04 * i }}
+                          className="flex items-center gap-3 py-1.5"
+                          data-ocid={`dashboard.item.${i + 1}`}
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0" />
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] flex-shrink-0 ${ACTIVITY_LOG_COLORS[log.activityType]}`}
+                          >
+                            {ACTIVITY_LOG_LABELS[log.activityType]}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground flex-1 truncate">
+                            ID #{log.relatedId.toString()}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                            {formatTs(log.createdAt)}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* ─── TAB 2: DOCTOR APPOINTMENTS & PERKS ─── */}
+          <TabsContent value="appointments" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-foreground">
-                  Your Doctor Appointments
+                  Your Doctor Appointments &amp; Consultations
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Upcoming and confirmed 1-on-1 confidential consultations
+                  Upcoming confidential 1-on-1 sessions covered under corporate wellness
                 </p>
               </div>
               <Button
@@ -272,8 +967,8 @@ export function DashboardPage() {
                 asChild
                 className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs"
               >
-                <Link href="/#doctors-section">
-                  <Stethoscope className="w-3.5 h-3.5 mr-1" /> Book New Session
+                <Link href="/therapy">
+                  <Stethoscope className="w-3.5 h-3.5 mr-1.5" /> Book Session
                 </Link>
               </Button>
             </div>
@@ -284,17 +979,17 @@ export function DashboardPage() {
                   <CalendarCheck className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <h4 className="text-sm font-bold text-foreground mb-1">
-                  No appointments scheduled yet
+                  No doctor appointments scheduled yet
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
-                  Browse our licensed therapists and psychologists to book your first confidential session covered under your company perks.
+                  Browse licensed therapists and psychologists to schedule your confidential 1-on-1 session.
                 </p>
                 <Button
                   size="sm"
                   asChild
                   className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs"
                 >
-                  <Link href="/#doctors-section">Explore Available Doctors</Link>
+                  <Link href="/therapy">Explore Licensed Therapists</Link>
                 </Button>
               </Card>
             ) : (
@@ -347,86 +1042,86 @@ export function DashboardPage() {
                 ))}
               </div>
             )}
-          </TabsContent>
 
-          {/* ─── TAB 2: OFFERS & CORPORATE PERKS ─── */}
-          <TabsContent value="offers" className="space-y-4">
-            <div>
-              <h3 className="text-lg font-bold text-foreground">
-                Corporate Wellbeing Perks &amp; Discounts
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Exclusive wellness promo codes and subsidized session allowances
-              </p>
-            </div>
+            {/* Corporate Perks & Offers Section */}
+            <div className="pt-6 border-t border-border space-y-4">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">
+                  Corporate Wellbeing Perks &amp; Discounts
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Active promotional codes subsidized by corporate wellness benefits
+                </p>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeOffers.map((offer) => (
-                <Card
-                  key={offer.id}
-                  className="border-emerald-500/25 bg-gradient-to-br from-card to-emerald-500/5 shadow-xs"
-                >
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge variant="outline" className="text-[10px] font-bold border-emerald-500/40 text-emerald-700 bg-emerald-500/10">
-                        {offer.badge}
-                      </Badge>
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-500/15 px-2.5 py-0.5 rounded-full">
-                        {offer.discount}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-bold text-foreground">{offer.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                        {offer.description}
-                      </p>
-                    </div>
-
-                    <div className="pt-2 border-t border-border flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 bg-background border border-border px-2.5 py-1 rounded-lg">
-                        <code className="text-xs font-mono font-bold text-emerald-800">
-                          {offer.code}
-                        </code>
-                        <button
-                          type="button"
-                          onClick={() => copyPromo(offer.code)}
-                          className="text-muted-foreground hover:text-foreground"
-                          title="Copy code"
-                        >
-                          {copiedCode === offer.code ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeOffers.map((offer) => (
+                  <Card
+                    key={offer.id}
+                    className="border-emerald-500/25 bg-gradient-to-br from-card to-emerald-500/5 shadow-xs"
+                  >
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant="outline" className="text-[10px] font-bold border-emerald-500/40 text-emerald-700 bg-emerald-500/10">
+                          {offer.badge}
+                        </Badge>
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-500/15 px-2.5 py-0.5 rounded-full">
+                          {offer.discount}
+                        </span>
                       </div>
 
-                      <Button
-                        size="sm"
-                        asChild
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-8"
-                      >
-                        <Link href="/#doctors-section">
-                          Use Code <ArrowRight className="w-3 h-3 ml-1" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div>
+                        <h4 className="text-sm font-bold text-foreground">{offer.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          {offer.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-border flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 bg-background border border-border px-2.5 py-1 rounded-lg">
+                          <code className="text-xs font-mono font-bold text-emerald-800">
+                            {offer.code}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => copyPromo(offer.code)}
+                            className="text-muted-foreground hover:text-foreground"
+                            title="Copy code"
+                          >
+                            {copiedCode === offer.code ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+
+                        <Button
+                          size="sm"
+                          asChild
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-8"
+                        >
+                          <Link href="/therapy">
+                            Use Code <ArrowRight className="w-3 h-3 ml-1" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </TabsContent>
 
           {/* ─── TAB 3: ACCOUNT & PASSWORD SECURITY ─── */}
-          <TabsContent value="account" className="space-y-6">
+          <TabsContent value="security" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Account Details Card */}
+              {/* Account Details */}
               <Card className="border-border shadow-xs">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    Corporate Account Info
+                    Corporate Member Profile
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -435,16 +1130,16 @@ export function DashboardPage() {
                       Registered Corporate Email
                     </label>
                     <p className="text-sm font-medium text-foreground mt-0.5">
-                      {user?.email}
+                      {user?.email || "anonymous@company.com"}
                     </p>
                   </div>
 
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground">
-                      Account Role
+                      Account Tier
                     </label>
                     <p className="text-sm font-medium text-foreground mt-0.5">
-                      {isAdmin ? "Administrator" : "Employee Professional"}
+                      Corporate Wellness Employee
                     </p>
                   </div>
 
@@ -470,12 +1165,12 @@ export function DashboardPage() {
 
                   <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
                     <Lock className="w-4 h-4 text-emerald-700 flex-shrink-0" />
-                    <span>Your session and stored credentials are kept securely in private storage.</span>
+                    <span>Your identity and peer discussions remain anonymous and encrypted.</span>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Password Management Card */}
+              {/* Password Management */}
               <Card className="border-border shadow-xs">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
