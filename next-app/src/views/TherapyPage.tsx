@@ -63,18 +63,42 @@ export function TherapyPage() {
         <p>
           Connect with certified therapists and psychologists anonymously to talk through your stress, anxiety, or everyday struggles. Your identity remains 100% private.
         </p>
-        <div className="page-links" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div className="page-links" style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap", marginTop: "24px" }}>
           <Link
             href="/apply-provider"
             className="wellness-button"
-            style={{ background: "var(--teal-600)", color: "white" }}
+            style={{
+              background: "var(--teal-600, #0d9488)",
+              color: "#ffffff",
+              border: "1px solid var(--teal-600, #0d9488)",
+              fontWeight: 600,
+              fontSize: "15px",
+              padding: "12px 24px",
+              borderRadius: "12px",
+              display: "inline-flex",
+              alignItems: "center",
+              boxShadow: "0 4px 14px rgba(13, 148, 136, 0.25)",
+              textDecoration: "none",
+            }}
           >
             Register as a Therapist
           </Link>
           <Link
             href="/book-activities"
             className="wellness-button"
-            style={{ background: "white", color: "var(--teal-700)", border: "1px solid var(--teal-300)" }}
+            style={{
+              background: "#ffffff",
+              color: "var(--teal-700, #0f766e)",
+              border: "1.5px solid var(--teal-600, #0d9488)",
+              fontWeight: 600,
+              fontSize: "15px",
+              padding: "12px 24px",
+              borderRadius: "12px",
+              display: "inline-flex",
+              alignItems: "center",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+              textDecoration: "none",
+            }}
           >
             Explore Wellness Activities
           </Link>
@@ -399,15 +423,16 @@ export function TherapyPage() {
                 <button
                   className="wellness-button"
                   style={{
-                    background: "white",
-                    color: "var(--teal-700)",
-                    border: "1px solid var(--teal-300)",
+                    background: "#ffffff",
+                    color: "var(--teal-700, #0f766e)",
+                    border: "1px solid var(--teal-400, #2dd4bf)",
                     display: "flex",
                     justifyContent: "center",
                     gap: "6px",
                     alignItems: "center",
                     fontSize: "13px",
                     padding: "10px",
+                    fontWeight: 600,
                   }}
                   onClick={() => handleBook(doc)}
                 >
