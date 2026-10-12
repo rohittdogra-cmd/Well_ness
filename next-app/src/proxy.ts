@@ -6,25 +6,29 @@ import { isPrivatePath } from "@/lib/routes";
 /**
  * Content Security Policy.
  *
- * Scripts are allowed by per-request nonce rather than `unsafe-inline`, so a
- * stored-XSS payload injected into the database has no way to become a running
- * script. Next reads the nonce from the `x-nonce` request header and stamps it
- * on the bootstrap scripts it emits, so it has to be set on the *request*
- * before `NextResponse.next` is built. `strict-dynamic` lets the scripts Next
- * inject load their own chunks without every chunk path needing to be listed.
+ * `unsafe-inline` is required for Next's own bootstrap scripts. `unsafe-eval`
+ * is only needed by the dev compiler, so it is dropped from production builds.
  *
- * `'self'` stays in the list for browsers that predate `strict-dynamic`, which
- * is the same reason the nonces are random per request rather than fixed.
+ * A per-request nonce (`script-src 'nonce-…' 'strict-dynamic'`) is the stronger
+ * option and it works in `next dev`, but it does **not** work here: the public
+ * pages are statically prerendered, so their HTML is written once at build time
+ * and served from the CDN. Next can only stamp a nonce into a document it
+ * generates during the request, so a prerendered page arrives with no nonce on
+ * its scripts while this header demands one — every script is blocked and the
+ * page renders blank. Forcing the pages dynamic would fix it at the cost of a
+ * server render per request. So: `unsafe-inline` until the routes are dynamic.
  *
- * Styles still need `unsafe-inline`: Tailwind's arbitrary values and the
- * animation styles injected by `motion` are inline `style` attributes, and
- * there is no equivalent nonce mechanism for them.
+ * Styles need `unsafe-inline` regardless: Tailwind's arbitrary values and the
+ * animation styles injected by `motion` are inline `style` attributes.
+ *
+ * The rest of the policy still holds — no plugins, no framing, no base-tag
+ * hijack, forms restricted to this origin, and a self-only default.
  *
  * `connect-src` and `img-src` are built from the configured Supabase origin, so
  * the policy always matches the project this deployment points at, including a
  * local endpoint used by the browser tests.
  */
-function contentSecurityPolicy(nonce: string) {
+function contentSecurityPolicy() {
   const origin = supabaseOrigin();
   const connect = origin
     ? ["'self'", origin, "wss://*.supabase.co"]
@@ -40,9 +44,7 @@ function contentSecurityPolicy(nonce: string) {
   const production = process.env.NODE_ENV === "production";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${
-      production ? "" : " 'unsafe-eval'"
-    }`,
+    `script-src 'self' 'unsafe-inline'${production ? "" : " 'unsafe-eval'"}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src ${images.join(" ")}`,
     "font-src 'self' data:",
@@ -54,11 +56,6 @@ function contentSecurityPolicy(nonce: string) {
     // Production only: this would rewrite a loopback test origin to https.
     ...(production ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
-}
-
-/** A fresh 128-bit nonce, base64 encoded, for one request. */
-function createNonce() {
-  return btoa(crypto.randomUUID());
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -101,14 +98,7 @@ export async function proxy(request: NextRequest) {
       headers: { "Cache-Control": "no-store", "Content-Type": "text/plain" },
     });
 
-  const nonce = createNonce();
-  // Forwarded on the request so Next can put this nonce on the scripts it
-  // injects into the HTML. Set after the 404 early-return so that response
-  // stays a plain text body.
-  const headers = new Headers(request.headers);
-  headers.set("x-nonce", nonce);
-
-  let response = NextResponse.next({ request: { headers } });
+  let response = NextResponse.next({ request });
 
   if (isConfigured()) {
     const supabase = createServerClient(supabaseConfig.url, supabaseConfig.key, {
@@ -117,9 +107,8 @@ export async function proxy(request: NextRequest) {
         setAll: (values) => {
           for (const { name, value } of values) request.cookies.set(name, value);
           // Rebuild the response so refreshed cookies are forwarded to the
-          // browser rather than only being visible to this render. The nonce
-          // header has to be carried across, or the rebuilt response loses it.
-          response = NextResponse.next({ request: { headers } });
+          // browser rather than only being visible to this render.
+          response = NextResponse.next({ request });
           for (const { name, value, options } of values)
             response.cookies.set(name, value, options);
         },
@@ -137,7 +126,7 @@ export async function proxy(request: NextRequest) {
 
   for (const [key, value] of Object.entries(SECURITY_HEADERS))
     response.headers.set(key, value);
-  response.headers.set("Content-Security-Policy", contentSecurityPolicy(nonce));
+  response.headers.set("Content-Security-Policy", contentSecurityPolicy());
 
   if (isPrivatePath(request.nextUrl.pathname))
     response.headers.set("Cache-Control", "private, no-store");
