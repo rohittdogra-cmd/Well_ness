@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { siteUrl } from "./env";
 import { isPrivatePath, PUBLIC_PATHS } from "./routes";
 
-export const SITE_NAME = "Wellness Hub";
-export const SITE_TAGLINE = "Corporate wellness platform";
+export const SITE_NAME = "stress-unwind";
+export const SITE_TAGLINE = "Corporate stress relief & wellness platform";
 export const SITE_DESCRIPTION =
-  "A holistic corporate wellness platform for mindful meetups, social gatherings, task sharing, and peer support.";
+  "A holistic platform for stress relief, mindful meetups, social gatherings, task sharing, and peer support.";
 
 const asArray = (value: string | readonly string[]) =>
   Array.isArray(value) ? value : [value as string];

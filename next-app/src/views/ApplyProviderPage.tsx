@@ -99,7 +99,7 @@ export function ApplyProviderPage() {
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Whether you’re a licensed psychologist or a sports & fitness
-            company, apply to partner with the Corporate Wellness Hub and reach
+            company, apply to partner with stress-unwind and reach
             employees who need your expertise.
           </p>
         </motion.div>

@@ -19,9 +19,9 @@ export function downloadCalendar(session: Session) {
   const text = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Wellness Hub//Activities//EN",
+    "PRODID:-//stress-unwind//Activities//EN",
     "BEGIN:VEVENT",
-    `UID:wellness-${session.id}@${window.location.hostname}`,
+    `UID:stress-unwind-${session.id}@${window.location.hostname}`,
     `DTSTAMP:${date(Date.now())}`,
     `DTSTART:${date(start)}`,
     `DTEND:${date(start + 3600000)}`,

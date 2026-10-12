@@ -18,7 +18,7 @@ export function AboutPage() {
           </h1>
           <p>
             Modern work solved communication tools, but created deeper loneliness.
-            Wellness Hub was founded to bring back authentic human connection:
+            stress-unwind was founded to bring back authentic human connection:
             small mindful moments, shared passions, and real peer support without judgment.
           </p>
           <div className="flex items-center gap-3 mt-6 flex-wrap">
@@ -108,7 +108,7 @@ export function AboutPage() {
       {/* Our 4 Core Principles */}
       <section className="mb-16">
         <h2 className="text-2xl font-display font-bold text-foreground mb-6">
-          What makes Wellness Hub different
+          What makes stress-unwind different
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <article className="provider-card">

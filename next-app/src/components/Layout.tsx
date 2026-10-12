@@ -94,7 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span>
                   <Heart size={23} />
                 </span>
-                wellness<span className="logo-dot">.</span>
+                stress-unwind<span className="logo-dot">.</span>
               </Link>
               <nav aria-label="Public navigation" className="public-nav">
                 {publicNav.map((item) => (
@@ -153,7 +153,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span>
                 <Heart size={23} />
               </span>
-              wellness<span className="logo-dot">.</span>
+              stress-unwind<span className="logo-dot">.</span>
             </Link>
             <nav aria-label="Main navigation">
               {nav.map((item) => (

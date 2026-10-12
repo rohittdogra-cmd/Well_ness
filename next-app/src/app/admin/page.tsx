@@ -36,7 +36,7 @@ export default function AdminPage() {
             Your corporate account ({user.email}) does not have administrative privileges.
           </p>
           <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold w-full">
-            <Link href="/">Return to Wellness Hub</Link>
+            <Link href="/">Return to stress-unwind</Link>
           </Button>
         </div>
       </main>

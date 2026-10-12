@@ -548,7 +548,7 @@ export function SignInPage() {
           <span>
             <Heart size={22} />
           </span>
-          wellness<span className="brand-dot">.</span>
+          stress-unwind<span className="brand-dot">.</span>
         </motion.div>
 
         <motion.div
