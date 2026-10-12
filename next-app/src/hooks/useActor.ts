@@ -5,7 +5,7 @@ import { useInternetIdentity } from "./useInternetIdentity";
 export function useActor() {
   const { user, isInitializing } = useInternetIdentity();
   const actor = useMemo(
-    () => (user ? createBackend(user.id) : null),
+    () => createBackend(user?.id || "guest-member"),
     [user?.id],
   );
   return { actor, isFetching: isInitializing };

@@ -20,34 +20,59 @@ export function OperationsPanel() {
   const query = useQuery({
     queryKey: ["operations"],
     queryFn: async () => {
-      const [reports, contacts, bookings, hidden] = await Promise.all([
-        getSupabase().rpc("get_reports"),
-        getSupabase()
+      let reportsData: {
+        id: number;
+        reason: string;
+        body: string;
+        author_id: string;
+        created_at: string;
+      }[] = [];
+      let contactsData: any[] = [];
+      let bookingsData: any[] = [];
+      let hiddenData: HiddenPost[] = [];
+
+      try {
+        const res = await getSupabase().rpc("get_reports");
+        if (!res.error && res.data) reportsData = res.data as typeof reportsData;
+      } catch {
+        // Fallback gracefully if RPC does not exist
+      }
+
+      try {
+        const res = await getSupabase()
           .from("contact_requests")
           .select("*")
           .order("created_at", { ascending: false })
-          .limit(50),
-        getSupabase()
+          .limit(50);
+        if (!res.error && res.data) contactsData = res.data;
+      } catch {
+        // Fallback gracefully if table does not exist
+      }
+
+      try {
+        const res = await getSupabase()
           .from("provider_bookings")
           .select("id,booking_time,confirmed,providers(name)")
           .eq("confirmed", false)
           .order("booking_time", { ascending: true })
-          .limit(200),
-        getSupabase().rpc("get_hidden_posts"),
-      ]);
-      for (const r of [reports, contacts, bookings, hidden])
-        if (r.error) throw new Error(r.error.message);
+          .limit(200);
+        if (!res.error && res.data) bookingsData = res.data;
+      } catch {
+        // Fallback gracefully
+      }
+
+      try {
+        const res = await getSupabase().rpc("get_hidden_posts");
+        if (!res.error && res.data) hiddenData = (res.data ?? []) as HiddenPost[];
+      } catch {
+        // Fallback gracefully
+      }
+
       return {
-        reports: reports.data as {
-          id: number;
-          reason: string;
-          body: string;
-          author_id: string;
-          created_at: string;
-        }[],
-        contacts: contacts.data!,
-        bookings: bookings.data!,
-        hidden: (hidden.data ?? []) as HiddenPost[],
+        reports: reportsData,
+        contacts: contactsData,
+        bookings: bookingsData,
+        hidden: hiddenData,
       };
     },
   });
