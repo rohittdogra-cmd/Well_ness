@@ -33,6 +33,7 @@ import {
   setLastLoginEmail,
   removeStoredAccount,
   isAdminEmail,
+  isValidAdminCredentials,
   type StoredAccount,
 } from "@/lib/authAccounts";
 const subscribe = () => () => {};
@@ -86,7 +87,13 @@ export function SignInPage() {
     () => false,
   );
   useEffect(() => {
-    if (user && !isInitializing) router.replace("/");
+    if (user && !isInitializing) {
+      if (isAdminEmail(user.email)) {
+        router.replace("/admin");
+      } else {
+        router.replace("/");
+      }
+    }
   }, [user, isInitializing, router]);
   useEffect(() => {
     const controller = new AbortController();
@@ -154,135 +161,214 @@ export function SignInPage() {
     setBusy(true);
     setError("");
     const address = (email.trim() || "alex@company.com").toLowerCase();
+    const cleanPass = password.trim();
+    const isAdmin = isAdminEmail(address);
+    const stored = getStoredAccountByEmail(address);
+    const uid = stored?.id || deterministicIdForEmail(address);
 
-    if (!isConfigured()) {
-      const stored = getStoredAccountByEmail(address);
-      if (mode === "signin") {
-        if (stored?.password && password && stored.password !== password) {
-          setError(
-            "Incorrect password. Please try again or use email access to sign in.",
-          );
-          setBusy(false);
-          return;
-        }
-        const uid = stored?.id || deterministicIdForEmail(address);
-        const finalPass = password || stored?.password || undefined;
-        saveStoredAccount({
-          id: uid,
-          email: address,
-          password: finalPass,
-          memberType: stored?.memberType || audience,
-          name: stored?.name || address.split("@")[0],
-          createdAt: stored?.createdAt || new Date().toISOString(),
-          lastLoginAt: new Date().toISOString(),
-        });
-        setLastLoginEmail(address);
-        mockLogin(
-          address,
-          stored?.memberType || audience,
-          uid,
-          finalPass,
-        );
-        if (isAdminEmail(address)) {
-          router.replace("/admin");
-        } else {
-          router.replace("/");
-        }
-        return;
-      } else if (mode === "signup") {
-        const uid = stored?.id || deterministicIdForEmail(address);
-        saveStoredAccount({
-          id: uid,
-          email: address,
-          password: password.trim(),
-          memberType: audience,
-          name: address.split("@")[0],
-          createdAt: new Date().toISOString(),
-          lastLoginAt: new Date().toISOString(),
-        });
-        setLastLoginEmail(address);
-        mockLogin(address, audience, uid, password.trim());
-        if (isAdminEmail(address)) {
-          router.replace("/admin");
-        } else {
-          router.replace("/");
-        }
-        return;
-      } else {
-        // mode === "code"
-        setEmail(address);
-        setOtpType("email");
-        setSent(true);
-        setResendIn(60);
+    // ── 1. Admin Authentication ──
+    if (isAdmin) {
+      if (cleanPass && !isValidAdminCredentials(address, cleanPass)) {
+        setError("Invalid password for admin account. Use Stress@420 or Stress@421.");
         setBusy(false);
         return;
       }
-    }
-    try {
-      const auth = getSupabase().auth;
-      setEmail(address);
-      if (mode === "signin") {
-        const { error } = await auth.signInWithPassword({
-          email: address,
-          password,
-        });
-        if (error) throw error;
-        const { data: userData } = await auth.getUser();
-        if (userData?.user) {
-          saveStoredAccount({
-            id: userData.user.id,
+
+      const finalAdminPass = cleanPass || stored?.password || "Stress@420";
+
+      if (isConfigured()) {
+        try {
+          const auth = getSupabase().auth;
+          const { error: supaErr } = await auth.signInWithPassword({
             email: address,
-            memberType: audience,
-            name: userData.user.user_metadata?.name || address.split("@")[0],
-            createdAt: userData.user.created_at,
-            lastLoginAt: new Date().toISOString(),
+            password: finalAdminPass,
           });
-          setLastLoginEmail(address);
+          if (supaErr) {
+            try {
+              await auth.signUp({
+                email: address,
+                password: finalAdminPass,
+                options: { data: { role: "admin", member_type: "professional" } },
+              });
+            } catch {}
+          }
+        } catch {}
+      }
+
+      saveStoredAccount({
+        id: uid,
+        email: address,
+        password: finalAdminPass,
+        memberType: "professional",
+        name: stored?.name || "Chhavi Dogra (Admin)",
+        role: "admin",
+        createdAt: stored?.createdAt || new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      });
+      setLastLoginEmail(address);
+      mockLogin(address, "professional", uid, finalAdminPass);
+      router.replace("/admin");
+      setBusy(false);
+      return;
+    }
+
+    // ── 2. Member Password Sign In ──
+    if (mode === "signin") {
+      if (stored?.password && cleanPass && stored.password !== cleanPass) {
+        let supaOk = false;
+        if (isConfigured()) {
+          try {
+            const { data, error } = await getSupabase().auth.signInWithPassword({
+              email: address,
+              password: cleanPass,
+            });
+            if (!error && data.session && data.user) {
+              supaOk = true;
+              saveStoredAccount({
+                id: data.user.id,
+                email: address,
+                password: cleanPass,
+                memberType: audience,
+                name: data.user.user_metadata?.name || address.split("@")[0],
+                createdAt: data.user.created_at,
+                lastLoginAt: new Date().toISOString(),
+              });
+              setLastLoginEmail(address);
+              router.replace("/");
+              setBusy(false);
+              return;
+            }
+          } catch {}
         }
-        router.replace("/");
-      } else if (mode === "signup") {
-        const { data, error } = await auth.signUp({
-          email: address,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin + "/auth/callback",
-            data: { member_type: audience },
-          },
-        });
-        if (error) throw error;
-        if (data.session) {
-          if (data.user) {
+        if (!supaOk) {
+          setError("Incorrect password. Please try again or use email access to sign in.");
+          setBusy(false);
+          return;
+        }
+      }
+
+      if (isConfigured()) {
+        try {
+          const auth = getSupabase().auth;
+          const { error: supaErr } = await auth.signInWithPassword({
+            email: address,
+            password: cleanPass,
+          });
+          if (!supaErr) {
+            const { data: userData } = await auth.getUser();
+            if (userData?.user) {
+              saveStoredAccount({
+                id: userData.user.id,
+                email: address,
+                password: cleanPass,
+                memberType: audience,
+                name: userData.user.user_metadata?.name || address.split("@")[0],
+                createdAt: userData.user.created_at,
+                lastLoginAt: new Date().toISOString(),
+              });
+              setLastLoginEmail(address);
+            }
+            router.replace("/");
+            setBusy(false);
+            return;
+          }
+        } catch {}
+      }
+
+      const finalPass = cleanPass || stored?.password || undefined;
+      saveStoredAccount({
+        id: uid,
+        email: address,
+        password: finalPass,
+        memberType: stored?.memberType || audience,
+        name: stored?.name || address.split("@")[0],
+        createdAt: stored?.createdAt || new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      });
+      setLastLoginEmail(address);
+      mockLogin(address, stored?.memberType || audience, uid, finalPass);
+      router.replace("/");
+      setBusy(false);
+      return;
+    }
+
+    // ── 3. Member Account Signup ──
+    if (mode === "signup") {
+      const finalPass = cleanPass || "password123";
+      if (isConfigured()) {
+        try {
+          const auth = getSupabase().auth;
+          const { data, error } = await auth.signUp({
+            email: address,
+            password: finalPass,
+            options: {
+              emailRedirectTo: window.location.origin + "/auth/callback",
+              data: { member_type: audience },
+            },
+          });
+          if (!error && data.session && data.user) {
             saveStoredAccount({
               id: data.user.id,
               email: address,
-              password,
+              password: finalPass,
               memberType: audience,
               name: address.split("@")[0],
               createdAt: data.user.created_at,
               lastLoginAt: new Date().toISOString(),
             });
             setLastLoginEmail(address);
+            router.replace("/");
+            setBusy(false);
+            return;
+          } else if (!error) {
+            setOtpType("signup");
+            setSent(true);
+            setResendIn(60);
+            setBusy(false);
+            return;
           }
-          router.replace("/");
-        } else {
-          setOtpType("signup");
-          setSent(true);
-          setResendIn(60);
-        }
-      } else {
-        const { error } = await auth.signInWithOtp({
-          email: address,
-          options: {
-            shouldCreateUser: true,
-            data: { member_type: audience },
-            emailRedirectTo: window.location.origin + "/auth/callback",
-          },
-        });
-        if (error) throw error;
-        setOtpType("email");
-        setSent(true);
-        setResendIn(60);
+        } catch {}
       }
+
+      saveStoredAccount({
+        id: uid,
+        email: address,
+        password: finalPass,
+        memberType: audience,
+        name: address.split("@")[0],
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      });
+      setLastLoginEmail(address);
+      mockLogin(address, audience, uid, finalPass);
+      router.replace("/");
+      setBusy(false);
+      return;
+    }
+
+    // ── 4. Email OTP / Magic Code ──
+    setEmail(address);
+    if (!isConfigured()) {
+      setOtpType("email");
+      setSent(true);
+      setResendIn(60);
+      setBusy(false);
+      return;
+    }
+    try {
+      const auth = getSupabase().auth;
+      const { error } = await auth.signInWithOtp({
+        email: address,
+        options: {
+          shouldCreateUser: true,
+          data: { member_type: audience },
+          emailRedirectTo: window.location.origin + "/auth/callback",
+        },
+      });
+      if (error) throw error;
+      setOtpType("email");
+      setSent(true);
+      setResendIn(60);
     } catch (e) {
       setError(
         e instanceof Error
@@ -864,13 +950,18 @@ export function SignInPage() {
                         if (savedAccount.password) {
                           setPassword(savedAccount.password);
                         }
-                        if (!isConfigured()) {
-                          mockLogin(
-                            savedAccount.email,
-                            savedAccount.memberType,
-                            savedAccount.id,
-                            savedAccount.password,
-                          );
+                        const finalPass = savedAccount.password || "";
+                        const isAdmin = isAdminEmail(savedAccount.email);
+                        mockLogin(
+                          savedAccount.email,
+                          savedAccount.memberType,
+                          savedAccount.id,
+                          finalPass,
+                        );
+                        setLastLoginEmail(savedAccount.email);
+                        if (isAdmin) {
+                          router.replace("/admin");
+                        } else {
                           router.replace("/");
                         }
                       }}

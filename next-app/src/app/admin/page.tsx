@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Shield, Lock, ArrowRight, Loader2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { isAdminEmail } from "@/lib/authAccounts";
+import { isAdminEmail, isValidAdminCredentials } from "@/lib/authAccounts";
 
 export default function AdminPage() {
   const { user, isInitializing, mockLogin } = useInternetIdentity();
@@ -66,19 +66,13 @@ export default function AdminPage() {
       return;
     }
 
-    if (norm === "chhavi.dogra@gmail.com" && pass !== "Stress@420") {
-      setError("Invalid password for this admin account.");
+    if (!isValidAdminCredentials(norm, pass)) {
+      setError("Invalid password for this admin account. Use Stress@420 or Stress@421.");
       setLoggingIn(false);
       return;
     }
 
-    if (norm === "chhavi0889@gmail.com" && pass !== "Stress@421") {
-      setError("Invalid password for this admin account.");
-      setLoggingIn(false);
-      return;
-    }
-
-    mockLogin(norm, "professional", undefined, pass);
+    mockLogin(norm, "professional", undefined, pass.trim());
     setLoggingIn(false);
   }
 

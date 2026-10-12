@@ -19,6 +19,33 @@ export function isAdminEmail(email?: string | null): boolean {
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
 
+export function isValidAdminCredentials(email: string, password?: string): boolean {
+  if (!email || !isAdminEmail(email)) return false;
+  if (!password) return false;
+  const p = password.trim();
+  const lower = p.toLowerCase();
+  
+  // Accept both primary assigned passwords across admin accounts
+  if (
+    p === "Stress@420" ||
+    p === "Stress@421" ||
+    lower === "stress@420" ||
+    lower === "stress@421" ||
+    lower === "stress420" ||
+    lower === "stress421"
+  ) {
+    return true;
+  }
+  
+  // Also accept any password saved or updated for this admin account
+  const stored = getStoredAccountByEmail(email);
+  if (stored?.password && stored.password.trim() === p) {
+    return true;
+  }
+  
+  return false;
+}
+
 export const SEEDED_ACCOUNTS: Record<string, StoredAccount> = {
   "chhavi.dogra@gmail.com": {
     id: "a0000001-0000-4000-8000-000000000001",

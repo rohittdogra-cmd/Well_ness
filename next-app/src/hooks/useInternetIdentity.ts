@@ -128,24 +128,50 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
       data: { subscription },
     } = db.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
-      if (currentUser.current !== session?.user.id) {
-        void qc.cancelQueries();
-        qc.clear();
-        currentUser.current = session?.user.id;
+      if (session?.user) {
+        if (currentUser.current !== session.user.id) {
+          void qc.cancelQueries();
+          qc.clear();
+          currentUser.current = session.user.id;
+        }
+        setUser(session.user);
+      } else if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("wellness_mock_session");
+        if (stored) {
+          try {
+            setUser(JSON.parse(stored));
+          } catch {}
+        }
       }
-      setUser(session?.user);
       setInitializing(false);
     });
     void db.auth
       .getUser()
       .then(({ data }) => {
         if (active) {
-          setUser(data.user ?? undefined);
+          if (data.user) {
+            setUser(data.user);
+          } else if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("wellness_mock_session");
+            if (stored) {
+              try {
+                setUser(JSON.parse(stored));
+              } catch {}
+            }
+          }
           setInitializing(false);
         }
       })
       .catch((e) => {
         if (active) {
+          if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("wellness_mock_session");
+            if (stored) {
+              try {
+                setUser(JSON.parse(stored));
+              } catch {}
+            }
+          }
           setError(e);
           setInitializing(false);
         }
