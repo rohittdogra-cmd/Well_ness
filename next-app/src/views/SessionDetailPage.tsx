@@ -29,6 +29,7 @@ import {
   ArrowLeft,
   Building2,
   CalendarDays,
+  Check,
   CheckSquare,
   Loader2,
   LogIn,
@@ -101,16 +102,18 @@ export function SessionDetailPage() {
     }
     try {
       await joinMutation.mutateAsync(sessionId);
-      toast.success("Joined session!");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to join session");
+      toast.success("Enrolled in event successfully!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to enroll in event");
     }
   };
 
   const handleLeave = async () => {
     try {
       await leaveMutation.mutateAsync(sessionId);
-      toast.success("Left session");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to leave session");
+      toast.success("Enrollment removed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove enrollment");
     }
   };
 
@@ -190,7 +193,7 @@ export function SessionDetailPage() {
   }
 
   return (
-    <main className="pt-24 pb-20">
+    <main className="pt-6 md:pt-10 pb-20">
       <div className="container max-w-3xl mx-auto px-4">
         {/* Back */}
         <motion.div
@@ -229,7 +232,11 @@ export function SessionDetailPage() {
                 )}
                 <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground leading-tight">
                   {session.title}
-                </h1><button type="button" className="text-action my-3" onClick={() => downloadCalendar(session)}>Add to calendar ↗</button>{isCreator && <EditSession session={session} />}
+                </h1>
+                <div className="flex items-center gap-4 my-3 flex-wrap">
+                  <button type="button" className="text-action text-xs font-semibold" onClick={() => downloadCalendar(session)}>Add to calendar ↗</button>
+                  {isCreator && <EditSession session={session} />}
+                </div>
               </div>
 
               {isCreator && (
@@ -327,52 +334,82 @@ export function SessionDetailPage() {
               )}
             </div>
 
-            {/* Join / Leave */}
-            {isAuthenticated && !isCreator && (
-              <div>
-                {isParticipant ? (
-                  <Button
-                    variant="outline"
-                    onClick={handleLeave}
-                    disabled={leaveMutation.isPending}
-                    data-ocid="session.leave_button"
-                    className="w-full sm:w-auto"
-                  >
-                    {leaveMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            {/* Join / Leave Event Actions */}
+            <div className="pt-5 mt-2 border-t border-border/70 flex flex-wrap items-center justify-between gap-4">
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    {isParticipant ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/25">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" /> You are enrolled in this event {isCreator && "(Host)"}
+                      </span>
                     ) : (
-                      <UserMinus className="w-4 h-4 mr-2" />
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {full ? "This event is currently full" : "Spots available — Enroll now to secure your spot!"}
+                      </span>
                     )}
-                    Leave Session
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleJoin}
-                    disabled={joinMutation.isPending || full}
-                    data-ocid="session.join_button"
-                    className="w-full sm:w-auto"
-                  >
-                    {joinMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <UserPlus className="w-4 h-4 mr-2" />
-                    )}
-                    {full ? "Session Full" : "Join Session"}
-                  </Button>
-                )}
-              </div>
-            )}
+                  </div>
 
-            {!isAuthenticated && (
-              <Button
-                onClick={login}
-                disabled={isLoggingIn}
-                data-ocid="nav.login_button"
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign in to join
-              </Button>
-            )}
+                  <div className="flex items-center gap-2">
+                    {isParticipant ? (
+                      <Button
+                        variant="outline"
+                        onClick={handleLeave}
+                        disabled={leaveMutation.isPending}
+                        data-ocid="session.leave_button"
+                        className="w-full sm:w-auto hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+                      >
+                        {leaveMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <UserMinus className="w-4 h-4 mr-2" />
+                        )}
+                        Remove Enrollment
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleJoin}
+                        disabled={joinMutation.isPending || full}
+                        data-ocid="session.join_button"
+                        className="w-full sm:w-auto shine-btn text-white font-semibold"
+                        style={{
+                          background: "linear-gradient(135deg, #0f766e 0%, #0d9488 100%)",
+                          padding: "10px 20px",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        {joinMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <UserPlus className="w-4 h-4 mr-2" />
+                        )}
+                        {full ? "Event Full" : "Enroll in Event"}
+                      </Button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground font-medium">
+                    Sign in to enroll and connect with participants.
+                  </div>
+                  <Button
+                    onClick={login}
+                    disabled={isLoggingIn}
+                    data-ocid="nav.login_button"
+                    className="w-full sm:w-auto shine-btn text-white font-semibold"
+                    style={{
+                      background: "linear-gradient(135deg, #0f766e 0%, #0d9488 100%)",
+                      padding: "10px 20px",
+                      borderRadius: "12px",
+                    }}
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign in to Enroll
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </motion.div>
 

@@ -47,13 +47,14 @@ export function SessionCard({
   const handleJoin = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!identity) {
-      toast.error("Please sign in to join sessions");
+      toast.error("Please sign in to enroll");
       return;
     }
     try {
       await joinMutation.mutateAsync(session.id);
-      toast.success("Joined session!");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to join session");
+      toast.success("Enrolled in event!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to enroll");
     }
   };
 
@@ -61,8 +62,9 @@ export function SessionCard({
     e.preventDefault();
     try {
       await leaveMutation.mutateAsync(session.id);
-      toast.success("Left session");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to leave session");
+      toast.success("Enrollment removed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove enrollment");
     }
   };
 
@@ -78,8 +80,8 @@ export function SessionCard({
           {/* Top accent line */}
           <div className={`h-1 ${cfg.bgClass} opacity-80`} />
 
-          <div className="p-5">
-            <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="p-4 sm:p-5 flex flex-col">
+            <div className="flex items-start justify-between gap-3 mb-2.5">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Badge
@@ -89,32 +91,32 @@ export function SessionCard({
                     {cfg.emoji} {cfg.shortLabel}
                   </Badge>
                 </div>
-                <h3 className="font-semibold text-foreground text-base leading-tight truncate group-hover:text-primary transition-colors">
+                <h3 className="font-semibold text-foreground text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                   {session.title}
                 </h3>
               </div>
               <ArrowRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-1" />
             </div>
 
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
               {session.description}
             </p>
 
             {session.location && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/70" />
                 <span className="truncate">{session.location}</span>
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <CalendarDays className="w-3.5 h-3.5" />
+            <div className="pt-3 mt-1 border-t border-border/60 flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2.5 text-xs text-muted-foreground flex-wrap">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-[11px] sm:text-xs text-foreground/80">
+                  <CalendarDays className="w-3.5 h-3.5 text-primary/70 shrink-0" />
                   {formatDateTimeShort(session.dateTime)}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-[11px] sm:text-xs">
+                  <Users className="w-3.5 h-3.5 text-primary/70 shrink-0" />
                   {participantCount(session)}/
                   {session.maxParticipants.toString()}
                 </span>
@@ -125,6 +127,7 @@ export function SessionCard({
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                   role="presentation"
+                  className="shrink-0 ml-auto"
                 >
                   {!identity ? (
                     <Button
@@ -135,50 +138,45 @@ export function SessionCard({
                         login();
                       }}
                       data-ocid="session.signin_button"
-                      className="text-xs h-7 px-2.5"
+                      className="text-xs h-7 px-2.5 whitespace-nowrap font-semibold"
                     >
-                      Sign in to Book
+                      Sign in to Enroll
+                    </Button>
+                  ) : isParticipant ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleLeave}
+                      disabled={leaveMutation.isPending}
+                      data-ocid="session.leave_button"
+                      className="text-xs h-7 px-2.5 whitespace-nowrap font-semibold hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                    >
+                      {leaveMutation.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : (
+                        <UserMinus className="w-3.5 h-3.5 mr-1 shrink-0" />
+                      )}
+                      Remove
                     </Button>
                   ) : (
-                    !isCreator &&
-                    (isParticipant ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleLeave}
-                        disabled={leaveMutation.isPending}
-                        data-ocid="session.leave_button"
-                        className="text-xs h-7 px-2.5"
-                      >
-                        {leaveMutation.isPending ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <>
-                            <UserMinus className="w-3 h-3 mr-1" />
-                            Leave
-                          </>
-                        )}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={handleJoin}
-                        disabled={joinMutation.isPending || full}
-                        data-ocid="session.join_button"
-                        className="text-xs h-7 px-2.5"
-                      >
-                        {joinMutation.isPending ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : full ? (
-                          "Full"
-                        ) : (
-                          <>
-                            <UserPlus className="w-3 h-3 mr-1" />
-                            Join
-                          </>
-                        )}
-                      </Button>
-                    ))
+                    <Button
+                      size="sm"
+                      onClick={handleJoin}
+                      disabled={joinMutation.isPending || full}
+                      data-ocid="session.join_button"
+                      className="text-xs h-7 px-3 whitespace-nowrap font-semibold shine-btn"
+                    >
+                      {joinMutation.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : full ? (
+                        "Full"
+                      ) : (
+                        <>
+                          <UserPlus className="w-3.5 h-3.5 mr-1 shrink-0" />
+                          Enroll
+                        </>
+                      )}
+                    </Button>
                   )}
                 </div>
               )}

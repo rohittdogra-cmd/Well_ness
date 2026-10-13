@@ -1,5 +1,4 @@
 "use client";
-import { Toaster } from "@/components/ui/sonner";
 import Link from "next/link";
 import { Notifications } from "./Notifications";
 import { AuthGate } from "./AuthGate";
@@ -19,12 +18,16 @@ import {
   LogOut,
   User,
   Shield,
+  Menu,
+  X,
+  Sparkles,
 } from "lucide-react";
 import { MotionConfig } from "motion/react";
 import { Mascot } from "./Mascot";
 import { useLocalProfile } from "../hooks/useLocalProfile";
 import { isAuthPath, isPublicPath } from "../lib/routes";
 import { isAdminEmail } from "../lib/authAccounts";
+
 const publicNav = [
   { label: "Activities & Calendar", href: "/book-activities" },
   { label: "Community & Posts", href: "/community" },
@@ -51,12 +54,15 @@ const nav = [
   { label: "Therapy & Support", href: "/therapy", icon: Heart },
   { label: "My Profile", href: "/dashboard", icon: User },
 ];
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "/";
   const profile = useLocalProfile();
   const { clear, user, isInitializing } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const isActive = (href: string) => {
     if (href === "/dashboard") {
       return (
@@ -70,6 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
     return path === href || (href !== "/" && path.startsWith(href + "/"));
   };
+
   // Auth pages render their own minimal shell.
   if (isAuthPath(path) || path === "/signin")
     return (
@@ -79,6 +86,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </MotionConfig>
     );
+
   // Public marketing pages get the public chrome for signed-out visitors, and
   // the member chrome once a session exists. The server render is always the
   // public shell so crawlers and link previews receive real content; the swap
@@ -91,38 +99,111 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <a className="skip-link" href="#main-content">
               Skip to content
             </a>
-            <header className="public-header">
-              <Link href="/" className="wellness-logo">
-                <span>
-                  <Heart size={23} />
-                </span>
-                stress-unwind<span className="logo-dot">.</span>
-              </Link>
-              <nav aria-label="Public navigation" className="public-nav">
-                {publicNav.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    {item.label}
-                  </Link>
-                ))}
-                {user ? (
-                  <>
-                    <Link
-                      className="topbar-account"
-                      href="/dashboard"
-                      title="Your dashboard"
-                    >
-                      {profile ? `Hey, ${profile.name}` : "Create an account"}
+            <header className="public-header modern-glass-header">
+              <div className="public-header-inner">
+                <Link href="/" className="wellness-logo">
+                  <span className="logo-icon-wrap">
+                    <Heart size={21} className="heart-pulse" />
+                  </span>
+                  stress-unwind<span className="logo-dot">.</span>
+                </Link>
+
+                <nav aria-label="Public navigation" className="public-nav desktop-nav">
+                  {publicNav.map((item) => {
+                    const active =
+                      path === item.href ||
+                      (item.href !== "/" && path.startsWith(item.href));
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`public-nav-link ${active ? "active" : ""}`}
+                      >
+                        {item.label}
+                        {active && <span className="active-glow-pill" />}
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                <div className="public-header-actions">
+                  <div className="live-status-pill hidden md:inline-flex">
+                    <span className="live-status-dot" />
+                    <span>Live Hub</span>
+                  </div>
+
+                  {user ? (
+                    <>
+                      <Link
+                        className="topbar-account"
+                        href="/dashboard"
+                        title="Your dashboard"
+                      >
+                        {profile ? `Hey, ${profile.name}` : "Create an account"}
+                      </Link>
+                      <Link className="wellness-button shine-btn" href="/dashboard">
+                        Go to your hub
+                      </Link>
+                    </>
+                  ) : (
+                    <Link className="wellness-button shine-btn" href="/signin">
+                      Sign in
                     </Link>
-                    <Link className="wellness-button" href="/dashboard">
-                      Go to your hub
-                    </Link>
-                  </>
-                ) : (
-                  <Link className="wellness-button" href="/signin">
-                    Sign in
-                  </Link>
-                )}
-              </nav>
+                  )}
+
+                  <button
+                    type="button"
+                    className="mobile-hamburger-btn"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    aria-label="Toggle navigation menu"
+                    aria-expanded={mobileMenuOpen}
+                  >
+                    {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile Drawer */}
+              {mobileMenuOpen && (
+                <div className="public-mobile-drawer">
+                  <div className="public-mobile-links">
+                    {publicNav.map((item) => {
+                      const active =
+                        path === item.href ||
+                        (item.href !== "/" && path.startsWith(item.href));
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`mobile-nav-item ${active ? "active" : ""}`}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                    <div className="mobile-drawer-cta">
+                      {user ? (
+                        <Link
+                          href="/dashboard"
+                          className="wellness-button w-full"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Go to your hub
+                        </Link>
+                      ) : (
+                        <Link
+                          href="/signin"
+                          className="wellness-button w-full"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Sign in
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </header>
             <main id="main-content">{children}</main>
             <footer className="public-footer">
@@ -143,6 +224,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </AuthGate>
       </MotionConfig>
     );
+
   return (
     <MotionConfig reducedMotion="user">
       <AuthGate>
@@ -150,14 +232,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <a className="skip-link" href="#main-content">
             Skip to content
           </a>
-          <aside className="wellness-sidebar">
-            <Link href="/" className="wellness-logo">
-              <span>
-                <Heart size={23} />
-              </span>
-              stress-unwind<span className="logo-dot">.</span>
-            </Link>
-            <nav aria-label="Main navigation">
+          <aside className="wellness-sidebar modern-sidebar">
+            <div className="sidebar-brand-wrapper">
+              <Link href="/" className="wellness-logo">
+                <span className="logo-icon-wrap">
+                  <Heart size={21} className="heart-pulse" />
+                </span>
+                stress-unwind<span className="logo-dot">.</span>
+              </Link>
+            </div>
+
+            <nav aria-label="Main navigation" className="sidebar-nav-container">
               {nav.map((item) => (
                 <Link
                   key={item.href}
@@ -165,8 +250,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   aria-current={isActive(item.href) ? "page" : undefined}
                   className={`side-link ${isActive(item.href) ? "active" : ""}`}
                 >
-                  <item.icon size={19} />
-                  {item.label}
+                  <item.icon size={19} className="nav-icon" />
+                  <span>{item.label}</span>
                   {isActive(item.href) && <span className="nav-dot" />}
                 </Link>
               ))}
@@ -175,64 +260,52 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {isAdminEmail(user?.email) && (
                 <Link
                   href="/admin"
-                  className={`side-link ${path.startsWith("/admin") ? "active" : ""}`}
-                  style={{ color: "var(--teal-700)", fontWeight: 600 }}
+                  className={`side-link admin-side-link ${path.startsWith("/admin") ? "active" : ""}`}
                 >
                   <Shield size={19} />
-                  Admin Panel
-                  <span
-                    style={{
-                      fontSize: "9px",
-                      background: "var(--teal-600)",
-                      color: "white",
-                      padding: "1px 5px",
-                      borderRadius: "6px",
-                      marginLeft: "auto",
-                    }}
-                  >
-                    LIVE
-                  </span>
+                  <span>Admin Panel</span>
+                  <span className="admin-live-tag">LIVE</span>
                 </Link>
               )}
             </nav>
 
-            <Link href="/dashboard" className="sidebar-profile">
-              <Mascot variant={profile?.avatar ?? 0} />
-              <span>
-                <strong>{profile?.name || "Your space awaits"}</strong>
-                <small>
-                  {profile ? "View your profile" : "Create your profile"}
-                </small>
-              </span>
-              <ArrowUpRight size={17} />
-            </Link>
+            <div className="sidebar-bottom-zone">
+              <Link href="/dashboard" className="sidebar-profile-card">
+                <div className="profile-mascot-wrap">
+                  <Mascot variant={profile?.avatar ?? 0} />
+                  <span className="online-indicator-dot" />
+                </div>
+                <div className="profile-info-text">
+                  <strong>{profile?.name || "Your space awaits"}</strong>
+                  <small>
+                    {profile ? "Member Space" : "Create your profile"}
+                  </small>
+                </div>
+                <ArrowUpRight size={16} className="profile-chevron" />
+              </Link>
+            </div>
           </aside>
+
           <div className="wellness-content">
-            <header className="wellness-topbar">
-              <span className="topbar-label">
-                {path.startsWith("/admin")
-                  ? "Admin Dashboard"
-                  : nav.find((item) => isActive(item.href))?.label ||
-                    "stress unwind"}
-                <small>
+            <header className="wellness-topbar modern-topbar">
+              <div className="topbar-left">
+                <span className="topbar-label">
                   {path.startsWith("/admin")
-                    ? "Live Website Control Center"
-                    : "Make room for connection & stress relief"}
-                </small>
-              </span>
+                    ? "Admin Dashboard"
+                    : nav.find((item) => isActive(item.href))?.label ||
+                      "stress unwind"}
+                  <small>
+                    {path.startsWith("/admin")
+                      ? "Live Website Control Center & Moderation"
+                      : "Make room for connection & stress relief"}
+                  </small>
+                </span>
+              </div>
               <div className="account-actions">
                 {isAdminEmail(user?.email) && (
                   <Link
                     href="/admin"
-                    className="wellness-button"
-                    style={{
-                      padding: "6px 12px",
-                      fontSize: "12px",
-                      gap: "6px",
-                      background: "rgba(20, 184, 166, 0.15)",
-                      color: "var(--teal-800)",
-                      border: "1px solid rgba(20, 184, 166, 0.3)",
-                    }}
+                    className="admin-badge-btn"
                   >
                     <Shield size={14} /> Admin Controls
                   </Link>
@@ -296,7 +369,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
-          <Toaster richColors position="top-center" />
         </div>
       </AuthGate>
     </MotionConfig>

@@ -82,7 +82,7 @@ export const viewport: Viewport = {
 
 import { Providers } from "../components/Providers";
 import { Layout } from "../components/Layout";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

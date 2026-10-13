@@ -36,6 +36,7 @@ import {
   isValidAdminCredentials,
   type StoredAccount,
 } from "@/lib/authAccounts";
+import { generateCuteName } from "@/lib/anonymousNameGenerator";
 const subscribe = () => () => {};
 
 const stagger = {
@@ -312,7 +313,7 @@ export function SignInPage() {
               email: address,
               password: finalPass,
               memberType: audience,
-              name: address.split("@")[0],
+              name: generateCuteName({ interests: ["Badminton", "Football"] }),
               createdAt: data.user.created_at,
               lastLoginAt: new Date().toISOString(),
             });
@@ -335,7 +336,7 @@ export function SignInPage() {
         email: address,
         password: finalPass,
         memberType: audience,
-        name: address.split("@")[0],
+        name: generateCuteName({ interests: ["Badminton", "Football"] }),
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       });

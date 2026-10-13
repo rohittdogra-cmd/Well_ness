@@ -92,6 +92,14 @@ export function TakeAMomentPage() {
     const now = new Date();
     const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     try {
+      const { isConfigured, getSupabase } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`wellness_checkin_${user.id}_${day}`, value);
+        }
+        setMoodSaved(true);
+        return;
+      }
       // The only thing this page persists. Private by database policy.
       await getSupabase().from("check_ins").upsert({ user_id: user.id, day, mood: value });
       setMoodSaved(true);

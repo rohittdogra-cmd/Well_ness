@@ -8,7 +8,7 @@ import {
 import { getSupabase } from "@/lib/supabase/client";
 import { rpc } from "@/lib/backend";
 import { useInternetIdentity } from "./useInternetIdentity";
-import { getStoredGroups, addLiveGroup } from "@/lib/liveDataManager";
+import { getStoredGroups, addLiveGroup, toggleStoredGroup } from "@/lib/liveDataManager";
 
 /** A group as the directory needs it: counts and membership resolved in Postgres. */
 export type Group = {
@@ -229,11 +229,16 @@ export function useCommunityAction() {
           image: args.p_image ? String(args.p_image) : undefined,
         });
       }
+      if (!isConfigured() && name === "toggle_group" && args) {
+        toggleStoredGroup(args.p_group, Boolean(args.p_join));
+        return 1;
+      }
       return rpc(name, args ?? {}) as Promise<unknown>;
     },
     onSuccess: async (_data, action) => {
       const invalidations: Promise<unknown>[] = [
         qc.invalidateQueries({ queryKey: ["feed"] }),
+        qc.invalidateQueries({ queryKey: ["feed-latest"] }),
         qc.invalidateQueries({ queryKey: ["group"] }),
         qc.invalidateQueries({ queryKey: ["notifications"] }),
       ];

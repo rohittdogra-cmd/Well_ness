@@ -9,6 +9,9 @@ export type LocalProfile = {
   interests: string[];
   availability: string[];
   goal: string;
+  gender?: "male" | "female" | "non-binary";
+  location?: string;
+  assignedCuteName?: string;
 };
 export function useProfileQuery() {
   const { user } = useInternetIdentity();
@@ -32,23 +35,41 @@ export function useProfileQuery() {
           }
         }
         return {
-          name:
-            user?.user_metadata?.name ||
-            user?.email?.split("@")[0] ||
-            "Alex Member",
+          name: "Smash Sensation",
+          assignedCuteName: "Smash Sensation",
+          gender: "male",
+          location: "Janakpuri, Delhi",
           avatar: 1,
-          bio: "Here for mindful meetups, community sports, and wellness.",
-          interests: ["Cricket", "Yoga", "Mindfulness"],
+          bio: "Here for badminton matches, weekend turfs, and mindful wellness.",
+          interests: ["Badminton", "Cricket", "Yoga"],
           availability: ["Weekdays after 5pm", "Weekends"],
           goal: "Build healthy habits and connect with peers",
         } as LocalProfile;
       }
       const { data, error } = await getSupabase()
         .from("profiles")
-        .select("name,avatar,bio,interests,availability,goal")
+        .select("name,avatar,bio,interests,availability,goal,location,gender")
         .eq("id", user!.id)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        // Fallback in case location/gender columns aren't in remote schema yet
+        const retry = await getSupabase()
+          .from("profiles")
+          .select("name,avatar,bio,interests,availability,goal")
+          .eq("id", user!.id)
+          .maybeSingle();
+        if (retry.error) throw retry.error;
+        return (retry.data || {
+          name: "",
+          avatar: 0,
+          bio: "",
+          interests: [],
+          availability: [],
+          goal: "",
+          location: "Janakpuri, Delhi",
+          gender: "male",
+        }) as LocalProfile;
+      }
       return (data || {
         name: "",
         avatar: 0,
@@ -56,6 +77,8 @@ export function useProfileQuery() {
         interests: [],
         availability: [],
         goal: "",
+        location: "Janakpuri, Delhi",
+        gender: "male",
       }) as LocalProfile;
     },
   });

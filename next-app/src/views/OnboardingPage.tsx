@@ -1,9 +1,20 @@
 "use client";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Sparkles,
+  Dice5,
+  ShieldCheck,
+  MapPin,
+  Heart,
+  User,
+  Compass,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { Mascot, mascotNames } from "../components/Mascot";
 import {
@@ -11,82 +22,205 @@ import {
   useLocalProfile,
   type LocalProfile,
 } from "../hooks/useLocalProfile";
-const interests = [
-  "Music",
-  "Sports",
-  "Coffee",
+import {
+  generateCuteName,
+  shuffleCuteName,
+  type GenderType,
+} from "../lib/anonymousNameGenerator";
+
+const ALL_INTERESTS = [
+  "Badminton",
+  "Football",
+  "Cricket",
+  "Gym / Fitness",
   "Yoga",
-  "Books",
+  "Running",
+  "Coffee",
+  "Mindfulness",
   "Gaming",
+  "Books",
   "Travel",
   "Food",
-  "Photography",
-  "Mindfulness",
-  "Movies",
-  "Learning",
+  "Music",
 ];
-const availability = [
+
+const POPULAR_LOCATIONS = [
+  "Janakpuri, Delhi",
+  "Gurgaon, Haryana",
+  "Noida, Uttar Pradesh",
+  "Palwal, Haryana",
+  "South Delhi",
+  "Indiranagar, Bangalore",
+  "Auckland, New Zealand",
+];
+
+const AVAILABILITY = [
   "Early mornings",
   "Lunch breaks",
   "After work",
   "Weekends",
 ];
-const goals = [
-  "Meet my people",
-  "Feel more balanced",
-  "Try something new",
-  "Build a good habit",
+
+const GOALS = [
+  "Play badminton & turf sports",
+  "Meet like-minded peers",
+  "Feel more balanced & de-stress",
+  "Build a healthy fitness habit",
 ];
+
 export function OnboardingPage() {
   const existing = useLocalProfile();
   const { identity } = useInternetIdentity();
 
   return (
     <ProfileBuilder
-      key={identity?.getPrincipal().toText()}
+      key={identity?.getPrincipal().toText() || "profile-builder"}
       existing={existing}
     />
   );
 }
+
 function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
   const { identity } = useInternetIdentity();
-  const [profile, setProfile] = useState<LocalProfile>(
-    existing || {
-      name: "",
-      avatar: 0,
-      bio: "",
-      interests: [],
-      availability: [],
-      goal: "",
-    },
+
+  // Initialize profile with gender, location, and auto-assigned cute name
+  const [gender, setGender] = useState<GenderType>(
+    (existing?.gender as GenderType) || "male",
   );
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(
+    existing?.interests?.length
+      ? existing.interests
+      : ["Badminton", "Football"],
+  );
+  const [location, setLocation] = useState<string>(
+    existing?.location || "Janakpuri, Delhi",
+  );
+
+  const [profile, setProfile] = useState<LocalProfile>(() => {
+    if (existing && existing.name.trim()) {
+      return existing;
+    }
+    const initName = generateCuteName({
+      gender: "male",
+      interests: ["Badminton", "Football"],
+    });
+    return {
+      name: initName,
+      assignedCuteName: initName,
+      avatar: 1,
+      bio: "Up for weekend badminton, sports turfs, and good conversations.",
+      interests: ["Badminton", "Football"],
+      availability: ["Weekends", "After work"],
+      goal: "Play badminton & turf sports",
+      gender: "male",
+      location: "Janakpuri, Delhi",
+    };
+  });
+
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  function toggle(field: "interests" | "availability", value: string) {
+  const [justShuffled, setJustShuffled] = useState(false);
+
+  // Auto-generate name when gender or interests change if user hasn't explicitly chosen yet
+  const handleGenderChange = (newGender: GenderType) => {
+    setGender(newGender);
+    const newName = generateCuteName({
+      gender: newGender,
+      interests: selectedInterests,
+    });
     setProfile((p) => ({
       ...p,
-      [field]: p[field].includes(value)
-        ? p[field].filter((v) => v !== value)
-        : [...p[field], value],
+      gender: newGender,
+      name: newName,
+      assignedCuteName: newName,
+    }));
+  };
+
+  const toggleInterest = (val: string) => {
+    const updated = selectedInterests.includes(val)
+      ? selectedInterests.filter((x) => x !== val)
+      : [...selectedInterests, val];
+    setSelectedInterests(updated);
+
+    // If current name doesn't match new interests, regenerate fresh cute name
+    const freshName = generateCuteName({
+      gender,
+      interests: updated,
+    });
+    setProfile((p) => ({
+      ...p,
+      interests: updated,
+      name: freshName,
+      assignedCuteName: freshName,
+    }));
+  };
+
+  const handleShuffleCuteName = () => {
+    const nextName = shuffleCuteName({
+      gender,
+      interests: selectedInterests,
+      currentName: profile.name,
+    });
+    setProfile((p) => ({
+      ...p,
+      name: nextName,
+      assignedCuteName: nextName,
+    }));
+    setJustShuffled(true);
+    setTimeout(() => setJustShuffled(false), 600);
+  };
+
+  function toggleAvailability(value: string) {
+    setProfile((p) => ({
+      ...p,
+      availability: p.availability.includes(value)
+        ? p.availability.filter((v) => v !== value)
+        : [...p.availability, value],
     }));
   }
+
   async function next() {
     setError("");
-    if (step === 0 && profile.name.trim().length < 2) {
-      setError("Choose a name with at least 2 characters.");
-      return;
+
+    if (step === 0) {
+      if (!profile.name || profile.name.trim().length < 2) {
+        setError("Please roll an anonymous cute name to continue.");
+        return;
+      }
+      if (selectedInterests.length === 0) {
+        setError("Pick at least one sport or interest to personalize your profile.");
+        return;
+      }
     }
+
+    if (step === 1) {
+      if (!location.trim()) {
+        setError("Please enter your city or area (e.g., 'Janakpuri, Delhi').");
+        return;
+      }
+    }
+
     if (step < 2) {
       setStep(step + 1);
       return;
     }
+
     setSaving(true);
     try {
+      const payload: LocalProfile = {
+        ...profile,
+        name: profile.name.trim(),
+        assignedCuteName: profile.name.trim(),
+        gender,
+        location: location.trim(),
+        interests: selectedInterests,
+        bio: profile.bio.trim(),
+      };
       await saveLocalProfile(
-        { ...profile, name: profile.name.trim(), bio: profile.bio.trim() },
+        payload,
         identity?.getPrincipal().toText() || "",
       );
       await qc.invalidateQueries({ queryKey: ["profile"] });
@@ -101,19 +235,21 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
       setSaving(false);
     }
   }
+
   return (
     <div className="profile-page">
       <div className="profile-intro">
-        <span className="eyebrow">YOUR SPACE, YOUR WAY</span>
-        <h1>{existing ? "A little more you." : "Good to meet you."}</h1>
+        <span className="eyebrow">SAFE · WHOLESOME · ANONYMOUS</span>
+        <h1>{existing ? "Your Sports & Match Profile." : "Welcome to the Hub."}</h1>
         <p>
-          Make yourself at home. Start with a name and a little personality.
+          We auto-assign cute, respectful handles so you can connect, match for badminton, and play safely without awkwardness.
         </p>
       </div>
+
       <div className="profile-grid">
         <section className="profile-form">
           <div className="step-track">
-            {["The basics", "Your interests", "Your rhythm"].map((label, i) => (
+            {["Identity & Cute Name", "Your Location", "Rhythm & Goals"].map((label, i) => (
               <button
                 type="button"
                 key={label}
@@ -129,17 +265,22 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
               </button>
             ))}
           </div>
+
           {done ? (
             <div className="profile-success" role="status">
               <Sparkles size={36} />
-              <h2>You’re right where you belong.</h2>
+              <h2>You’re all set to play and connect!</h2>
               <p>
-                Your profile is saved to your account. Your next good thing is
-                waiting.
+                Your profile is saved with your cute anonymous handle <strong>{profile.name}</strong> from <strong>{location}</strong>.
               </p>
-              <Link href="/" className="wellness-button">
-                Explore my hub <ArrowRight size={18} />
-              </Link>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginTop: "16px", flexWrap: "wrap" }}>
+                <Link href="/programs/badminton" className="wellness-button" style={{ background: "#087f79" }}>
+                  Explore Badminton &amp; Turfs <ArrowRight size={18} />
+                </Link>
+                <Link href="/" className="wellness-button" style={{ background: "#334155" }}>
+                  Go to Hub Dashboard
+                </Link>
+              </div>
             </div>
           ) : (
             <form
@@ -156,38 +297,179 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                   exit={{ opacity: 0, x: -15 }}
                   transition={{ duration: 0.2 }}
                 >
+                  {/* ── STEP 0: GENDER & AUTO-ASSIGNED CUTE NAME ── */}
                   {step === 0 && (
                     <>
-                      <h2>How should we know you?</h2>
+                      <h2>Your Anonymous Cute Name</h2>
                       <p>
-                        A first name or a nickname. Whatever feels like you.
+                        To ensure zero harassment and keep our sports circles welcoming, display names are auto-assigned based on your sports and gender.
                       </p>
-                      <label className="field-label" htmlFor="profile-name">
-                        Your display name <span>*</span>
+
+                      {/* Gender selector */}
+                      <label className="field-label" style={{ marginTop: "16px" }}>
+                        Select your gender
                       </label>
-                      <input
-                        autoComplete="nickname"
-                        id="profile-name"
-                        maxLength={30}
-                        value={profile.name}
-                        onChange={(e) =>
-                          setProfile({ ...profile, name: e.target.value })
-                        }
-                        placeholder="e.g. Alex, or your alter ego"
-                        aria-invalid={!!error}
-                        aria-describedby={error ? "profile-error" : undefined}
-                      />
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "8px",
+                          marginBottom: "18px",
+                        }}
+                      >
+                        {(
+                          [
+                            { id: "male", label: "Male" },
+                            { id: "female", label: "Female" },
+                            { id: "non-binary", label: "Non-binary / Neutral" },
+                          ] as const
+                        ).map((g) => (
+                          <button
+                            type="button"
+                            key={g.id}
+                            onClick={() => handleGenderChange(g.id)}
+                            style={{
+                              padding: "10px 12px",
+                              borderRadius: "12px",
+                              border: gender === g.id ? "2px solid #087f79" : "1px solid #cbd5e1",
+                              background: gender === g.id ? "rgba(8, 127, 121, 0.08)" : "#ffffff",
+                              color: gender === g.id ? "#0f766e" : "#475569",
+                              fontWeight: gender === g.id ? 700 : 500,
+                              fontSize: "13px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "6px",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            {gender === g.id && <Check size={14} />}
+                            {g.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Sports & Interests selection */}
+                      <label className="field-label">
+                        Pick your sports &amp; passions <span>*</span>
+                      </label>
+                      <div className="interest-picker" style={{ marginBottom: "18px" }}>
+                        {ALL_INTERESTS.map((item) => {
+                          const isSel = selectedInterests.includes(item);
+                          return (
+                            <button
+                              type="button"
+                              key={item}
+                              aria-pressed={isSel}
+                              className={isSel ? "selected" : ""}
+                              onClick={() => toggleInterest(item)}
+                            >
+                              {item === "Badminton" && "🏸 "}
+                              {item === "Football" && "⚽ "}
+                              {item === "Cricket" && "🏏 "}
+                              {item === "Gym / Fitness" && "💪 "}
+                              {item === "Yoga" && "🧘 "}
+                              {item === "Coffee" && "☕ "}
+                              {item === "Running" && "🏃 "}
+                              {item}
+                              {isSel && <Check size={14} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Display of Auto-Assigned Cute Handle (NO custom text edit) */}
+                      <div
+                        style={{
+                          background: "linear-gradient(135deg, rgba(8, 127, 121, 0.08) 0%, rgba(20, 184, 166, 0.05) 100%)",
+                          border: "1.5px solid rgba(8, 127, 121, 0.3)",
+                          borderRadius: "16px",
+                          padding: "18px 20px",
+                          marginBottom: "20px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "12px",
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                            <Sparkles size={16} color="#0f766e" />
+                            <span style={{ fontSize: "11px", fontWeight: 750, color: "#0f766e", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                              Auto-Assigned Cute Handle
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "22px",
+                              fontWeight: 800,
+                              color: "#0f172a",
+                              letterSpacing: "-0.02em",
+                              transition: "transform 0.2s ease",
+                              transform: justShuffled ? "scale(1.04)" : "scale(1)",
+                            }}
+                          >
+                            {profile.name}
+                          </div>
+                          <span style={{ fontSize: "12px", color: "#64748b" }}>
+                            Assigned from your {gender} {selectedInterests[0] || "Sports"} profile
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleShuffleCuteName}
+                          style={{
+                            background: "#087f79",
+                            color: "white",
+                            border: "none",
+                            padding: "9px 16px",
+                            borderRadius: "10px",
+                            fontSize: "12.5px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "7px",
+                            boxShadow: "0 2px 6px rgba(8, 127, 121, 0.25)",
+                          }}
+                        >
+                          <Dice5 size={16} />
+                          Roll another cute name
+                        </button>
+                      </div>
+
+                      {/* Notice about custom text being disabled */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          fontSize: "12px",
+                          color: "#475569",
+                          background: "#f8fafc",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          border: "1px solid #e2e8f0",
+                          marginBottom: "18px",
+                        }}
+                      >
+                        <ShieldCheck size={16} color="#059669" />
+                        <span>Manual name input is locked to protect everyone from offensive or troll usernames.</span>
+                      </div>
+
+                      {/* Avatar Picker */}
                       <fieldset>
-                        <legend>Choose your avatar</legend>
+                        <legend>Pick your avatar mascot</legend>
                         <div className="avatar-picker">
                           {mascotNames.map((name, i) => (
                             <button
                               type="button"
                               key={name}
                               aria-pressed={profile.avatar === i}
-                              onClick={() =>
-                                setProfile({ ...profile, avatar: i })
-                              }
+                              onClick={() => setProfile({ ...profile, avatar: i })}
                               className={profile.avatar === i ? "selected" : ""}
                             >
                               <Mascot variant={i} />
@@ -199,8 +481,94 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                           ))}
                         </div>
                       </fieldset>
-                      <label className="field-label" htmlFor="profile-bio">
-                        A little about you <small>optional</small>
+                    </>
+                  )}
+
+                  {/* ── STEP 1: YOUR LOCATION ── */}
+                  {step === 1 && (
+                    <>
+                      <h2>Where are you based?</h2>
+                      <p>
+                        Your location is shared with prospective sports partners so you both know if an in-person match (like badminton in Janakpuri or Gurgaon) is practical, or if you are across different cities/countries.
+                      </p>
+
+                      <label className="field-label" htmlFor="user-location" style={{ marginTop: "14px" }}>
+                        City &amp; Area <span>*</span>
+                      </label>
+                      <div style={{ position: "relative", marginBottom: "12px" }}>
+                        <MapPin
+                          size={18}
+                          color="#0f766e"
+                          style={{ position: "absolute", left: "12px", top: "14px" }}
+                        />
+                        <input
+                          id="user-location"
+                          style={{ paddingLeft: "38px" }}
+                          placeholder="e.g. Janakpuri, Delhi or Gurgaon, Haryana"
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          maxLength={60}
+                          required
+                        />
+                      </div>
+
+                      {/* Quick click suggestions */}
+                      <div style={{ marginBottom: "20px" }}>
+                        <span style={{ fontSize: "11.5px", fontWeight: 650, color: "#64748b", display: "block", marginBottom: "6px" }}>
+                          Quick select popular hubs:
+                        </span>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {POPULAR_LOCATIONS.map((loc) => (
+                            <button
+                              type="button"
+                              key={loc}
+                              onClick={() => setLocation(loc)}
+                              style={{
+                                padding: "5px 10px",
+                                borderRadius: "8px",
+                                border: location === loc ? "1.5px solid #087f79" : "1px solid #cbd5e1",
+                                background: location === loc ? "rgba(8, 127, 121, 0.1)" : "#ffffff",
+                                color: location === loc ? "#0f766e" : "#475569",
+                                fontSize: "11.5px",
+                                fontWeight: location === loc ? 700 : 500,
+                                cursor: "pointer",
+                              }}
+                            >
+                              📍 {loc}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Proximity explainer */}
+                      <div
+                        style={{
+                          background: "#f0fdfa",
+                          border: "1px solid #99f6e4",
+                          borderRadius: "12px",
+                          padding: "14px 16px",
+                          fontSize: "12.5px",
+                          color: "#115e59",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <strong>How proximity matching works:</strong>
+                        <ul style={{ margin: "6px 0 0", paddingLeft: "18px" }}>
+                          <li><strong>Nearby / Same City:</strong> Shows green badge &amp; enables direct badminton turf slot booking.</li>
+                          <li><strong>Far Distance / International:</strong> Shows purple badge indicating remote chat only, preventing unrealistic meetup plans.</li>
+                        </ul>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── STEP 2: RHYTHM & BIO ── */}
+                  {step === 2 && (
+                    <>
+                      <h2>Your Rhythm &amp; Bio</h2>
+                      <p>Tell prospective peers when you like to play and what you are looking for.</p>
+
+                      <label className="field-label" htmlFor="profile-bio" style={{ marginTop: "12px" }}>
+                        Short bio <small>optional</small>
                       </label>
                       <textarea
                         id="profile-bio"
@@ -209,52 +577,17 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                         onChange={(e) =>
                           setProfile({ ...profile, bio: e.target.value })
                         }
-                        placeholder="Coffee enthusiast. Weekend wanderer. Here for the good vibes."
+                        placeholder="Interests, badminton level (Beginner/Intermediate), or preferred match hours."
                         rows={3}
                       />
                       <small className="character-count">
                         {profile.bio.length}/160
                       </small>
-                    </>
-                  )}
-                  {step === 1 && (
-                    <>
-                      <h2>What lights you up?</h2>
-                      <p>
-                        Pick a few things you love. There’s no wrong
-                        combination.
-                      </p>
-                      <div className="interest-picker">
-                        {interests.map((item) => (
-                          <button
-                            type="button"
-                            key={item}
-                            aria-pressed={profile.interests.includes(item)}
-                            className={
-                              profile.interests.includes(item) ? "selected" : ""
-                            }
-                            onClick={() => toggle("interests", item)}
-                          >
-                            {item}
-                            {profile.interests.includes(item) && (
-                              <Check size={15} />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="form-hint">
-                        These are optional. You can always change them later.
-                      </p>
-                    </>
-                  )}
-                  {step === 2 && (
-                    <>
-                      <h2>Find your own rhythm.</h2>
-                      <p>Make space for good things, when it works for you.</p>
-                      <fieldset>
-                        <legend>When are you usually free?</legend>
+
+                      <fieldset style={{ marginTop: "16px" }}>
+                        <legend>When are you usually free for sports / meetups?</legend>
                         <div className="interest-picker">
-                          {availability.map((item) => (
+                          {AVAILABILITY.map((item) => (
                             <button
                               type="button"
                               key={item}
@@ -264,7 +597,7 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                                   ? "selected"
                                   : ""
                               }
-                              onClick={() => toggle("availability", item)}
+                              onClick={() => toggleAvailability(item)}
                             >
                               {item}
                               {profile.availability.includes(item) && (
@@ -274,10 +607,11 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                           ))}
                         </div>
                       </fieldset>
-                      <fieldset>
+
+                      <fieldset style={{ marginTop: "16px" }}>
                         <legend>What brings you here?</legend>
                         <div className="goal-picker">
-                          {goals.map((item) => (
+                          {GOALS.map((item) => (
                             <button
                               type="button"
                               key={item}
@@ -308,12 +642,14 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                   )}
                 </motion.div>
               </AnimatePresence>
+
               {error && (
-                <p className="form-error" id="profile-error" role="alert">
+                <p className="form-error" id="profile-error" role="alert" style={{ marginTop: "12px" }}>
                   {error}
                 </p>
               )}
-              <div className="form-actions">
+
+              <div className="form-actions" style={{ marginTop: "24px" }}>
                 {step > 0 ? (
                   <button
                     type="button"
@@ -336,36 +672,54 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                   disabled={saving}
                   className="wellness-button"
                 >
-                  {step === 2 ? "Save my profile" : "Continue"}
+                  {step === 2 ? "Save & Activate Profile" : "Continue"}
                   <ArrowRight size={17} />
                 </button>
               </div>
-              <p className="local-notice">
-                Your name, avatar, bio and interests appear in the member
-                directory. Your availability and goal sync across your devices.
-              </p>
             </form>
           )}
         </section>
+
+        {/* ── RIGHT PREVIEW CARD ── */}
         <aside className="profile-preview">
-          <span className="eyebrow">YOUR PROFILE</span>
+          <span className="eyebrow">YOUR ANONYMOUS PROFILE</span>
           <div className="preview-mascot">
             <Mascot variant={profile.avatar} />
           </div>
-          <h2>{profile.name.trim() || "Your name here"}</h2>
+          <h2>{profile.name}</h2>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              background: "rgba(8, 127, 121, 0.1)",
+              color: "#0f766e",
+              padding: "4px 10px",
+              borderRadius: "9999px",
+              fontSize: "11px",
+              fontWeight: 700,
+              margin: "6px 0 10px",
+            }}
+          >
+            <MapPin size={12} />
+            {location || "Location not set"}
+          </div>
+
           <p>
-            {profile.bio || "A new face. A fresh start. Good things ahead."}
+            {profile.bio || "Up for weekend badminton, sports turfs, and good conversations."}
           </p>
+
           <div className="preview-interests">
-            {profile.interests.map((item) => (
+            {selectedInterests.map((item) => (
               <span key={item}>{item}</span>
             ))}
           </div>
+
           <div className="preview-bottom">
             <span className="status-dot" />
-            {profile.goal || "Here for a little more good"}
+            {profile.goal || "Play badminton & turf sports"}
           </div>
-          <small>Be yourself. You’ll fit right in.</small>
+          <small>100% Anonymous. Protected by Auto-Assigned Handles.</small>
         </aside>
       </div>
     </div>

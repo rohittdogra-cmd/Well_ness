@@ -14,6 +14,13 @@ export function DailyCheckIn() {
     queryKey: ["check-in", user?.id, day],
     enabled: !!user,
     queryFn: async () => {
+      const { isConfigured, getSupabase } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        if (typeof window !== "undefined") {
+          return localStorage.getItem(`wellness_checkin_${user!.id}_${day}`);
+        }
+        return null;
+      }
       const { data, error } = await getSupabase()
         .from("check_ins")
         .select("mood")
@@ -26,12 +33,23 @@ export function DailyCheckIn() {
   });
   const mutation = useMutation({
     mutationFn: async (mood: string) => {
+      const { isConfigured, getSupabase } = await import("@/lib/supabase/client");
+      if (!isConfigured()) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`wellness_checkin_${user!.id}_${day}`, mood);
+        }
+        return;
+      }
       const { error } = await getSupabase()
         .from("check_ins")
         .upsert({ user_id: user!.id, day, mood });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["check-in"] }),
+    onSuccess: (_data, mood) => {
+      qc.invalidateQueries({ queryKey: ["check-in"] });
+      qc.invalidateQueries({ queryKey: ["mood-week"] });
+      toast.success(`Check-in recorded: ${mood}`);
+    },
     onError: (e) => toast.error(e.message),
   });
   return (

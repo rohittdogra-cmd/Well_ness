@@ -11,6 +11,10 @@ import { rpc } from "@/lib/backend";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useMyConnections, type Connection } from "@/hooks/useConnections";
 import { Mascot } from "@/components/Mascot";
+import { useLocalProfile } from "@/hooks/useLocalProfile";
+import { BadmintonTurfBookingModal } from "@/components/BadmintonTurfBookingModal";
+import { calculateProximity } from "@/lib/turfVenues";
+import { MapPin } from "lucide-react";
 
 type Member = {
   id: string;
@@ -18,14 +22,21 @@ type Member = {
   avatar: number;
   bio: string;
   interests: string[];
+  location?: string;
 };
 type Message = { id: number; sender: string; body: string; created_at: string };
 
 export function PeoplePage() {
   const { user } = useInternetIdentity();
+  const localProfile = useLocalProfile();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
+  const [turfModalOpen, setTurfModalOpen] = useState(false);
+  const [turfPartner, setTurfPartner] = useState<{ name: string; location: string }>({
+    name: "Shuttle Queen",
+    location: "Janakpuri, Delhi",
+  });
   const qc = useQueryClient();
   const members = useInfiniteQuery({
     queryKey: ["members", user?.id, filter],
@@ -60,8 +71,7 @@ export function PeoplePage() {
       <span className="eyebrow">YOUR COMMUNITY</span>
       <h1>Find your people.</h1>
       <p>
-        Meet other members, connect, and make time for a conversation. Your
-        email and private check-ins stay off your public profile.
+        Meet peers with auto-assigned cute handles, check distance proximity, and coordinate badminton turf matches.
       </p>
       {action.error && (
         <p role="alert" className="signin-error">
@@ -106,43 +116,100 @@ export function PeoplePage() {
           )}
           {members.data?.pages.flat().map((m) => {
             const c = connections.data?.find((c) => c.member_id === m.id);
+            const mLoc = m.location || "Janakpuri, Delhi";
+            const myLoc = localProfile?.location || "Janakpuri, Delhi";
+            const prox = calculateProximity(myLoc, mLoc);
             return (
-              <article className="member-card" key={m.id}>
+              <article className="member-card" key={m.id} style={{ alignItems: "flex-start", gap: "12px" }}>
                 <Mascot variant={m.avatar} />
-                <div>
-                  <h3>{m.name}</h3>
-                  <p>{m.bio}</p>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <h3 style={{ margin: 0 }}>{m.name}</h3>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "3px",
+                        color: "#0f766e",
+                        background: "rgba(15, 118, 110, 0.08)",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        fontWeight: 650,
+                      }}
+                    >
+                      <MapPin size={11} /> {mLoc}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        padding: "2px 6px",
+                        borderRadius: "9999px",
+                        background: prox.isViableForMeetup ? "#dcfce7" : "#fce7f3",
+                        color: prox.isViableForMeetup ? "#15803d" : "#be185d",
+                      }}
+                    >
+                      {prox.label}
+                    </span>
+                  </div>
+                  <p style={{ margin: "4px 0" }}>{m.bio}</p>
                   <small>{m.interests.join(" · ")}</small>
                 </div>
-                {c?.status === "accepted" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
+                  {c?.status === "accepted" ? (
+                    <button
+                      className="text-action"
+                      onClick={() => setSelected(c.id)}
+                    >
+                      Chat
+                    </button>
+                  ) : c ? (
+                    <span style={{ fontSize: "11.5px" }}>
+                      {c.status === "declined"
+                        ? "Not connected"
+                        : c.recipient === user?.id
+                          ? "Request received"
+                          : "Request sent"}
+                    </span>
+                  ) : (
+                    <button
+                      className="text-action"
+                      disabled={action.isPending || !connections.isSuccess}
+                      onClick={() =>
+                        action.mutate({
+                          name: "request_connection",
+                          args: { p_member: m.id },
+                        })
+                      }
+                    >
+                      Connect
+                    </button>
+                  )}
+
+                  {/* Badminton Turf Booking CTA */}
                   <button
+                    type="button"
                     className="text-action"
-                    onClick={() => setSelected(c.id)}
+                    style={{
+                      color: "#087f79",
+                      fontWeight: 700,
+                      fontSize: "11.5px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "3px",
+                    }}
+                    onClick={() => {
+                      setTurfPartner({
+                        name: m.name,
+                        location: mLoc,
+                      });
+                      setTurfModalOpen(true);
+                    }}
                   >
-                    Chat
+                    🏸 Book Turf
                   </button>
-                ) : c ? (
-                  <span>
-                    {c.status === "declined"
-                      ? "Not connected"
-                      : c.recipient === user?.id
-                        ? "Request received"
-                        : "Request sent"}
-                  </span>
-                ) : (
-                  <button
-                    className="text-action"
-                    disabled={action.isPending || !connections.isSuccess}
-                    onClick={() =>
-                      action.mutate({
-                        name: "request_connection",
-                        args: { p_member: m.id },
-                      })
-                    }
-                  >
-                    Connect
-                  </button>
-                )}
+                </div>
               </article>
             );
           })}
@@ -221,6 +288,15 @@ export function PeoplePage() {
           )}
         </section>
       </div>
+
+      <BadmintonTurfBookingModal
+        isOpen={turfModalOpen}
+        onClose={() => setTurfModalOpen(false)}
+        partnerCuteName={turfPartner.name}
+        partnerLocation={turfPartner.location}
+        userCuteName={localProfile?.name || "Smash Sensation"}
+        userLocation={localProfile?.location || "Janakpuri, Delhi"}
+      />
     </div>
   );
 }

@@ -13,6 +13,11 @@ import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useUpcomingSessions } from "../hooks/useQueries";
 import { ProgramType } from "../hooks/useQueries";
 import { getProgramConfig, getProgramTypeFromPath } from "../lib/programConfig";
+import { useLocalProfile } from "../hooks/useLocalProfile";
+import { BadmintonTurfBookingModal } from "../components/BadmintonTurfBookingModal";
+import { TURF_VENUES } from "../lib/turfVenues";
+import { MapPin, Sparkles, Building2 } from "lucide-react";
+import { useState } from "react";
 
 const EXERCISE_SPORTS = [
   {
@@ -360,6 +365,17 @@ export function ProgramsPage() {
   });
   const { identity, login, isLoggingIn } = useInternetIdentity();
   const isAuthenticated = !!identity;
+  const localProfile = useLocalProfile();
+  const [turfModalOpen, setTurfModalOpen] = useState(false);
+  const [partnerDetails, setPartnerDetails] = useState<{
+    name: string;
+    location: string;
+  }>({
+    name: "Shuttle Queen",
+    location: "Janakpuri, Delhi",
+  });
+
+  const isBadminton = programType === ProgramType.badminton || type === "badminton";
 
   return (
     <main className="pt-24 pb-20">
@@ -386,21 +402,191 @@ export function ProgramsPage() {
               </p>
             </div>
 
-            {isAuthenticated ? (
-              <CreateSessionModal defaultType={programType} />
-            ) : (
-              <Button
-                variant="outline"
-                onClick={login}
-                disabled={isLoggingIn}
-                data-ocid="nav.login_button"
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign in to create
-              </Button>
-            )}
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              {isBadminton && (
+                <Button
+                  onClick={() => setTurfModalOpen(true)}
+                  style={{ background: "#087f79", color: "white" }}
+                >
+                  🏸 Match &amp; Book Turf
+                </Button>
+              )}
+              {isAuthenticated ? (
+                <CreateSessionModal defaultType={programType} />
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={login}
+                  disabled={isLoggingIn}
+                  data-ocid="nav.login_button"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign in to create
+                </Button>
+              )}
+            </div>
           </div>
         </motion.div>
+
+        {/* Dedicated Badminton Matchmaking & Playable Turf Courts Hub */}
+        {isBadminton && (
+          <motion.section
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12"
+          >
+            <div
+              style={{
+                background: "linear-gradient(135deg, #087f79 0%, #0f766e 60%, #047857 100%)",
+                borderRadius: "20px",
+                padding: "24px 28px",
+                color: "white",
+                marginBottom: "24px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "16px",
+                boxShadow: "0 10px 25px -5px rgba(8, 127, 121, 0.3)",
+              }}
+            >
+              <div style={{ maxWidth: "600px" }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "rgba(255, 255, 255, 0.18)",
+                    padding: "4px 10px",
+                    borderRadius: "9999px",
+                    fontSize: "11px",
+                    fontWeight: 750,
+                    letterSpacing: "0.04em",
+                    marginBottom: "10px",
+                  }}
+                >
+                  <Sparkles size={13} /> 2-PLAYER BADMINTON MATCHMAKING &amp; TURF BOOKING
+                </span>
+                <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "0 0 8px", lineHeight: 1.25 }}>
+                  Find a doubles/singles partner &amp; book verified turf courts nearby.
+                </h2>
+                <p style={{ margin: 0, fontSize: "13.5px", opacity: 0.9, lineHeight: 1.5 }}>
+                  Both players coordinate a mutual area (Janakpuri, Gurgaon, Noida, Palwal), choose an authentic court with teak wood or synthetic BWF mats, and get verified by our operations team.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setTurfModalOpen(true)}
+                style={{
+                  background: "#ffffff",
+                  color: "#087f79",
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "12px 24px",
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                }}
+              >
+                🏸 Match Partner &amp; Book Slot <ArrowRight size={16} />
+              </button>
+            </div>
+
+            {/* Playable Arenas Showcase */}
+            <div style={{ marginBottom: "28px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                <div>
+                  <h3 style={{ fontSize: "18px", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                    Verified Playable Turfs &amp; Badminton Arenas
+                  </h3>
+                  <span style={{ fontSize: "12.5px", color: "#64748b" }}>
+                    Indoor air-conditioned halls with Yonex rentals and certified flooring
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+                {TURF_VENUES.map((turf) => (
+                  <div
+                    key={turf.id}
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "16px",
+                      padding: "18px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                        <strong style={{ fontSize: "15px", color: "#0f172a" }}>{turf.name}</strong>
+                        <span
+                          style={{
+                            background: "#f0fdf4",
+                            color: "#16a34a",
+                            border: "1px solid #bbf7d0",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            padding: "2px 7px",
+                            borderRadius: "6px",
+                          }}
+                        >
+                          ⭐ {turf.rating}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "4px", marginBottom: "8px" }}>
+                        <MapPin size={12} color="#0d9488" /> {turf.cityState}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "12px" }}>
+                        <span style={{ background: "#e0f2fe", color: "#0369a1", fontSize: "11px", fontWeight: 650, padding: "2px 8px", borderRadius: "6px" }}>
+                          {turf.courtType}
+                        </span>
+                        {turf.amenities.slice(0, 2).map((a) => (
+                          <span key={a} style={{ background: "#f1f5f9", color: "#475569", fontSize: "11px", padding: "2px 6px", borderRadius: "6px" }}>
+                            {a}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
+                      <span style={{ fontSize: "15px", fontWeight: 800, color: "#0f766e" }}>
+                        ₹{turf.pricePerHour} <small style={{ fontSize: "11px", fontWeight: 500, color: "#64748b" }}>/ hr</small>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPartnerDetails({ name: "Shuttle Queen", location: turf.cityState });
+                          setTurfModalOpen(true);
+                        }}
+                        style={{
+                          background: "#087f79",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "6px 14px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Book Slot
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+        )}
 
         {/* Sport Categories — only for exercise */}
         {programType === ProgramType.exercise && <SportCategoriesSection />}
@@ -476,6 +662,15 @@ export function ProgramsPage() {
           </>
         )}
       </div>
+
+      <BadmintonTurfBookingModal
+        isOpen={turfModalOpen}
+        onClose={() => setTurfModalOpen(false)}
+        partnerCuteName={partnerDetails.name}
+        partnerLocation={partnerDetails.location}
+        userCuteName={localProfile?.name || "Smash Sensation"}
+        userLocation={localProfile?.location || "Janakpuri, Delhi"}
+      />
     </main>
   );
 }

@@ -26,6 +26,8 @@ import {
   Coffee,
   Briefcase,
   Users,
+  MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
@@ -36,6 +38,8 @@ import {
   KNOWN_MEMBERS,
   type CommunityMember,
 } from "@/lib/uniqueId";
+import { BadmintonTurfBookingModal } from "@/components/BadmintonTurfBookingModal";
+import { calculateProximity } from "@/lib/turfVenues";
 
 export interface CommunityPostItem {
   id: string;
@@ -66,123 +70,123 @@ const CATEGORY_META = {
 const SEED_POSTS: CommunityPostItem[] = [
   {
     id: "post-1",
-    authorName: "Rohan Mehta",
-    authorUniqueId: "SU-8492-RM",
-    authorRole: "Senior Product Designer",
-    authorAvatarSeed: 1,
+    authorName: "Shuttle Queen",
+    authorUniqueId: "SU-2910-AS",
+    authorRole: "Badminton Doubles Partner",
+    authorAvatarSeed: 2,
     category: "sports",
     categoryLabel: "🏸 Sports & Fitness",
-    location: "HSR Layout / Indiranagar",
+    location: "Janakpuri, Delhi",
     content:
-      "Anyone up for badminton this Saturday 7:30 AM? Intermediate level, need a doubles partner. Court is reserved, just looking for 1-2 people to join so we can play and unwind!",
+      "Anyone up for badminton this Saturday 7:30 AM? Intermediate level, need a doubles partner. Court is reserved at SP Arena Janakpuri, just looking for 1 friendly player to join and unwind!",
     createdAt: "12m ago",
-    likes: 8,
-    repliesCount: 3,
-  },
-  {
-    id: "post-2",
-    authorName: "Ananya Sharma",
-    authorUniqueId: "SU-2910-AS",
-    authorRole: "Full Stack Engineer",
-    authorAvatarSeed: 2,
-    category: "coffee",
-    categoryLabel: "☕ Coffee & Vent",
-    location: "Koramangala 4th Block",
-    content:
-      "Heavy sprint deadline week and feeling brain-dead. Anyone free for a quick 25-minute coffee & vent break this evening around 5:30 PM? First round of cold brew on me!",
-    createdAt: "28m ago",
-    likes: 14,
-    repliesCount: 5,
-  },
-  {
-    id: "post-3",
-    authorName: "Vikram Desai",
-    authorUniqueId: "SU-5183-VD",
-    authorRole: "Engineering Manager",
-    authorAvatarSeed: 3,
-    category: "work",
-    categoryLabel: "💼 Work & Co-working",
-    location: "Virtual / Google Meet",
-    content:
-      "Setting up a virtual 50-minute Pomodoro co-working sprint tomorrow at 11 AM. Cameras optional, focused deep work with a friendly 5-minute debrief. Text me to grab the room link!",
-    createdAt: "1h ago",
-    likes: 11,
-    repliesCount: 4,
-  },
-  {
-    id: "post-4",
-    authorName: "Priya Nair",
-    authorUniqueId: "SU-4391-PN",
-    authorRole: "People & Talent Lead",
-    authorAvatarSeed: 4,
-    category: "mindful",
-    categoryLabel: "🧘 Mindful & Walk",
-    location: "Cubbon Park",
-    content:
-      "Doing a gentle Sunday morning walk around Cubbon Park at 8:00 AM. Phones on silent, breathing in some fresh air. If you need some calm time away from screens, text me and let's stroll together.",
-    createdAt: "2h ago",
-    likes: 19,
-    repliesCount: 6,
-  },
-  {
-    id: "post-5",
-    authorName: "Samarth Gupta",
-    authorUniqueId: "SU-6029-SG",
-    authorRole: "Data Analyst",
-    authorAvatarSeed: 5,
-    category: "open",
-    categoryLabel: "💬 Spontaneous Talk",
-    location: "Text / Call",
-    content:
-      "Just switched teams this week and feeling serious imposter syndrome. Would genuinely love to text and chat with another tech peer who has been through this transition recently.",
-    createdAt: "3h ago",
-    likes: 24,
-    repliesCount: 9,
-  },
-  {
-    id: "post-6",
-    authorName: "Neha Sen",
-    authorUniqueId: "SU-3721-NS",
-    authorRole: "UX Researcher",
-    authorAvatarSeed: 6,
-    category: "hobbies",
-    categoryLabel: "🎨 Hobbies & Fun",
-    location: "Whitefield / Nexus",
-    content:
-      "Board game night this Saturday at 6 PM! Looking for 2 more people for Catan or Ticket to Ride. Complete beginners welcome, we'll teach the rules in 5 minutes!",
-    createdAt: "4h ago",
     likes: 12,
     repliesCount: 4,
   },
   {
-    id: "post-7",
-    authorName: "Siddharth Rao",
-    authorUniqueId: "SU-7241-SR",
-    authorRole: "Backend Architect",
-    authorAvatarSeed: 7,
+    id: "post-2",
+    authorName: "Junior Ronaldo",
+    authorUniqueId: "SU-8492-RM",
+    authorRole: "Football & Turf Striker",
+    authorAvatarSeed: 1,
+    category: "sports",
+    categoryLabel: "⚽ Turf Football",
+    location: "Gurgaon, Haryana",
+    content:
+      "Organizing a friendly 5-a-side weekend turf friendly near Cyber Hub / Sector 54. Looking for peers who love quick passing and good cardio. DM to join the squad!",
+    createdAt: "24m ago",
+    likes: 15,
+    repliesCount: 6,
+  },
+  {
+    id: "post-3",
+    authorName: "Crazy Kohli",
+    authorUniqueId: "SU-5183-VD",
+    authorRole: "Box Cricket Enthusiast",
+    authorAvatarSeed: 3,
+    category: "sports",
+    categoryLabel: "🏏 Box Cricket",
+    location: "Noida, Uttar Pradesh",
+    content:
+      "Box cricket night under turf lights this Sunday 6:00 PM in Sector 62 Noida! Need 2 more players to balance the teams. Tennis ball, zero pressure, lots of fun.",
+    createdAt: "45m ago",
+    likes: 18,
+    repliesCount: 7,
+  },
+  {
+    id: "post-4",
+    authorName: "Iron Gymmer",
+    authorUniqueId: "SU-4391-PN",
+    authorRole: "Morning Lifting & Mobility",
+    authorAvatarSeed: 4,
+    category: "sports",
+    categoryLabel: "💪 Gym & Fitness",
+    location: "Gurgaon, Haryana",
+    content:
+      "Looking for a 6:30 AM gym & mobility accountability buddy around DLF Phase 2. Staying consistent with functional workouts and stretching before morning work meetings.",
+    createdAt: "1h ago",
+    likes: 9,
+    repliesCount: 3,
+  },
+  {
+    id: "post-5",
+    authorName: "Messed Messi",
+    authorUniqueId: "SU-6029-SG",
+    authorRole: "Weekend Sports Peer",
+    authorAvatarSeed: 5,
+    category: "sports",
+    categoryLabel: "⚽ Sports Meetup",
+    location: "Palwal, Haryana",
+    content:
+      "Anyone based in or around Palwal up for weekend badminton or turf football? Trying to get a regular local group going every Saturday morning!",
+    createdAt: "2h ago",
+    likes: 11,
+    repliesCount: 5,
+  },
+  {
+    id: "post-6",
+    authorName: "Drop Shot Dave",
+    authorUniqueId: "SU-3721-NS",
+    authorRole: "Badminton Enthusiast",
+    authorAvatarSeed: 6,
     category: "sports",
     categoryLabel: "🏸 Sports & Fitness",
-    location: "Online Daily Check-in",
+    location: "Janakpuri, Delhi",
     content:
-      "Starting a daily 15-minute post-work stretch & mobility routine. Looking for an accountability buddy to text daily check-ins with so we stay consistent through the quarter.",
+      "Smash rallies & drop shots! Looking for a sparring buddy for singles or doubles practice on weekdays after 6 PM. Can split court booking fee.",
+    createdAt: "3h ago",
+    likes: 14,
+    repliesCount: 8,
+  },
+  {
+    id: "post-7",
+    authorName: "Cold Brew Charlie",
+    authorUniqueId: "SU-9134-MJ",
+    authorRole: "Remote Peer",
+    authorAvatarSeed: 8,
+    category: "coffee",
+    categoryLabel: "☕ Coffee & Vent",
+    location: "Auckland, New Zealand",
+    content:
+      "Working remotely overseas from New Zealand! Happy to hop on virtual coffee chats or share expat wellness thoughts with peers back home.",
     createdAt: "5h ago",
-    likes: 9,
-    repliesCount: 2,
+    likes: 21,
+    repliesCount: 9,
   },
   {
     id: "post-8",
-    authorName: "Meera Joshi",
-    authorUniqueId: "SU-9134-MJ",
-    authorRole: "Growth Marketer",
-    authorAvatarSeed: 8,
-    category: "open",
-    categoryLabel: "💬 Spontaneous Talk",
-    location: "Anywhere",
+    authorName: "Zen Zebra",
+    authorUniqueId: "SU-7241-SR",
+    authorRole: "Yoga & Breathwork",
+    authorAvatarSeed: 7,
+    category: "mindful",
+    categoryLabel: "🧘 Mindful & Walk",
+    location: "South Delhi",
     content:
-      "Afternoon slump hitting hard. If anyone else is staring blankly at spreadsheets right now, text me! Let's talk about anything non-work for 10 minutes to reset our brains.",
+      "Morning mindfulness stroll and gentle yoga breathing in South Delhi parks at 7:00 AM. A quiet space to destress away from laptops.",
     createdAt: "6h ago",
     likes: 16,
-    repliesCount: 7,
+    repliesCount: 4,
   },
 ];
 
@@ -207,7 +211,23 @@ export function CommunityLiveBoard() {
 
   // Filter state
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("#category-dropdown-container")) {
+        setShowCategoryMenu(false);
+      }
+    };
+    if (showCategoryMenu) {
+      document.addEventListener("click", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showCategoryMenu]);
 
   // Post composer state
   const [showComposer, setShowComposer] = useState(false);
@@ -225,6 +245,13 @@ export function CommunityLiveBoard() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [outgoingText, setOutgoingText] = useState("");
   const [isTypingPeer, setIsTypingPeer] = useState(false);
+
+  // Badminton Matchmaking & Turf Booking Modal state
+  const [turfModalOpen, setTurfModalOpen] = useState(false);
+  const [turfModalPartner, setTurfModalPartner] = useState<{
+    name: string;
+    location: string;
+  }>({ name: "Shuttle Queen", location: "Janakpuri, Delhi" });
 
   // Load stored posts from localStorage on mount
   useEffect(() => {
@@ -424,44 +451,41 @@ export function CommunityLiveBoard() {
     <div className="community-live-board" style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 16px 80px" }}>
       {/* Top Banner: Community & Direct Peer Texting */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
           background: "linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #047857 100%)",
           color: "white",
-          borderRadius: "20px",
-          padding: "24px 28px",
-          marginBottom: "28px",
-          boxShadow: "0 10px 25px -5px rgba(13, 148, 136, 0.25)",
+          borderRadius: "16px",
+          padding: "16px 20px",
+          marginBottom: "18px",
+          boxShadow: "0 8px 20px -6px rgba(13, 148, 136, 0.2)",
         }}
       >
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <span
                 style={{
                   background: "rgba(255, 255, 255, 0.2)",
-                  padding: "4px 10px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
+                  padding: "3px 8px",
+                  borderRadius: "16px",
+                  fontSize: "11px",
                   fontWeight: 600,
-                  letterSpacing: "0.04em",
+                  letterSpacing: "0.03em",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "5px",
                 }}
               >
-                <ShieldCheck size={14} /> stress unwind · Member Network
+                <ShieldCheck size={13} /> Anonymous &amp; Encrypted
               </span>
-              <span style={{ fontSize: "12px", opacity: 0.85 }}>● Live Connections</span>
+              <span style={{ fontSize: "11px", opacity: 0.85 }}>● 142 Active Peers</span>
             </div>
 
-            <h2 style={{ margin: "0 0 6px", fontSize: "24px", fontWeight: 700, color: "white" }}>
+            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "white" }}>
               Community Board &amp; Direct Texting
             </h2>
-            <p style={{ margin: 0, fontSize: "14px", opacity: 0.92, maxWidth: "600px", lineHeight: 1.5 }}>
-              Post random activities or thoughts, connect with colleagues and peers, and text directly to talk ahead and unwind together.
-            </p>
           </div>
 
           {/* Current Member Status Card */}
@@ -470,80 +494,203 @@ export function CommunityLiveBoard() {
               background: "rgba(255, 255, 255, 0.14)",
               backdropFilter: "blur(12px)",
               border: "1px solid rgba(255, 255, 255, 0.25)",
-              borderRadius: "14px",
-              padding: "14px 20px",
+              borderRadius: "12px",
+              padding: "8px 14px",
               display: "flex",
               alignItems: "center",
-              gap: "12px",
+              gap: "10px",
             }}
           >
             <div
               style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "12px",
-                background: "rgba(255, 255, 255, 0.2)",
+                width: "32px",
+                height: "32px",
+                borderRadius: "10px",
+                background: "rgba(255, 255, 255, 0.22)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 700,
-                fontSize: "18px",
+                fontSize: "14px",
               }}
             >
               {myName.charAt(0)}
             </div>
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "white" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "white" }}>
                 {myName}
               </div>
-              <div style={{ fontSize: "12px", opacity: 0.9, display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#4ade80" }} />
-                Active member · Ready to connect
+              <div style={{ fontSize: "11px", opacity: 0.9, display: "flex", alignItems: "center", gap: "5px" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80" }} />
+                Online &amp; ready to connect
               </div>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Main Action Bar: Composer Trigger & Category Filters */}
+      {/* Main Action Bar: Category Dropdown & Post Composer */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "14px",
-          marginBottom: "20px",
+          gap: "12px",
+          marginBottom: "16px",
         }}
       >
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {Object.entries(CATEGORY_META).map(([key, meta]) => {
-            const isSelected = activeCategory === key;
-            return (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          {/* Active Category Display Pill */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              borderRadius: "12px",
+              background: "#087f79",
+              color: "#ffffff",
+              fontSize: "13px",
+              fontWeight: 650,
+              boxShadow: "0 2px 8px rgba(8, 127, 121, 0.25)",
+            }}
+          >
+            <span>{CATEGORY_META[activeCategory as keyof typeof CATEGORY_META]?.label || "All Posts"}</span>
+            {activeCategory !== "all" && (
               <button
-                key={key}
                 type="button"
-                onClick={() => setActiveCategory(key)}
+                onClick={() => setActiveCategory("all")}
+                title="Clear filter and show all"
                 style={{
-                  background: isSelected ? "#087f79" : "#fff",
-                  color: isSelected ? "#fff" : "#475569",
-                  border: isSelected ? "1px solid #087f79" : "1px solid #e2e8f0",
-                  padding: "8px 14px",
-                  borderRadius: "12px",
-                  fontSize: "13px",
-                  fontWeight: isSelected ? 600 : 500,
-                  cursor: "pointer",
+                  background: "rgba(255, 255, 255, 0.25)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "18px",
+                  height: "18px",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
-                  boxShadow: isSelected ? "0 4px 10px rgba(8, 127, 121, 0.2)" : "0 1px 3px rgba(0, 0, 0, 0.04)",
-                  transition: "all 0.15s ease",
+                  justifyContent: "center",
+                  color: "#fff",
+                  cursor: "pointer",
+                  padding: 0,
+                  marginLeft: "2px",
                 }}
               >
-                {meta.label}
+                <X size={12} />
               </button>
-            );
-          })}
+            )}
+          </div>
+
+          {/* Three-Dot (•••) Dropdown Trigger */}
+          <div id="category-dropdown-container" style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => setShowCategoryMenu((prev) => !prev)}
+              aria-label="Filter categories"
+              style={{
+                background: showCategoryMenu ? "#f1f5f9" : "#ffffff",
+                color: "#334155",
+                border: "1px solid #cbd5e1",
+                borderRadius: "12px",
+                padding: "8px 12px",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <MoreHorizontal size={18} />
+              <ChevronDown
+                size={14}
+                style={{
+                  transition: "transform 0.2s ease",
+                  transform: showCategoryMenu ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              />
+            </button>
+
+            {/* Dropdown Menu Popover */}
+            <AnimatePresence>
+              {showCategoryMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    zIndex: 50,
+                    minWidth: "250px",
+                    background: "#ffffff",
+                    borderRadius: "14px",
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 12px 32px -4px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0,0,0,0.04)",
+                    padding: "8px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "6px 10px 6px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      color: "#94a3b8",
+                      borderBottom: "1px solid #f1f5f9",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Select Community Topic
+                  </div>
+
+                  {Object.entries(CATEGORY_META).map(([key, meta]) => {
+                    const isSelected = activeCategory === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          setActiveCategory(key);
+                          setShowCategoryMenu(false);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          width: "100%",
+                          padding: "8px 12px",
+                          borderRadius: "10px",
+                          border: "none",
+                          background: isSelected ? "rgba(8, 127, 121, 0.1)" : "transparent",
+                          color: isSelected ? "#087f79" : "#334155",
+                          fontWeight: isSelected ? 650 : 500,
+                          fontSize: "13px",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "background 0.12s ease",
+                        }}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                          {meta.label}
+                        </span>
+                        {isSelected && <Check size={16} color="#087f79" />}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         <button
@@ -767,14 +914,10 @@ export function CommunityLiveBoard() {
                 key={post.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
+                className="community-post-card"
                 style={{
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "16px",
-                  padding: "20px 24px",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.03)",
-                  transition: "box-shadow 0.2s ease, border-color 0.2s ease",
-                }}
+                  "--category-border-color": CATEGORY_META[post.category]?.color || "#0d9488",
+                } as React.CSSProperties}
               >
                 {/* Post Header */}
                 <div
@@ -790,32 +933,38 @@ export function CommunityLiveBoard() {
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <div
                       style={{
-                        width: "44px",
-                        height: "44px",
-                        borderRadius: "12px",
+                        width: "46px",
+                        height: "46px",
+                        borderRadius: "14px",
                         background: `hsl(${(post.authorAvatarSeed * 45 + 160) % 360}, 75%, 90%)`,
                         color: `hsl(${(post.authorAvatarSeed * 45 + 160) % 360}, 85%, 28%)`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontWeight: 700,
-                        fontSize: "16px",
+                        fontWeight: 800,
+                        fontSize: "17px",
                         flexShrink: 0,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                       }}
                     >
                       {post.authorName.charAt(0)}
                     </div>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <strong style={{ fontSize: "15px", color: "#1e293b" }}>{post.authorName}</strong>
+                        <strong style={{ fontSize: "15px", color: "#1e293b", fontWeight: 700 }}>
+                          {post.authorName}
+                        </strong>
+                        <span className="author-unique-pill">
+                          <Tag size={10} /> {post.authorUniqueId}
+                        </span>
                         {isMe && (
                           <span
                             style={{
                               fontSize: "10px",
                               background: "#ccfbf1",
                               color: "#0f766e",
-                              fontWeight: 700,
-                              padding: "2px 6px",
+                              fontWeight: 800,
+                              padding: "2px 7px",
                               borderRadius: "6px",
                             }}
                           >
@@ -824,8 +973,10 @@ export function CommunityLiveBoard() {
                         )}
                       </div>
 
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
-                        <span style={{ fontSize: "12px", color: "#64748b" }}>{post.authorRole}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
+                        <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 500 }}>
+                          {post.authorRole}
+                        </span>
                         <span style={{ fontSize: "12px", color: "#cbd5e1" }}>•</span>
                         <span style={{ fontSize: "12px", color: "#94a3b8" }}>{post.createdAt}</span>
                       </div>
@@ -837,12 +988,12 @@ export function CommunityLiveBoard() {
                     <span
                       style={{
                         fontSize: "12px",
-                        fontWeight: 600,
-                        padding: "4px 10px",
+                        fontWeight: 650,
+                        padding: "5px 12px",
                         borderRadius: "20px",
-                        background: "#f0fdf4",
-                        color: "#166534",
-                        border: "1px solid #bbf7d0",
+                        background: "rgba(15, 118, 110, 0.08)",
+                        color: "#0f766e",
+                        border: "1px solid rgba(15, 118, 110, 0.2)",
                       }}
                     >
                       {post.categoryLabel}
@@ -851,17 +1002,18 @@ export function CommunityLiveBoard() {
                       <span
                         style={{
                           fontSize: "12px",
-                          color: "#64748b",
+                          fontWeight: 500,
+                          color: "#475569",
                           background: "#f8fafc",
                           border: "1px solid #e2e8f0",
-                          padding: "4px 10px",
+                          padding: "5px 12px",
                           borderRadius: "20px",
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "4px",
+                          gap: "5px",
                         }}
                       >
-                        <MapPin size={12} /> {post.location}
+                        <MapPin size={13} color="#0d9488" /> {post.location}
                       </span>
                     )}
                   </div>
@@ -870,10 +1022,10 @@ export function CommunityLiveBoard() {
                 {/* Post Content */}
                 <p
                   style={{
-                    fontSize: "14.5px",
+                    fontSize: "15px",
                     lineHeight: "1.65",
                     color: "#334155",
-                    margin: "0 0 16px",
+                    margin: "0 0 18px",
                     whiteSpace: "pre-wrap",
                   }}
                 >
@@ -887,15 +1039,16 @@ export function CommunityLiveBoard() {
                     justifyContent: "space-between",
                     alignItems: "center",
                     flexWrap: "wrap",
-                    gap: "10px",
-                    paddingTop: "14px",
+                    gap: "12px",
+                    paddingTop: "16px",
                     borderTop: "1px solid #f1f5f9",
                   }}
                 >
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
                     {/* Primary Direct Texting CTA */}
                     <button
                       type="button"
+                      className="direct-text-btn"
                       onClick={() => {
                         const member: CommunityMember = {
                           id: post.authorUniqueId,
@@ -904,28 +1057,44 @@ export function CommunityLiveBoard() {
                           avatarSeed: post.authorAvatarSeed,
                           initials: post.authorUniqueId.slice(-2) || "MB",
                           status: "Active member",
+                          location: post.location || "Janakpuri, Delhi",
                         };
                         openChatWithMember(member, post);
                       }}
-                      style={{
-                        background: "#087f79",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "10px",
-                        padding: "8px 16px",
-                        fontSize: "13px",
-                        fontWeight: 650,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        cursor: "pointer",
-                        boxShadow: "0 3px 8px rgba(8, 127, 121, 0.2)",
-                      }}
                     >
-                      <MessageCircle size={15} /> Text &amp; Connect Directly
+                      <MessageCircle size={15} /> Text Directly
                     </button>
 
-                    {/* Secondary Quick Text */}
+                    {/* Quick Badminton / Turf Matchmaking CTA */}
+                    {post.category === "sports" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTurfModalPartner({
+                            name: post.authorName,
+                            location: post.location || "Janakpuri, Delhi",
+                          });
+                          setTurfModalOpen(true);
+                        }}
+                        style={{
+                          background: "rgba(8, 127, 121, 0.08)",
+                          color: "#087f79",
+                          border: "1px solid rgba(8, 127, 121, 0.25)",
+                          padding: "8px 14px",
+                          borderRadius: "10px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        🏸 Match &amp; Book Turf
+                      </button>
+                    )}
+
+                    {/* Secondary Heart Like Reaction */}
                     <button
                       type="button"
                       onClick={() => handleToggleLike(post.id)}
@@ -934,23 +1103,25 @@ export function CommunityLiveBoard() {
                         color: post.liked ? "#dc2626" : "#64748b",
                         border: "1px solid",
                         borderColor: post.liked ? "#fca5a5" : "#e2e8f0",
-                        borderRadius: "10px",
+                        borderRadius: "12px",
                         padding: "8px 14px",
                         fontSize: "13px",
-                        fontWeight: 500,
+                        fontWeight: 600,
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "5px",
+                        gap: "6px",
                         cursor: "pointer",
+                        transition: "all 0.2s ease",
                       }}
                     >
-                      <Heart size={14} fill={post.liked ? "currentColor" : "none"} />
+                      <Heart size={15} fill={post.liked ? "currentColor" : "none"} />
                       <span>{post.likes}</span>
                     </button>
                   </div>
 
-                  <div style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span>{post.repliesCount} peer text threads connected</span>
+                  <div style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981" }} />
+                    <span>{post.repliesCount} active peer threads</span>
                   </div>
                 </div>
               </motion.article>
@@ -1077,6 +1248,73 @@ export function CommunityLiveBoard() {
                   </span>
                 </div>
               )}
+
+              {/* Location & Proximity Bar with Badminton Matchmaking Action */}
+              {(() => {
+                const peerLoc = activeChatMember.location || "Janakpuri, Delhi";
+                const myLoc = localProfile?.location || "Janakpuri, Delhi";
+                const prox = calculateProximity(myLoc, peerLoc);
+                return (
+                  <div
+                    style={{
+                      background: prox.isViableForMeetup ? "#f0fdfa" : "#fdf2f8",
+                      borderBottom: prox.isViableForMeetup ? "1px solid #99f6e4" : "1px solid #fbcfe8",
+                      padding: "8px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: 700, color: "#1e293b" }}>
+                        <MapPin size={13} color="#0f766e" /> {peerLoc}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "10.5px",
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: "9999px",
+                          background: prox.isViableForMeetup ? "rgba(13, 148, 136, 0.15)" : "rgba(219, 39, 119, 0.15)",
+                          color: prox.isViableForMeetup ? "#0f766e" : "#be185d",
+                        }}
+                      >
+                        {prox.label}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTurfModalPartner({
+                          name: activeChatMember.name,
+                          location: peerLoc,
+                        });
+                        setTurfModalOpen(true);
+                      }}
+                      style={{
+                        background: "#087f79",
+                        color: "white",
+                        border: "none",
+                        padding: "5px 12px",
+                        borderRadius: "8px",
+                        fontSize: "11.5px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        boxShadow: "0 2px 4px rgba(8, 127, 121, 0.2)",
+                      }}
+                    >
+                      🏸 Coordinate Badminton &amp; Book Turf
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Chat Message Scrollable Container */}
               <div
@@ -1275,6 +1513,16 @@ export function CommunityLiveBoard() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Badminton Matchmaking & Turf Slot Booking Modal */}
+      <BadmintonTurfBookingModal
+        isOpen={turfModalOpen}
+        onClose={() => setTurfModalOpen(false)}
+        partnerCuteName={turfModalPartner.name}
+        partnerLocation={turfModalPartner.location}
+        userCuteName={localProfile?.name || "Smash Sensation"}
+        userLocation={localProfile?.location || "Janakpuri, Delhi"}
+      />
     </div>
   );
 }

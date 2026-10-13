@@ -16,6 +16,16 @@
 import { getSupabase, isConfigured } from "./supabase/client";
 import { accountId } from "@/hooks/useInternetIdentity";
 import {
+  getStoredSessions,
+  getStoredSession,
+  joinStoredSession,
+  leaveStoredSession,
+  createStoredSession,
+  updateStoredSession,
+  deleteStoredSession,
+  getMyStoredSessions,
+} from "./sessionStore";
+import {
   type backendInterface,
   type Session,
   type Task,
@@ -144,16 +154,46 @@ export async function rpc(
     if (name === "list_connections") return [];
     if (name === "find_members") {
       return [
-        { id: "22222222-2222-4222-8222-222222222222", name: "Maya Sharma", avatar: 1, bio: "Lunch walks and book discussions.", interests: ["Books", "Walking", "Yoga"] },
-        { id: "33333333-3333-4333-8333-333333333333", name: "Samir Patel", avatar: 2, bio: "Tech & badminton enthusiast.", interests: ["Badminton", "Tech", "Cycling"] },
-        { id: "44444444-4444-4444-8444-444444444444", name: "Jordan Lee", avatar: 3, bio: "Morning runner & coffee explorer.", interests: ["Running", "Coffee", "Football"] },
+        { id: "22222222-2222-4222-8222-222222222222", name: "Shuttle Queen", avatar: 1, bio: "Weekend badminton rallies & court sparring partner.", location: "Janakpuri, Delhi", interests: ["Badminton", "Sports", "Yoga"] },
+        { id: "33333333-3333-4333-8333-333333333333", name: "Junior Ronaldo", avatar: 2, bio: "Football striker & box sports coordinator.", location: "Gurgaon, Haryana", interests: ["Football", "Sports", "Cycling"] },
+        { id: "44444444-4444-4444-8444-444444444444", name: "Crazy Kohli", avatar: 3, bio: "Evening turf cricket match organizer.", location: "Noida, Uttar Pradesh", interests: ["Cricket", "Sports", "Fitness"] },
+        { id: "55555555-5555-5555-8555-555555555555", name: "Iron Gymmer", avatar: 4, bio: "Morning lift & functional fitness accountability.", location: "Gurgaon, Haryana", interests: ["Gym / Fitness", "Sports"] },
+        { id: "66666666-6666-6666-8666-666666666666", name: "Messed Messi", avatar: 5, bio: "Weekend turf friendly player.", location: "Palwal, Haryana", interests: ["Football", "Sports"] },
+        { id: "77777777-7777-7777-8777-777777777777", name: "Cold Brew Charlie", avatar: 6, bio: "Overseas expat working remotely from Auckland.", location: "Auckland, New Zealand", interests: ["Coffee", "Books", "Travel"] },
       ];
     }
     if (name === "group_category_counts") {
       return { sports: 12, wellbeing: 12, social: 12, outdoors: 10, arts: 10, learning: 10 };
     }
     if (name === "search_groups") return [];
-    if (name === "get_feed") return [];
+    if (name === "get_feed") {
+      const { getStoredPosts } = require("./liveDataManager");
+      const groupId = args.p_group !== undefined && args.p_group !== null ? Number(args.p_group) : null;
+      return getStoredPosts(groupId);
+    }
+    if (name === "publish_post") {
+      const { addLivePost, replyLivePost } = require("./liveDataManager");
+      const groupId = args.p_group !== undefined && args.p_group !== null ? Number(args.p_group) : null;
+      if (args.p_parent) {
+        replyLivePost(Number(args.p_parent), String(args.p_body || ""), args.p_anonymous ? "Anonymous Member" : undefined);
+        return 1;
+      }
+      return addLivePost({
+        groupId,
+        body: String(args.p_body || ""),
+        anonymous: Boolean(args.p_anonymous),
+      });
+    }
+    if (name === "like_post" || name === "react_post") {
+      const { likeLivePost } = require("./liveDataManager");
+      likeLivePost(Number(args.p_post));
+      return 1;
+    }
+    if (name === "delete_post") {
+      const { deleteLivePost } = require("./liveDataManager");
+      deleteLivePost(Number(args.p_post));
+      return 1;
+    }
     if (name === "is_admin") return true;
     if (name === "admin_stats") {
       return {
@@ -161,6 +201,17 @@ export async function rpc(
         total_bookings: 3, confirmed_bookings: 2,
         bookings_by_provider: { "1": 2, "2": 1 },
       };
+    }
+    if (name === "join_session") {
+      const sessionId = BigInt(String(args.p_session || 1));
+      const join = Boolean(args.p_join);
+      const targetUser = String(args.p_user || args.userId || "creator-admin");
+      if (join) {
+        joinStoredSession(sessionId, targetUser);
+      } else {
+        leaveStoredSession(sessionId, targetUser);
+      }
+      return 1;
     }
     if (name === "session_summaries_page" || name === "my_sessions") return [];
     if (name === "session_roster") return [{ user_id: args.userId || args.p_session }];
@@ -298,58 +349,46 @@ function createMockBackend(userId: string): backendInterface {
     saveCallerUserProfile: async () => {},
 
     listSessions: async (opts) => {
-      let filtered = [...sessions];
+      let filtered = getStoredSessions(uid);
       if (opts?.type) filtered = filtered.filter((s) => s.programType === opts.type);
       return filtered;
     },
-    getAllSessions: async () => sessions,
+    getAllSessions: async () => getStoredSessions(uid),
     getSessionsByProgramType: async (type) =>
-      sessions.filter((s) => s.programType === type),
+      getStoredSessions(uid).filter((s) => s.programType === type),
     getSession: async (id) =>
-      sessions.find((s) => s.id === id) || sessions[0],
-    getMySessions: async () => [
-      sessions.filter((s) => s.creator.toString() === uid),
-      sessions.filter((s) => s.joined),
-    ],
+      getStoredSession(id, uid) || getStoredSessions(uid)[0],
+    getMySessions: async () => getMyStoredSessions(uid),
     createSession: async (title, description, type, date, capacity, space, location) => {
-      const newSession: Session = {
-        id: BigInt(sessions.length + 1),
+      return createStoredSession({
         title,
         description,
-        creator: accountId(uid),
-        participants: [accountId(uid)],
-        participantCount: 1n,
-        joined: true,
-        createdAt: ns(new Date().toISOString()),
+        programType: type,
         dateTime: date,
         maxParticipants: capacity,
-        programType: type,
         spaceName: space ?? undefined,
         location: location ?? undefined,
-      };
-      sessions.push(newSession);
-      return newSession.id;
+      }, uid);
     },
     joinSession: async (id) => {
-      const s = sessions.find((x) => x.id === id);
-      if (s) {
-        s.joined = true;
-        s.participantCount = (s.participantCount ?? 0n) + 1n;
-      }
+      joinStoredSession(id, uid);
     },
     leaveSession: async (id) => {
-      const s = sessions.find((x) => x.id === id);
-      if (s) {
-        s.joined = false;
-        const count = s.participantCount ?? 0n;
-        s.participantCount = count > 0n ? count - 1n : 0n;
-      }
+      leaveStoredSession(id, uid);
     },
     deleteSession: async (id) => {
-      const idx = sessions.findIndex((x) => x.id === id);
-      if (idx !== -1) sessions.splice(idx, 1);
+      deleteStoredSession(id);
     },
-    updateSession: async () => {},
+    updateSession: async (id, title, description, date, capacity, space, location) => {
+      updateStoredSession(id, {
+        ...(title ? { title } : {}),
+        ...(description ? { description } : {}),
+        ...(date ? { dateTime: new Date(Number(date / 1_000_000n)).toISOString() } : {}),
+        ...(capacity ? { maxParticipants: Number(capacity) } : {}),
+        ...(space !== undefined ? { spaceName: space || undefined } : {}),
+        ...(location !== undefined ? { location: location || undefined } : {}),
+      });
+    },
 
     getAllTasks: async () => [],
     getTask: async (id) => ({

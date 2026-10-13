@@ -12,25 +12,35 @@ import {
   Clock,
   Copy,
   Check,
+  CheckCircle2,
+  Droplets,
   Eye,
   EyeOff,
+  Flame,
+  Heart,
   KeyRound,
   Loader2,
   Lock,
   LogIn,
+  MapPin,
   MessageCircle,
   Pencil,
+  PhoneCall,
   Save,
   Shield,
   ShieldCheck,
+  Smile,
   Sparkles,
   Stethoscope,
   Tag,
   UserCheck,
   Users,
+  Wallet,
   Zap,
   ArrowRight,
   ArrowUpRight,
+  Activity,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,7 +73,7 @@ import {
 } from "../hooks/useConnections";
 import { useGroups } from "../hooks/useCommunity";
 import { moodLabel, moodWeight, useMoodWeek } from "../hooks/useMood";
-import { useLiveOffers } from "@/lib/liveDataManager";
+import { useLiveOffers, getStoredPosts, type LivePost } from "@/lib/liveDataManager";
 import { getStoredAppointments, type BookedAppointment } from "@/lib/appointments";
 import {
   getStoredAccountByEmail,
@@ -205,6 +215,56 @@ function QuickActionLink({ action }: { action: QuickAction }) {
   );
 }
 
+const GURGAON_HUBS = [
+  {
+    id: "all",
+    name: "All Gurgaon",
+    badge: "66 Active Circles",
+    description: "Across DLF Cyber City, Golf Course Road, Sector 29, and Udyog Vihar",
+  },
+  {
+    id: "cyber-city",
+    name: "DLF Cyber City & Cyber Hub",
+    badge: "28 Circles",
+    description: "Chai catchups at Cyber Hub, Badminton at Phase 2, Board Game nights",
+    popular: ["Chai & Tech Catchup @ Cyber Hub", "Rapid Metro Evening Runners", "Badminton Smashers Phase 2"],
+  },
+  {
+    id: "golf-course",
+    name: "Golf Course Rd & One Horizon",
+    badge: "18 Circles",
+    description: "Corporate yoga, Weekend trail runs, and confidential peer support",
+    popular: ["One Horizon Coffee & Book Swap", "Aravalli Trail Runners", "Executive Burnout Alleviation"],
+  },
+  {
+    id: "sector-29",
+    name: "Sector 29 & Leisure Valley",
+    badge: "12 Circles",
+    description: "Open air walks at Leisure Valley, Box Cricket, and Weekend social meets",
+    popular: ["Leisure Valley Sunday Walkers", "Box Cricket League", "Weekend Acoustic Music Circle"],
+  },
+  {
+    id: "udyog-vihar",
+    name: "Udyog Vihar & Ambience",
+    badge: "10 Circles",
+    description: "Tech founders & engineers coffee connect, Bowling & sports",
+    popular: ["Udyog Vihar Tech & Chai Circle", "Ambience Bowling & Fun", "Post-Shift Decompression"],
+  },
+];
+
+const DAILY_HABITS = [
+  { id: "water", label: "Hydration Goal", target: "8 glasses (2.5L)", icon: Droplets, color: "text-blue-500 bg-blue-500/10" },
+  { id: "posture", label: "Desk Posture Reset", target: "5-min neck & shoulder stretch", icon: Activity, color: "text-emerald-500 bg-emerald-500/10" },
+  { id: "breath", label: "Mindful Box Breathing", target: "3 mins to lower cortisol", icon: Heart, color: "text-rose-500 bg-rose-500/10" },
+  { id: "circle", label: "Connect with Colleagues", target: "Check into 1 Gurgaon circle", icon: Users, color: "text-purple-500 bg-purple-500/10" },
+];
+
+const GURGAON_HELPLINES = [
+  { name: "Vandrevala Foundation", phone: "+91 9999 666 555", desc: "24/7 Free & Confidential Corporate Mental Health Support" },
+  { name: "Tele-MANAS (Govt of India)", phone: "14416 / 1800-891-4416", desc: "Toll-free 24/7 mental health counseling across India" },
+  { name: "KIRAN Helpline", phone: "1800-599-0019", desc: "24/7 National Psychological & Rehabilitation Support" },
+];
+
 export function DashboardPage() {
   const { identity, login, isLoggingIn, isInitializing, user } = useInternetIdentity();
   const isAuthenticated = !!identity || !!user;
@@ -237,12 +297,58 @@ export function DashboardPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState(false);
 
+  // Gurgaon Hub & Habits State
+  const [selectedHub, setSelectedHub] = useState<string>("all");
+  const [completedHabits, setCompletedHabits] = useState<Record<string, boolean>>({
+    water: true,
+    posture: true,
+  });
+  const [todayMood, setTodayMood] = useState<string | null>(null);
+  const [recentFeedPosts, setRecentFeedPosts] = useState<LivePost[]>([]);
+
   // Password update state
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+
+  useEffect(() => {
+    try {
+      const savedHabits = localStorage.getItem("wellness_habits_completed");
+      if (savedHabits) {
+        setCompletedHabits(JSON.parse(savedHabits));
+      }
+      const savedMood = localStorage.getItem("wellness_today_mood");
+      if (savedMood) {
+        setTodayMood(savedMood);
+      }
+      setRecentFeedPosts(getStoredPosts(null).slice(0, 6));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleHabit = (id: string) => {
+    setCompletedHabits((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem("wellness_habits_completed", JSON.stringify(next));
+      } catch {}
+      if (!prev[id]) {
+        toast.success("Awesome! Habit completed. +25 Wellness Points!");
+      }
+      return next;
+    });
+  };
+
+  const handleSelectMood = (mood: string) => {
+    setTodayMood(mood);
+    try {
+      localStorage.setItem("wellness_today_mood", mood);
+    } catch {}
+    toast.success(`Check-in recorded: Feeling ${mood}. Take care of yourself today!`);
+  };
 
   useEffect(() => {
     setAppointments(getStoredAppointments());
@@ -443,11 +549,20 @@ export function DashboardPage() {
                     {user?.email || "Here’s your stress unwind activity and community at a glance."}
                   </p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                      <MapPin className="w-3 h-3 text-emerald-600" /> Gurgaon Hub Live
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-800 bg-teal-500/15 px-2.5 py-0.5 rounded-full border border-teal-500/30">
+                      <Wallet className="w-3 h-3 text-teal-600" /> ₹3,500 Subsidized Wellness Credit
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-500/10 px-2.5 py-0.5 rounded-full border border-slate-500/20">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" /> 100% Employer-Blind Privacy
+                    </span>
                     <Link
                       href="/community"
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:text-teal-900 bg-teal-500/10 hover:bg-teal-500/20 px-3 py-1 rounded-full border border-teal-500/20 transition-colors"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" /> Community Board &amp; Direct Texting →
+                      <MessageCircle className="w-3.5 h-3.5" /> Community Board &amp; Chat →
                     </Link>
                   </div>
                 </div>
@@ -563,265 +678,264 @@ export function DashboardPage() {
 
         {/* ─── Tabs Navigation ─── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="rounded-2xl bg-muted/60 p-1.5 flex gap-1 w-full max-w-lg">
+          <TabsList className="rounded-2xl bg-muted/60 p-1.5 flex gap-1 w-full max-w-2xl overflow-x-auto scrollbar-none">
             <TabsTrigger
               value="overview"
-              className="rounded-xl px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center"
+              className="rounded-xl px-3 sm:px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center whitespace-nowrap"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              Overview &amp; Habits
+            </TabsTrigger>
+            <TabsTrigger
+              value="community"
+              className="rounded-xl px-3 sm:px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center whitespace-nowrap"
             >
               <Users className="w-3.5 h-3.5 text-emerald-600" />
-              Community &amp; Sessions
+              Circles &amp; Chats ({myGroups?.pages.flat().length || 0})
             </TabsTrigger>
             <TabsTrigger
               value="appointments"
-              className="rounded-xl px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center"
+              className="rounded-xl px-3 sm:px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center whitespace-nowrap"
             >
               <CalendarCheck className="w-3.5 h-3.5 text-emerald-600" />
-              Doctor Appointments ({appointments.length})
+              Appointments &amp; Wallet ({appointments.length})
             </TabsTrigger>
             <TabsTrigger
               value="security"
-              className="rounded-xl px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center"
+              className="rounded-xl px-3 sm:px-4 py-2 text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center gap-1.5 flex-1 justify-center whitespace-nowrap"
             >
               <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
-              Account &amp; Password
+              Account &amp; Security
             </TabsTrigger>
           </TabsList>
 
-          {/* ─── TAB 1: OVERVIEW & COMMUNITY ─── */}
+          {/* ─── TAB 1: OVERVIEW & HABITS ─── */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Your people & Mood trend */}
-            <div className="grid md:grid-cols-3 gap-6">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="md:col-span-2"
-              >
-                <Card>
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Users className="w-4 h-4 text-emerald-600" />
-                      Your People
-                    </CardTitle>
-                    <Link
-                      href="/people"
-                      className="text-xs text-emerald-700 hover:underline"
-                      data-ocid="dashboard.link"
-                    >
-                      Find more
-                    </Link>
-                  </CardHeader>
-                  <CardContent>
-                    {connectionsLoading ? (
-                      <p className="text-xs text-muted-foreground" role="status">
-                        Loading conversations…
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        {incoming.length > 0 && (
-                          <section aria-labelledby="dash-incoming">
-                            <h2
-                              id="dash-incoming"
-                              className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2"
-                            >
-                              Asked to connect with you
-                              <Badge className="rounded-full bg-emerald-600 text-[10px]">
-                                {incoming.length}
-                              </Badge>
-                            </h2>
-                            <ul className="space-y-2">
-                              {incoming.map((c) => (
-                                <li
-                                  key={c.id}
-                                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3"
-                                >
-                                  <span className="font-medium text-xs">
-                                    {c.name} would like to connect
-                                  </span>
-                                  <span className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      className="rounded-xl text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                                      disabled={respond.isPending}
-                                      onClick={() =>
-                                        respond.mutate({
-                                          connectionId: c.id,
-                                          accept: true,
-                                        })
-                                      }
-                                      data-ocid="dashboard.accept_connection"
-                                    >
-                                      Accept
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="rounded-xl text-xs"
-                                      disabled={respond.isPending}
-                                      onClick={() =>
-                                        respond.mutate({
-                                          connectionId: c.id,
-                                          accept: false,
-                                        })
-                                      }
-                                    >
-                                      Decline
-                                    </Button>
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </section>
-                        )}
+            {/* Daily Habits & Mental Wellness Pulse Row */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Daily Habit Checklist & Streak */}
+              <Card className="border-border shadow-xs">
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-orange-500" />
+                    Daily Wellness Habits
+                  </CardTitle>
+                  <Badge className="bg-orange-500/15 text-orange-700 border-orange-200 text-[10px] font-bold">
+                    🔥 5-Day Streak
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3.5">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground font-medium">Today&apos;s Goal Progress</span>
+                      <span className="font-bold text-emerald-700">
+                        {Object.values(completedHabits).filter(Boolean).length} / {DAILY_HABITS.length} completed
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${Math.round((Object.values(completedHabits).filter(Boolean).length / DAILY_HABITS.length) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
 
-                        {openThreads.length > 0 ? (
-                          <section aria-labelledby="dash-threads">
-                            <h2
-                              id="dash-threads"
-                              className="text-xs font-semibold text-foreground mb-2"
-                            >
-                              Active Conversations
-                            </h2>
-                            <ul className="space-y-2">
-                              {openThreads.slice(0, 4).map((c) => (
-                                <li key={c.id}>
-                                  <Link
-                                    href="/people"
-                                    className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 hover:border-emerald-500/40 transition-colors"
-                                  >
-                                    <span className="font-medium text-xs">
-                                      {c.name}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                      Open chat <ArrowRight className="w-3 h-3" />
-                                    </span>
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
-                          </section>
-                        ) : null}
-
-                        {incoming.length === 0 && openThreads.length === 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {DAILY_HABITS.map((habit) => {
+                      const isDone = !!completedHabits[habit.id];
+                      return (
+                        <button
+                          key={habit.id}
+                          type="button"
+                          onClick={() => toggleHabit(habit.id)}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+                            isDone
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-foreground"
+                              : "bg-background border-border hover:border-emerald-500/30 text-muted-foreground"
+                          }`}
+                        >
                           <div
-                            className="text-center py-6 text-muted-foreground"
-                            data-ocid="dashboard.empty_state"
+                            className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              isDone ? "bg-emerald-600 text-white" : "border border-border bg-card"
+                            }`}
                           >
-                            <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-30 text-emerald-600" />
-                            <p className="text-xs font-medium">
-                              No pending chat requests
+                            {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-xs font-semibold leading-tight ${isDone ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                              {habit.label}
                             </p>
-                            <p className="text-[11px] mt-0.5">
-                              When colleagues ask to talk anonymously, they will appear here.
+                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                              {habit.target}
                             </p>
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Private mood trend */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
-                      Your Week
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div
-                      className="flex items-end gap-1.5 h-24"
-                      role="img"
-                      aria-label="Mood over the last seven days"
-                    >
+              {/* 1-Tap Burnout Pulse & Mood Check */}
+              <Card className="border-border shadow-xs">
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-rose-500" />
+                    How are you feeling today?
+                  </CardTitle>
+                  <Link href="/take-a-moment" className="text-xs text-emerald-700 hover:underline">
+                    Take a moment →
+                  </Link>
+                </CardHeader>
+                <CardContent className="space-y-3.5">
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[
+                      { mood: "Energized", emoji: "😊", label: "Energized" },
+                      { mood: "Balanced", emoji: "😌", label: "Balanced" },
+                      { mood: "Neutral", emoji: "😐", label: "Neutral" },
+                      { mood: "Stressed", emoji: "😣", label: "Stressed" },
+                      { mood: "Burnt Out", emoji: "😫", label: "Burnout" },
+                    ].map((m) => (
+                      <button
+                        key={m.mood}
+                        type="button"
+                        onClick={() => handleSelectMood(m.mood)}
+                        className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition-all ${
+                          todayMood === m.mood
+                            ? "bg-emerald-500/15 border-emerald-500 font-bold shadow-xs scale-102"
+                            : "bg-card border-border hover:border-emerald-500/30"
+                        }`}
+                      >
+                        <span className="text-xl">{m.emoji}</span>
+                        <span className="text-[10px] text-foreground leading-tight truncate w-full">
+                          {m.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {todayMood ? (
+                    <div className="p-2.5 rounded-xl bg-muted/60 border border-border text-xs flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        Today&apos;s check-in: <strong className="text-foreground">{todayMood}</strong>
+                      </span>
+                      {todayMood === "Stressed" || todayMood === "Burnt Out" ? (
+                        <Link href="/therapy" className="text-rose-700 font-semibold hover:underline">
+                          Book a 1-on-1 session →
+                        </Link>
+                      ) : (
+                        <Link href="/groups" className="text-emerald-700 font-semibold hover:underline">
+                          Explore sports circles →
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground italic text-center">
+                      Tap an emoji above to record your anonymous daily wellness pulse.
+                    </p>
+                  )}
+
+                  {/* 7-Day History Mini-bars */}
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-[11px] text-muted-foreground mb-1.5">Your 7-day trend</p>
+                    <div className="flex items-end gap-1.5 h-12" role="img" aria-label="Mood trend">
                       {(moodWeek ?? []).map((d) => {
                         const weight = moodWeight(d.mood);
                         return (
                           <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                             <span
-                              className={
-                                weight === 0
-                                  ? "w-full rounded-full bg-muted/40"
-                                  : "w-full rounded-full bg-emerald-600"
-                              }
+                              className={`w-full rounded-full ${weight === 0 ? "bg-muted/40" : "bg-emerald-600"}`}
                               style={{
-                                height: `${Math.max(8, weight * 18)}px`,
+                                height: `${Math.max(6, weight * 10)}px`,
                                 opacity: weight === 0 ? 1 : 0.4 + weight * 0.12,
                               }}
                             />
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-[9px] text-muted-foreground">
                               {d.day.slice(8)}
                             </span>
                           </div>
                         );
                       })}
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-3 flex items-center justify-between">
-                      <span>Private check-in</span>
-                      <Link href="/take-a-moment" className="text-emerald-700 hover:underline">
-                        Take a moment →
-                      </Link>
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Your groups */}
-            {(myGroups?.pages.flat().length ?? 0) > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.22 }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display text-base font-bold text-foreground flex items-center gap-2">
-                    <Users className="w-4 h-4 text-emerald-600" />
-                    Your Communities &amp; Groups
-                  </h2>
-                  <Link
-                    href="/groups"
-                    className="text-xs text-emerald-700 hover:underline"
-                  >
-                    Browse all groups →
-                  </Link>
+            {/* Gurgaon Corporate Hubs Radar */}
+            <Card className="border-border shadow-xs">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    Gurgaon Tech Parks &amp; Corporate Hubs Radar
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Connect with corporate employees nearby in Cyber City, Golf Course Road, and Sector 29
+                  </p>
                 </div>
-                <ul className="flex flex-wrap gap-2">
-                  {myGroups!.pages
-                    .flat()
-                    .slice(0, 8)
-                    .map((g) => (
-                      <li key={g.id}>
-                        <Link
-                          href={`/groups/${g.slug}`}
-                          className="inline-flex items-center gap-2 rounded-full border border-border px-3.5 py-1.5 text-xs font-medium hover:border-emerald-500/50 bg-card transition-colors shadow-2xs"
-                        >
-                          {g.name}
-                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
-                            {g.member_count}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                </ul>
-              </motion.div>
-            )}
+                <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700">
+                  NCR Live
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Hub Pills */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  {GURGAON_HUBS.map((hub) => (
+                    <button
+                      key={hub.id}
+                      type="button"
+                      onClick={() => setSelectedHub(hub.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border flex items-center gap-1.5 flex-shrink-0 ${
+                        selectedHub === hub.id
+                          ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                          : "bg-card text-muted-foreground border-border hover:border-emerald-500/40 hover:text-foreground"
+                      }`}
+                    >
+                      <span>{hub.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedHub === hub.id ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
+                        {hub.badge}
+                      </span>
+                    </button>
+                  ))}
+                </div>
 
-            {/* Quick actions & Upcoming sessions */}
+                {/* Hub Information & Popular meetups */}
+                {(() => {
+                  const currentHub = GURGAON_HUBS.find((h) => h.id === selectedHub) || GURGAON_HUBS[0];
+                  return (
+                    <div className="p-3.5 bg-muted/40 rounded-2xl border border-border space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-foreground">{currentHub.name}</h4>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{currentHub.description}</p>
+                        </div>
+                        <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl h-8">
+                          <Link href="/groups">Explore Hub Circles</Link>
+                        </Button>
+                      </div>
+
+                      {currentHub.popular && (
+                        <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/60">
+                          <span className="text-[11px] text-muted-foreground font-semibold">Popular here:</span>
+                          {currentHub.popular.map((act, i) => (
+                            <span key={i} className="text-[11px] font-medium bg-background px-2.5 py-1 rounded-lg border border-border text-foreground">
+                              {act}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions & Upcoming sessions */}
             <div className="grid md:grid-cols-3 gap-6">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="md:col-span-1"
-              >
+              <div className="md:col-span-1">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Quick Actions</CardTitle>
@@ -832,14 +946,9 @@ export function DashboardPage() {
                     ))}
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="md:col-span-2"
-              >
+              <div className="md:col-span-2">
                 <Card>
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -891,77 +1000,321 @@ export function DashboardPage() {
                     )}
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             </div>
 
-            {/* Activity Timeline */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Clock className="w-4 h-4 text-emerald-600" />
-                    My Activity
-                    {!logsLoading && recentLogs.length > 0 && (
-                      <Badge variant="secondary" className="ml-auto text-xs">
-                        {recentLogs.length} recent
-                      </Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {logsLoading ? (
-                    <div className="space-y-2.5" data-ocid="dashboard.loading_state">
-                      {["l1", "l2", "l3"].map((k) => (
-                        <Skeleton key={k} className="h-9 w-full rounded-lg" />
-                      ))}
-                    </div>
-                  ) : recentLogs.length === 0 ? (
-                    <div
-                      className="text-center py-6 text-muted-foreground"
-                      data-ocid="dashboard.empty_state"
-                    >
-                      <Clock className="w-7 h-7 mx-auto mb-2 opacity-30 text-emerald-600" />
-                      <p className="text-xs">No activity recorded yet</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {recentLogs.map((log, i) => (
-                        <motion.div
-                          key={log.id.toString()}
-                          initial={{ opacity: 0, x: -8 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.04 * i }}
-                          className="flex items-center gap-3 py-1.5"
-                          data-ocid={`dashboard.item.${i + 1}`}
+            {/* 24/7 Confidential Mental Health Helplines Card */}
+            <Card className="border-emerald-500/25 bg-gradient-to-r from-emerald-500/5 via-teal-500/5 to-transparent">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-emerald-600" />
+                  24/7 Confidential Mental Health &amp; Crisis Helplines (NCR &amp; India)
+                </CardTitle>
+                <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-800 bg-emerald-500/10">
+                  Always Free &amp; Anonymous
+                </Badge>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {GURGAON_HELPLINES.map((h, i) => (
+                    <div key={i} className="bg-card p-3 rounded-xl border border-border flex flex-col justify-between gap-2">
+                      <div>
+                        <h5 className="text-xs font-bold text-foreground">{h.name}</h5>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{h.desc}</p>
+                      </div>
+                      <div className="pt-2 border-t border-border flex items-center justify-between">
+                        <span className="font-mono text-xs font-bold text-emerald-700">{h.phone}</span>
+                        <a
+                          href={`tel:${h.phone.replace(/[^0-9]/g, "")}`}
+                          className="text-xs font-semibold text-emerald-700 hover:underline"
                         >
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0" />
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] flex-shrink-0 ${ACTIVITY_LOG_COLORS[log.activityType]}`}
-                          >
-                            {ACTIVITY_LOG_LABELS[log.activityType]}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground flex-1 truncate">
-                            ID #{log.relatedId.toString()}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground flex-shrink-0">
-                            {formatTs(log.createdAt)}
-                          </span>
-                        </motion.div>
-                      ))}
+                          Call Now →
+                        </a>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Activity Timeline */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Clock className="w-4 h-4 text-emerald-600" />
+                  My Activity
+                  {!logsLoading && recentLogs.length > 0 && (
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      {recentLogs.length} recent
+                    </Badge>
                   )}
-                </CardContent>
-              </Card>
-            </motion.div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {logsLoading ? (
+                  <div className="space-y-2.5" data-ocid="dashboard.loading_state">
+                    {["l1", "l2", "l3"].map((k) => (
+                      <Skeleton key={k} className="h-9 w-full rounded-lg" />
+                    ))}
+                  </div>
+                ) : recentLogs.length === 0 ? (
+                  <div
+                    className="text-center py-6 text-muted-foreground"
+                    data-ocid="dashboard.empty_state"
+                  >
+                    <Clock className="w-7 h-7 mx-auto mb-2 opacity-30 text-emerald-600" />
+                    <p className="text-xs">No activity recorded yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentLogs.map((log, i) => (
+                      <motion.div
+                        key={log.id.toString()}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.04 * i }}
+                        className="flex items-center gap-3 py-1.5"
+                        data-ocid={`dashboard.item.${i + 1}`}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0" />
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] flex-shrink-0 ${ACTIVITY_LOG_COLORS[log.activityType]}`}
+                        >
+                          {ACTIVITY_LOG_LABELS[log.activityType]}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground flex-1 truncate">
+                          ID #{log.relatedId.toString()}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                          {formatTs(log.createdAt)}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── TAB 2: CIRCLES & CHATS ─── */}
+          <TabsContent value="community" className="space-y-6">
+            {/* Your Joined Circles */}
+            <Card className="border-border shadow-xs">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-600" />
+                    Your Enrolled Gurgaon Circles
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Circles you participate in across DLF Cyber City, Sector 29, and Golf Course Road
+                  </p>
+                </div>
+                <Button size="sm" asChild variant="outline" className="rounded-xl text-xs h-8">
+                  <Link href="/groups">Browse All Groups →</Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {(myGroups?.pages.flat().length ?? 0) === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-30 text-emerald-600" />
+                    <p className="text-xs font-semibold">You haven&apos;t enrolled in any circles yet.</p>
+                    <p className="text-[11px] mt-0.5 mb-3">Join Badminton, Box Cricket, or Cyber Hub Cafes to connect.</p>
+                    <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs">
+                      <Link href="/groups">Explore Circles</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {myGroups!.pages.flat().map((g) => (
+                      <Link
+                        key={g.id}
+                        href={`/groups/${g.slug}`}
+                        className="p-3.5 rounded-2xl border border-border bg-card hover:border-emerald-500/50 transition-all flex flex-col justify-between gap-3 group shadow-2xs"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                              {g.category}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Users className="w-3 h-3" /> {g.member_count}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-foreground group-hover:text-emerald-700 transition-colors">
+                            {g.name}
+                          </h4>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {g.description}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                          Enter Circle Chat <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Live Feed & Chatter Preview */}
+            <Card className="border-border shadow-xs">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    Recent Discussions &amp; Peer Chatter
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    What members are sharing in community circles
+                  </p>
+                </div>
+                <Button size="sm" asChild variant="ghost" className="rounded-xl text-xs h-8 text-emerald-700">
+                  <Link href="/community">Open Live Board →</Link>
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recentFeedPosts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-4 text-center">No chatter yet. Start the conversation in a circle!</p>
+                ) : (
+                  recentFeedPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="p-3 rounded-xl border border-border bg-card space-y-1.5 hover:border-emerald-500/30 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-800 text-[10px] flex items-center justify-center font-bold">
+                            {post.alias.charAt(0)}
+                          </span>
+                          {post.alias}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(post.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {post.body}
+                      </p>
+                      <div className="flex items-center gap-3 pt-1 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                          <Heart className="w-3 h-3 fill-emerald-600" /> {post.likes} appreciations
+                        </span>
+                        <span>{post.replies?.length || 0} replies</span>
+                        <Link href="/community" className="text-emerald-700 hover:underline font-semibold ml-auto">
+                          Reply →
+                        </Link>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Direct People Connections */}
+            <Card className="border-border shadow-xs">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  Your 1-on-1 People &amp; Direct Chats
+                </CardTitle>
+                <Link href="/people" className="text-xs text-emerald-700 hover:underline">
+                  Find more colleagues →
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {connectionsLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading connections…</p>
+                ) : (
+                  <div className="space-y-4">
+                    {incoming.length > 0 && (
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-semibold text-foreground">Pending connection requests:</h5>
+                        {incoming.map((c) => (
+                          <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-border">
+                            <span className="text-xs font-medium">{c.name} wants to connect</span>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs h-7"
+                                onClick={() => respond.mutate({ connectionId: c.id, accept: true })}
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="rounded-xl text-xs h-7"
+                                onClick={() => respond.mutate({ connectionId: c.id, accept: false })}
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {openThreads.length > 0 ? (
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-semibold text-foreground">Active Direct Chats:</h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {openThreads.map((c) => (
+                            <Link
+                              key={c.id}
+                              href="/people"
+                              className="p-3 rounded-xl border border-border flex items-center justify-between hover:border-emerald-500/40 transition-colors"
+                            >
+                              <span className="text-xs font-bold text-foreground">{c.name}</span>
+                              <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                                Chat <ArrowRight className="w-3 h-3" />
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center py-4">
+                        No 1-on-1 chats yet. Send connection invites on the People page to start chatting!
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* ─── TAB 2: DOCTOR APPOINTMENTS & PERKS ─── */}
           <TabsContent value="appointments" className="space-y-6">
+            {/* Subsidized Corporate Wellness Wallet */}
+            <Card className="border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent shadow-xs">
+              <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <Wallet className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
+                      Employer Subsidized Wellness Wallet
+                    </span>
+                    <h3 className="text-2xl font-display font-bold text-foreground mt-0.5">
+                      ₹3,500 <span className="text-xs font-normal text-muted-foreground">Available Credits</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Subsidized benefit for Gurgaon employees: ₹2,000 Therapy (1 session 100% covered) + ₹1,500 Fitness &amp; Sports passes
+                    </p>
+                  </div>
+                </div>
+                <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold px-4 h-9">
+                  <Link href="/therapy">
+                    Book Subsidized Session <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-foreground">

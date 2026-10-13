@@ -39,11 +39,21 @@ import {
   Trophy,
   Users,
   X,
+  Phone,
+  PhoneCall,
+  Building2,
+  CalendarCheck,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useLiveAppointments } from "@/lib/liveDataManager";
 import { csvDocument, downloadCsv } from "@/lib/csv";
+import {
+  getTurfBookings,
+  verifyTurfBooking,
+  type TurfBookingRequest,
+} from "@/lib/turfVenues";
 import { ActivityLogType, ProviderType } from "../backend.types";
 import {
   useAdminStats,
@@ -150,24 +160,24 @@ function StatCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
     >
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border border-border/60 hover:shadow-md transition-all rounded-2xl bg-gradient-to-br from-card to-background shadow-xs">
         <CardContent className="p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-muted-foreground font-medium mb-1">
+              <p className="text-[11px] text-muted-foreground font-bold mb-1.5 uppercase tracking-wider">
                 {label}
               </p>
-              <p className="text-3xl font-bold text-foreground">{value}</p>
+              <p className="text-3xl font-extrabold text-foreground tracking-tight">{value}</p>
               {sub && (
-                <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 font-medium">{sub}</p>
               )}
             </div>
             <div
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center ${color}`}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-xs ${color}`}
             >
               <Icon className="w-5 h-5" />
             </div>
@@ -883,8 +893,82 @@ function ActivityLogsTab() {
   );
 }
 
-// ─── Booking Reports Tab ─────────────────────────────────────────
+// ─── Booking Reports & Appointments Verification Desk Tab ────────────
 function BookingReportsTab() {
+  const { user } = useInternetIdentity();
+  const {
+    appointments,
+    pendingVerificationAppointments,
+    confirmedAppointments,
+    verifyAppointment,
+    markPaidAtCabin,
+    cancelAppointment,
+  } = useLiveAppointments();
+
+  const [liveStatusFilter, setLiveStatusFilter] = useState<string>("all");
+
+  const [turfBookings, setTurfBookings] = useState<TurfBookingRequest[]>(() => {
+    const list = getTurfBookings();
+    if (list.length === 0) {
+      return [
+        {
+          bookingId: "TRF-BDM-9281",
+          turfId: "turf-janakpuri-sp",
+          turfName: "SP Arena Indoor Badminton Hub",
+          courtType: "BWF Synthetic Mat",
+          area: "Janakpuri",
+          player1CuteName: "Smash Sensation",
+          player1Phone: "+91 98112 34567",
+          player2CuteName: "Shuttle Queen",
+          date: "This Saturday",
+          timeSlot: "07:00 AM – 08:00 AM",
+          racketsNeeded: 2,
+          status: "verifying",
+          createdAt: new Date().toISOString(),
+          notes: "Need 2 Yonex rackets and synthetic shuttles",
+        },
+      ];
+    }
+    return list;
+  });
+
+  const handleVerifyTurf = (bookingId: string) => {
+    verifyTurfBooking(bookingId, "Court 2 (Air Conditioned)");
+    const updated = getTurfBookings();
+    setTurfBookings(
+      updated.length > 0
+        ? updated
+        : [
+            {
+              bookingId,
+              turfId: "turf-janakpuri-sp",
+              turfName: "SP Arena Indoor Badminton Hub",
+              courtType: "BWF Synthetic Mat",
+              area: "Janakpuri",
+              player1CuteName: "Smash Sensation",
+              player1Phone: "+91 98112 34567",
+              player2CuteName: "Shuttle Queen",
+              date: "This Saturday",
+              timeSlot: "07:00 AM – 08:00 AM",
+              racketsNeeded: 2,
+              status: "confirmed",
+              courtNumber: "Court 2 (Air Conditioned)",
+              passcode: "PASS-4921",
+              createdAt: new Date().toISOString(),
+              verifiedAt: new Date().toISOString(),
+            },
+          ]
+    );
+    toast.success(`Badminton Turf Booking ${bookingId} verified & court reserved!`);
+  };
+
+  const filteredLiveAppointments = appointments.filter((a) => {
+    if (liveStatusFilter === "pending") return a.status === "Pending Phone Verification";
+    if (liveStatusFilter === "confirmed") return a.status === "Verified & Confirmed";
+    if (liveStatusFilter === "completed") return a.status === "Completed";
+    return true;
+  });
+
   const {
     data: pages,
     isLoading,
@@ -912,8 +996,6 @@ function BookingReportsTab() {
       toast.error("There are no bookings to export.");
       return;
     }
-    // toISOString(), not toLocaleString(): the localised form contains a comma
-    // ("11/3/2026, 9:00:00 AM") which shifted every following column.
     const csv = csvDocument([
       ["Booking ID", "User", "Provider ID", "Booking Time", "Status"],
       ...filtered.map((b) => [
@@ -933,7 +1015,346 @@ function BookingReportsTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* ─── LIVE APPOINTMENTS & PHONE VERIFICATION DESK ─── */}
+      <div className="bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-transparent border border-teal-500/25 rounded-2xl p-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center flex-shrink-0 text-teal-700">
+              <PhoneCall className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                Therapy Appointments &amp; Phone Verification Desk
+                <Badge className="bg-amber-500 text-white text-[10px] px-1.5">
+                  LIVE VERIFICATION
+                </Badge>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                When patients book a session, verify their attendance via phone: &quot;Are you coming for the therapy?&quot;. Payment is collected at the doctor&apos;s cabin upon arrival.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Appointment Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-background/90 border border-border rounded-xl p-3 shadow-sm">
+            <span className="text-[11px] text-muted-foreground block font-medium">Total Appointments</span>
+            <span className="text-2xl font-bold text-foreground">{appointments.length}</span>
+          </div>
+          <div className="bg-background/90 border border-amber-300 rounded-xl p-3 shadow-sm">
+            <span className="text-[11px] text-amber-700 block font-medium flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> Pending Verification Calls
+            </span>
+            <span className="text-2xl font-bold text-amber-600">{pendingVerificationAppointments.length}</span>
+          </div>
+          <div className="bg-background/90 border border-emerald-300 rounded-xl p-3 shadow-sm">
+            <span className="text-[11px] text-emerald-700 block font-medium">Verified &amp; Reserved</span>
+            <span className="text-2xl font-bold text-emerald-600">{confirmedAppointments.length}</span>
+          </div>
+          <div className="bg-background/90 border border-teal-300 rounded-xl p-3 shadow-sm">
+            <span className="text-[11px] text-teal-700 block font-medium">Payment Mode</span>
+            <span className="text-xs font-bold text-teal-800 block mt-1">Pay at Doctor&apos;s Cabin (100%)</span>
+          </div>
+        </div>
+
+        {/* Filter controls */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs font-semibold text-foreground">Filter Desk:</span>
+          <button
+            type="button"
+            onClick={() => setLiveStatusFilter("all")}
+            className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+              liveStatusFilter === "all"
+                ? "bg-teal-600 text-white border-teal-600"
+                : "bg-background text-muted-foreground border-border hover:bg-muted"
+            }`}
+          >
+            All ({appointments.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setLiveStatusFilter("pending")}
+            className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+              liveStatusFilter === "pending"
+                ? "bg-amber-600 text-white border-amber-600"
+                : "bg-background text-amber-700 border-amber-200 hover:bg-amber-50"
+            }`}
+          >
+            Calls Due ({pendingVerificationAppointments.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setLiveStatusFilter("confirmed")}
+            className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+              liveStatusFilter === "confirmed"
+                ? "bg-emerald-600 text-white border-emerald-600"
+                : "bg-background text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+            }`}
+          >
+            Verified ({confirmedAppointments.length})
+          </button>
+        </div>
+
+        {/* Live Appointments Table */}
+        <div className="bg-background border border-border rounded-xl overflow-hidden shadow-sm">
+          {filteredLiveAppointments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-xs">
+              No appointments matching this filter.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs font-bold pl-4">Ref #</TableHead>
+                    <TableHead className="text-xs font-bold">Patient &amp; Phone</TableHead>
+                    <TableHead className="text-xs font-bold">Doctor &amp; Cabin</TableHead>
+                    <TableHead className="text-xs font-bold">Slot &amp; Mode</TableHead>
+                    <TableHead className="text-xs font-bold">Payment</TableHead>
+                    <TableHead className="text-xs font-bold">Verification Status</TableHead>
+                    <TableHead className="text-xs font-bold pr-4 text-right">Verification Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLiveAppointments.map((apt) => {
+                    const isPending = apt.status === "Pending Phone Verification";
+                    const isConfirmed = apt.status === "Verified & Confirmed";
+                    const isCompleted = apt.status === "Completed";
+                    return (
+                      <TableRow key={apt.id} className="hover:bg-muted/40">
+                        <TableCell className="pl-4 font-mono text-xs font-semibold text-muted-foreground">
+                          {apt.bookingRef}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-xs text-foreground">{apt.patientName}</div>
+                          <div className="flex items-center gap-1.5 text-xs text-teal-700 font-mono mt-0.5">
+                            <Phone className="w-3 h-3 text-teal-600" />
+                            <a href={`tel:${apt.patientPhone}`} className="hover:underline font-bold">
+                              {apt.patientPhone}
+                            </a>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs font-semibold text-foreground">{apt.doctorName}</div>
+                          <div className="text-[11px] text-muted-foreground truncate max-w-[200px]" title={apt.doctorCabinLocation}>
+                            {apt.doctorCabinLocation}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs font-medium text-foreground">{apt.slot}</div>
+                          <div className="text-[11px] text-teal-700">{apt.mode}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px] border-emerald-300 bg-emerald-50 text-emerald-800">
+                            Pay {apt.doctorFee} at Cabin
+                          </Badge>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {apt.paymentStatus}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={`text-[10px] ${
+                              isPending
+                                ? "bg-amber-500 text-white"
+                                : isConfirmed
+                                ? "bg-emerald-600 text-white"
+                                : isCompleted
+                                ? "bg-blue-600 text-white"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {apt.status}
+                          </Badge>
+                          {apt.verificationNotes && (
+                            <div className="text-[10px] text-muted-foreground mt-1 max-w-[180px] truncate" title={apt.verificationNotes}>
+                              {apt.verificationNotes}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="pr-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isPending && (
+                              <>
+                                <a
+                                  href={`tel:${apt.patientPhone}`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg transition-colors"
+                                  title="Call patient now"
+                                >
+                                  <Phone className="w-3 h-3" /> Call
+                                </a>
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  onClick={() => {
+                                    verifyAppointment(
+                                      apt.id,
+                                      user?.email || "Backend Coordinator",
+                                      `Called ${apt.patientPhone} - Confirmed attendance for ${apt.doctorCabinLocation}.`,
+                                    );
+                                    toast.success(`Verified! Called ${apt.patientPhone} and confirmed attendance.`);
+                                  }}
+                                >
+                                  ✓ Confirm Call
+                                </Button>
+                              </>
+                            )}
+                            {isConfirmed && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                                onClick={() => {
+                                  markPaidAtCabin(apt.id);
+                                  toast.success(`Marked paid at doctor's cabin.`);
+                                }}
+                              >
+                                💵 Mark Paid at Cabin
+                              </Button>
+                            )}
+                            {isPending && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-rose-600 hover:bg-rose-50"
+                                onClick={() => {
+                                  cancelAppointment(apt.id, "Declined on verification call");
+                                  toast.info(`Appointment cancelled.`);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─── BADMINTON TURF & COURTS VERIFICATION DESK ─── */}
+      <div className="bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-teal-500/5 border border-teal-500/30 rounded-2xl p-5 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center text-xl shadow-sm">
+              🏸
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground">
+                  Badminton Turf &amp; Court Verification Desk
+                </h3>
+                <Badge className="bg-teal-600 text-white hover:bg-teal-600 text-[10px] tracking-wider font-bold">
+                  TURF OPERATIONS
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Verify partner availability, check venue slot with turf manager, and allocate court numbers.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Turf Bookings Table */}
+        <div className="bg-background border border-border rounded-xl overflow-hidden shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="pl-4">Booking Ref</TableHead>
+                <TableHead>Players (Cute Handles)</TableHead>
+                <TableHead>Turf Arena &amp; Court</TableHead>
+                <TableHead>Schedule &amp; Slot</TableHead>
+                <TableHead>Phone / WhatsApp</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right pr-4">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {turfBookings.map((tb) => (
+                <TableRow key={tb.bookingId}>
+                  <TableCell className="pl-4 font-mono font-bold text-xs text-teal-700">
+                    {tb.bookingId}
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs font-bold text-foreground">
+                      {tb.player1CuteName} <span className="text-muted-foreground font-normal">vs</span> {tb.player2CuteName}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {tb.racketsNeeded > 0 ? `${tb.racketsNeeded} Rackets Requested` : "Own Rackets"}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs font-semibold text-foreground">
+                      {tb.turfName}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      📍 {tb.area} · {tb.courtType}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs font-medium text-foreground">
+                      {tb.date}
+                    </div>
+                    <div className="text-[11px] text-teal-700 font-semibold">
+                      ⏰ {tb.timeSlot}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <a
+                      href={`tel:${tb.player1Phone}`}
+                      className="inline-flex items-center gap-1.5 text-xs text-teal-700 font-bold hover:underline"
+                    >
+                      <PhoneCall size={12} /> {tb.player1Phone}
+                    </a>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                        tb.status === "confirmed"
+                          ? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300"
+                          : "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300"
+                      }`}
+                    >
+                      {tb.status === "confirmed" ? "✓ Confirmed" : "⏳ Verifying with Turf"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right pr-4">
+                    {tb.status === "confirmed" ? (
+                      <span className="text-[11px] font-mono text-emerald-700 font-semibold">
+                        {tb.courtNumber || "Court 2"} ({tb.passcode || "PASS-4921"})
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleVerifyTurf(tb.bookingId)}
+                        className="h-7 text-xs bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+                      >
+                        Verify &amp; Allocate Court
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* ─── LEGACY PROVIDER BOOKINGS & CSV EXPORT ─── */}
+      <div className="pt-2">
+        <h4 className="text-sm font-bold text-foreground mb-3 flex items-center justify-between">
+          <span>Platform Provider Logs</span>
+          <span className="text-xs text-muted-foreground font-normal">All historical session records</span>
+        </h4>
+      </div>
+
       {/* Summary stat cards */}
       <div className="grid grid-cols-3 gap-4">
         <Card>

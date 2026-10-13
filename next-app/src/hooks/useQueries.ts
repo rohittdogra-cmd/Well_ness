@@ -23,7 +23,7 @@ import {
   type UserProfileEntry,
 } from "../backend.types";
 import { useActor } from "./useActor";
-import { useInternetIdentity } from "./useInternetIdentity";
+import { useInternetIdentity, accountId } from "./useInternetIdentity";
 import { isAdminEmail } from "@/lib/authAccounts";
 
 export { ActivityLogType, ProgramType, ProviderType };
@@ -462,13 +462,36 @@ export function useCreateSession() {
 
 export function useJoinSession() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const qc = useQueryClient();
+  const uid = identity?.getPrincipal().toString();
+
   return useMutation({
     mutationFn: async (sessionId: bigint) => {
       if (!actor) throw new Error("Not authenticated");
       return actor.joinSession(sessionId);
     },
-    onSuccess: (_data, sessionId) => {
+    onMutate: async (sessionId: bigint) => {
+      await qc.cancelQueries({ queryKey: ["session", sessionId.toString()] });
+      const previousSession = qc.getQueryData<Session>(["session", sessionId.toString()]);
+      if (previousSession && uid) {
+        const filtered = previousSession.participants.filter((p) => p.toString() !== uid);
+        filtered.push(accountId(uid));
+        qc.setQueryData<Session>(["session", sessionId.toString()], {
+          ...previousSession,
+          joined: true,
+          participantCount: (previousSession.participantCount ?? 0n) + 1n,
+          participants: filtered,
+        });
+      }
+      return { previousSession };
+    },
+    onError: (_err, sessionId, context) => {
+      if (context?.previousSession) {
+        qc.setQueryData(["session", sessionId.toString()], context.previousSession);
+      }
+    },
+    onSettled: (_data, _err, sessionId) => {
       void qc.invalidateQueries({ queryKey: ["sessions"] });
       void qc.invalidateQueries({
         queryKey: ["session", sessionId.toString()],
@@ -480,13 +503,36 @@ export function useJoinSession() {
 
 export function useLeaveSession() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const qc = useQueryClient();
+  const uid = identity?.getPrincipal().toString();
+
   return useMutation({
     mutationFn: async (sessionId: bigint) => {
       if (!actor) throw new Error("Not authenticated");
       return actor.leaveSession(sessionId);
     },
-    onSuccess: (_data, sessionId) => {
+    onMutate: async (sessionId: bigint) => {
+      await qc.cancelQueries({ queryKey: ["session", sessionId.toString()] });
+      const previousSession = qc.getQueryData<Session>(["session", sessionId.toString()]);
+      if (previousSession && uid) {
+        const currentCount = previousSession.participantCount ?? 0n;
+        const filtered = previousSession.participants.filter((p) => p.toString() !== uid);
+        qc.setQueryData<Session>(["session", sessionId.toString()], {
+          ...previousSession,
+          joined: false,
+          participantCount: currentCount > 0n ? currentCount - 1n : 0n,
+          participants: filtered,
+        });
+      }
+      return { previousSession };
+    },
+    onError: (_err, sessionId, context) => {
+      if (context?.previousSession) {
+        qc.setQueryData(["session", sessionId.toString()], context.previousSession);
+      }
+    },
+    onSettled: (_data, _err, sessionId) => {
       void qc.invalidateQueries({ queryKey: ["sessions"] });
       void qc.invalidateQueries({
         queryKey: ["session", sessionId.toString()],
