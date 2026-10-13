@@ -263,12 +263,12 @@ export function HomePage() {
   // Venue filters
   const [selectedVenueArea, setSelectedVenueArea] = useState<string>("all");
 
-  // Proximity Tool Calculator State
-  const [calcLocA, setCalcLocA] = useState<string>(profile?.location || "Janakpuri, Delhi");
+  // User's permanent locked location (cannot be changed once entered)
+  const userLockedLocation = profile?.location || "Janakpuri, Delhi";
   const [calcLocB, setCalcLocB] = useState<string>("Gurgaon, Haryana");
   const proximityEstimate = useMemo(() => {
-    return calculateProximity(calcLocA, calcLocB);
-  }, [calcLocA, calcLocB]);
+    return calculateProximity(userLockedLocation, calcLocB);
+  }, [userLockedLocation, calcLocB]);
 
   // FAQ filters & accordion
   const [faqCategory, setFaqCategory] = useState<string>("all");
@@ -541,25 +541,29 @@ export function HomePage() {
           {/* Selectors Column */}
           <div className="locality-selector-group">
             <div className="locality-select-row">
-              <span style={{ width: "110px", fontSize: "12.5px", fontWeight: 750, color: "#334155", display: "flex", alignItems: "center", gap: "5px" }}>
+              <span className="locality-select-label">
                 <MapPin size={14} color="#087f79" /> Your Area:
               </span>
-              <select
-                value={calcLocA}
-                onChange={(e) => setCalcLocA(e.target.value)}
-                className="locality-select-dropdown"
+              <div
+                className="locality-locked-box"
+                title="Your location is permanently locked and cannot be changed"
               >
-                <option value="Janakpuri, Delhi">Janakpuri, Delhi (SP Arena Hub)</option>
-                <option value="Gurgaon, Haryana">Gurgaon, Haryana (DLF Cyber City / Sec 54)</option>
-                <option value="Noida, Uttar Pradesh">Noida, UP (Sector 62 IT Corridor)</option>
-                <option value="Palwal, Haryana">Palwal, Haryana (National Sports Arena)</option>
-                <option value="Aerocity, New Delhi">Aerocity, New Delhi (Midpoint Neutral)</option>
-                <option value="Auckland, New Zealand">Auckland, New Zealand (Overseas Expat)</option>
-              </select>
+                <div className="locality-locked-text">
+                  <MapPin size={14} color="#087f79" style={{ flexShrink: 0 }} />
+                  <span>{userLockedLocation}</span>
+                </div>
+                <span className="locality-locked-badge">
+                  <Lock size={11} /> Locked
+                </span>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#64748b", margin: "-6px 0 2px" }}>
+              <Lock size={12} color="#087f79" style={{ flexShrink: 0 }} />
+              <span>Location is permanently locked to your account and cannot be modified.</span>
             </div>
 
             <div className="locality-select-row">
-              <span style={{ width: "110px", fontSize: "12.5px", fontWeight: 750, color: "#334155", display: "flex", alignItems: "center", gap: "5px" }}>
+              <span className="locality-select-label">
                 <Users size={14} color="#ea580c" /> Match Area:
               </span>
               <select
@@ -579,7 +583,7 @@ export function HomePage() {
 
           {/* Result Card */}
           <div className="proximity-result-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
               <span
                 style={{
                   display: "inline-flex",
@@ -597,12 +601,12 @@ export function HomePage() {
                 {proximityEstimate.isViableForMeetup ? "🟢 " : "🟣 "}
                 {proximityEstimate.label}
               </span>
-              <span style={{ fontSize: "12.5px", fontWeight: 750, color: "#0f766e" }}>
+              <span style={{ fontSize: "12px", fontWeight: 750, color: "#0f766e" }}>
                 Approx: {proximityEstimate.approxDistance}
               </span>
             </div>
 
-            <p style={{ margin: "0 0 12px", fontSize: "12.5px", color: "#475569", lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 12px", fontSize: "12.5px", color: "#475569", lineHeight: 1.5, wordBreak: "break-word" }}>
               {proximityEstimate.explanation}
             </p>
 
@@ -619,18 +623,24 @@ export function HomePage() {
                   color: "#ffffff",
                   border: "none",
                   borderRadius: "10px",
-                  padding: "10px 14px",
+                  padding: "11px 14px",
                   fontSize: "13px",
                   fontWeight: 750,
                   cursor: "pointer",
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "6px",
                   boxShadow: "0 4px 12px rgba(8, 127, 121, 0.2)",
+                  whiteSpace: "normal",
+                  lineHeight: 1.35,
+                  textAlign: "center",
+                  wordBreak: "break-word",
+                  boxSizing: "border-box",
                 }}
               >
-                🏸 Book Midpoint Court ({proximityEstimate.suggestedMidpoints[0] || "Neutral Venue"}) <ArrowRight size={14} />
+                <span>🏸 Book Midpoint Court ({proximityEstimate.suggestedMidpoints[0] || "Neutral Venue"})</span>
+                <ArrowRight size={14} style={{ flexShrink: 0 }} />
               </button>
             ) : (
               <Link
@@ -641,17 +651,23 @@ export function HomePage() {
                   color: "#ffffff",
                   border: "none",
                   borderRadius: "10px",
-                  padding: "10px 14px",
+                  padding: "11px 14px",
                   fontSize: "13px",
                   fontWeight: 750,
                   textDecoration: "none",
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "6px",
+                  whiteSpace: "normal",
+                  lineHeight: 1.35,
+                  textAlign: "center",
+                  wordBreak: "break-word",
+                  boxSizing: "border-box",
                 }}
               >
-                💬 Join Virtual Expat Chat Board <ArrowRight size={14} />
+                <span>💬 Join Virtual Expat Chat Board</span>
+                <ArrowRight size={14} style={{ flexShrink: 0 }} />
               </Link>
             )}
           </div>

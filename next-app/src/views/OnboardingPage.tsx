@@ -12,6 +12,7 @@ import {
   Heart,
   User,
   Compass,
+  Lock,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState, useEffect } from "react";
@@ -95,6 +96,8 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
   const [location, setLocation] = useState<string>(
     existing?.location || "Janakpuri, Delhi",
   );
+  // Locations cannot be changed once set by the user
+  const isLocationLocked = Boolean(existing?.location && existing.location.trim().length > 0);
 
   const [profile, setProfile] = useState<LocalProfile>(() => {
     if (existing && existing.name.trim()) {
@@ -215,7 +218,7 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
         name: profile.name.trim(),
         assignedCuteName: profile.name.trim(),
         gender,
-        location: location.trim(),
+        location: isLocationLocked && existing?.location ? existing.location : location.trim(),
         interests: selectedInterests,
         bio: profile.bio.trim(),
       };
@@ -492,8 +495,59 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                         Your location is shared with prospective sports partners so you both know if an in-person match (like badminton in Janakpuri or Gurgaon) is practical, or if you are across different cities/countries.
                       </p>
 
+                      {isLocationLocked ? (
+                        <div
+                          style={{
+                            background: "#fffbeb",
+                            border: "1.5px solid #fde68a",
+                            borderRadius: "14px",
+                            padding: "14px 16px",
+                            marginTop: "16px",
+                            marginBottom: "16px",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "10px",
+                            color: "#92400e",
+                          }}
+                        >
+                          <Lock size={18} style={{ flexShrink: 0, marginTop: "2px", color: "#d97706" }} />
+                          <div>
+                            <strong style={{ fontSize: "13.5px", display: "block", marginBottom: "2px" }}>
+                              Your Location is Permanently Locked
+                            </strong>
+                            <span style={{ fontSize: "12px", lineHeight: 1.5, display: "block" }}>
+                              Your account location was verified as <strong>{existing?.location}</strong>. Once entered, locations cannot be changed to prevent distance manipulation and preserve matchmaking integrity.
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            background: "#f0fdfa",
+                            border: "1px solid #99f6e4",
+                            borderRadius: "12px",
+                            padding: "10px 14px",
+                            marginTop: "14px",
+                            marginBottom: "14px",
+                            fontSize: "12px",
+                            color: "#0f766e",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <Lock size={15} style={{ flexShrink: 0 }} />
+                          <span><strong>Notice:</strong> Once you enter and save this location, it is permanently locked to your account and cannot be modified later.</span>
+                        </div>
+                      )}
+
                       <label className="field-label" htmlFor="user-location" style={{ marginTop: "14px" }}>
                         City &amp; Area <span>*</span>
+                        {isLocationLocked && (
+                          <span style={{ marginLeft: "8px", fontSize: "11px", color: "#d97706", fontWeight: 700 }}>
+                            🔒 (Locked)
+                          </span>
+                        )}
                       </label>
                       <div style={{ position: "relative", marginBottom: "12px" }}>
                         <MapPin
@@ -503,42 +557,62 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                         />
                         <input
                           id="user-location"
-                          style={{ paddingLeft: "38px" }}
+                          style={{
+                            paddingLeft: "38px",
+                            background: isLocationLocked ? "#f8fafc" : "#ffffff",
+                            cursor: isLocationLocked ? "not-allowed" : "text",
+                            color: isLocationLocked ? "#475569" : "#0f172a",
+                          }}
                           placeholder="e.g. Janakpuri, Delhi or Gurgaon, Haryana"
                           value={location}
-                          onChange={(e) => setLocation(e.target.value)}
+                          onChange={(e) => {
+                            if (!isLocationLocked) {
+                              setLocation(e.target.value);
+                            }
+                          }}
                           maxLength={60}
+                          disabled={isLocationLocked}
+                          readOnly={isLocationLocked}
                           required
                         />
+                        {isLocationLocked && (
+                          <Lock
+                            size={16}
+                            color="#94a3b8"
+                            style={{ position: "absolute", right: "12px", top: "14px" }}
+                          />
+                        )}
                       </div>
 
-                      {/* Quick click suggestions */}
-                      <div style={{ marginBottom: "20px" }}>
-                        <span style={{ fontSize: "11.5px", fontWeight: 650, color: "#64748b", display: "block", marginBottom: "6px" }}>
-                          Quick select popular hubs:
-                        </span>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                          {POPULAR_LOCATIONS.map((loc) => (
-                            <button
-                              type="button"
-                              key={loc}
-                              onClick={() => setLocation(loc)}
-                              style={{
-                                padding: "5px 10px",
-                                borderRadius: "8px",
-                                border: location === loc ? "1.5px solid #087f79" : "1px solid #cbd5e1",
-                                background: location === loc ? "rgba(8, 127, 121, 0.1)" : "#ffffff",
-                                color: location === loc ? "#0f766e" : "#475569",
-                                fontSize: "11.5px",
-                                fontWeight: location === loc ? 700 : 500,
-                                cursor: "pointer",
-                              }}
-                            >
-                              📍 {loc}
-                            </button>
-                          ))}
+                      {/* Quick click suggestions (only shown for first-time onboarding) */}
+                      {!isLocationLocked && (
+                        <div style={{ marginBottom: "20px" }}>
+                          <span style={{ fontSize: "11.5px", fontWeight: 650, color: "#64748b", display: "block", marginBottom: "6px" }}>
+                            Quick select popular hubs:
+                          </span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                            {POPULAR_LOCATIONS.map((loc) => (
+                              <button
+                                type="button"
+                                key={loc}
+                                onClick={() => setLocation(loc)}
+                                style={{
+                                  padding: "5px 10px",
+                                  borderRadius: "8px",
+                                  border: location === loc ? "1.5px solid #087f79" : "1px solid #cbd5e1",
+                                  background: location === loc ? "rgba(8, 127, 121, 0.1)" : "#ffffff",
+                                  color: location === loc ? "#0f766e" : "#475569",
+                                  fontSize: "11.5px",
+                                  fontWeight: location === loc ? 700 : 500,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                📍 {loc}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Proximity explainer */}
                       <div
