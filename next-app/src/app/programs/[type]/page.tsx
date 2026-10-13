@@ -29,12 +29,37 @@ export async function generateMetadata({
   const label = PROGRAMS[type];
   if (!label)
     return pageMetadata("/programs", {
-      title: "Wellness Programs",
-      description: "Wellness programs running in your hub.",
+      title: "Wellness & Sports Programs · Delhi-NCR",
+      description:
+        "Browse verified corporate wellness programs, sports turfs, and mindful activities running across Delhi-NCR.",
     });
+
+  const isBadminton = type === "badminton";
+
   return pageMetadata(`/programs/${type}`, {
-    title: label,
-    description: `Browse upcoming ${label.toLowerCase()} sessions in your hub: dates, spaces and open places, with capacity checked when you join.`,
+    title: isBadminton
+      ? "Indoor Badminton Court Booking & 2-Player Matchmaking · Delhi-NCR"
+      : `${label} Sessions & Arena Booking · Delhi-NCR`,
+    description: isBadminton
+      ? "Book tournament-grade indoor badminton courts across Janakpuri, Cyber Hub Gurgaon, Sec 54, Noida, and Palwal. Match with nearby colleagues using cute avatars with 100% employer-blind anonymity."
+      : `Browse upcoming ${label.toLowerCase()} sessions in Delhi-NCR: verified venues, confirmed slots, and peer matchmaking with zero HR tracking.`,
+    keywords: isBadminton
+      ? [
+          "badminton turf booking delhi ncr",
+          "book badminton court gurgaon",
+          "janakpuri indoor badminton sp arena",
+          "fitso smash arena cyber hub",
+          "sector 54 rapid sports dome",
+          "noida sector 62 badminton court",
+          "palwal national sports arena",
+          "2 player badminton matchmaking",
+        ]
+      : [
+          `${label.toLowerCase()} booking delhi ncr`,
+          `${label.toLowerCase()} gurgaon`,
+          `corporate ${label.toLowerCase()} sessions`,
+          "sports matchmaking delhi ncr",
+        ],
   });
 }
 

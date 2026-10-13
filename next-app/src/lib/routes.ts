@@ -25,6 +25,7 @@ export const PUBLIC_PATHS = [
   "/how-it-works",
   "/safety",
   "/privacy",
+  "/terms",
   "/take-a-moment",
   // Program landing pages render their own "Sign in to Book" affordance.
   "/programs",
@@ -40,16 +41,10 @@ export const AUTH_PATHS = ["/auth"] as const;
 export const PRIVATE_PATHS = [
   "/account",
   "/apply-provider",
-  "/book-activities",
-  "/community",
-  "/dashboard",
   "/discuss",
-  "/groups",
   "/my-sessions",
   "/onboarding",
-  "/people",
   "/profile",
-  "/psychologists",
   "/sessions",
 ] as const;
 

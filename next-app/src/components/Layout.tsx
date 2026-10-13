@@ -350,6 +350,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/how-it-works">How it works</Link>
                 <Link href="/safety">Safety</Link>
                 <Link href="/privacy">Privacy</Link>
+                <Link href="/terms">Terms</Link>
                 <Link href="/psychologists">Support</Link>
                 <Link href="/contact">Contact</Link>
                 <Link href="/dashboard">Dashboard</Link>

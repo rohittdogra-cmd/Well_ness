@@ -8,7 +8,16 @@ import "./community-design.css";
 import "./moment.css";
 import "./animations.css";
 import { siteUrl } from "@/lib/env";
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  DEFAULT_KEYWORDS,
+  generateOrganizationSchema,
+  generateSportsVenuesSchema,
+  generateFaqSchema,
+  generateWebSiteSchema,
+  generateMedicalBusinessSchema,
+} from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,42 +40,48 @@ const base = siteUrl();
 export const metadata: Metadata = {
   // Required so every relative canonical URL and Open Graph URL resolves.
   metadataBase: new URL(base),
-  // Pages set their own title; this appends the brand instead of replacing it.
   title: {
-    default: `${SITE_NAME} — ${SITE_DESCRIPTION.slice(0, 40)}…`,
+    default: `${SITE_NAME} · 2-Player Badminton Turf Booking & 100% Employer-Blind Wellness`,
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  keywords: [
-    "corporate wellness",
-    "employee wellbeing",
-    "mindful meetups",
-    "peer support",
-    "workplace community",
-    "social gathering",
-    "wellness programs",
-  ],
+  keywords: DEFAULT_KEYWORDS,
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
   alternates: { canonical: `${base}/` },
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   openGraph: {
     type: "website",
     url: base,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Corporate Wellness Platform`,
+    title: `${SITE_NAME} · 2-Player Badminton Turf Booking & 100% Employer-Blind Wellness`,
     description: SITE_DESCRIPTION,
     locale: "en_US",
+    images: [
+      {
+        url: `${base}/images/community-hero.webp`,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} — Delhi-NCR Sports & Corporate Wellness`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Corporate Wellness Platform`,
+    title: `${SITE_NAME} · 2-Player Badminton Turf Booking & 100% Employer-Blind Wellness`,
     description: SITE_DESCRIPTION,
+    images: [`${base}/images/community-hero.webp`],
   },
   formatDetection: { telephone: false, address: false, email: false },
 };
@@ -91,6 +106,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateOrganizationSchema()),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateSportsVenuesSchema()),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateFaqSchema()),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateWebSiteSchema()),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateMedicalBusinessSchema()),
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>
           <Layout>{children}</Layout>

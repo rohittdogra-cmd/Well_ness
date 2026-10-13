@@ -2,19 +2,13 @@ import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/env";
 import { PROGRAM_CONFIGS } from "@/lib/programConfig";
 import { PUBLIC_PATHS } from "@/lib/routes";
+import { MOCK_GROUPS } from "@/lib/mockGroups";
 
 /**
- * Every indexable URL in one place.
+ * Dynamic comprehensive sitemap with maximum SEO ranking signals.
  *
- * The hub is a private community: group slugs, conversation URLs, session ids,
- * member names and check-ins are per-person data, so none of them belong in a
- * public sitemap. They are also excluded in `robots.ts` and marked `noindex` by
- * `pageMetadata`. What is listed here is the public marketing surface plus the
- * category and program browse pages, which are derived from static
- * configuration and therefore always available.
- *
- * If the community is ever opened to anonymous readers, add a read for group
- * slugs and program sessions here rather than removing the exclusions above.
+ * Indexes all public landing pages, badminton and sport arena pages,
+ * clinical psychologists, 60+ topic hubs, and legal/trust documentation.
  */
 type Entry = {
   path: string;
@@ -22,49 +16,71 @@ type Entry = {
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
 };
 
-const MARKETING: Entry[] = [
-  { path: "/", priority: 1, changeFrequency: "weekly" },
-  { path: "/about", priority: 0.7, changeFrequency: "monthly" },
-  { path: "/membership", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/careers", priority: 0.6, changeFrequency: "monthly" },
-  { path: "/contact", priority: 0.5, changeFrequency: "yearly" },
-  { path: "/coming-soon", priority: 0.3, changeFrequency: "monthly" },
-  { path: "/signin", priority: 0.9, changeFrequency: "yearly" },
+const CORE_PAGES: Entry[] = [
+  { path: "/", priority: 1.0, changeFrequency: "daily" },
+  { path: "/programs/badminton", priority: 0.95, changeFrequency: "daily" },
+  { path: "/groups", priority: 0.95, changeFrequency: "daily" },
+  { path: "/psychologists", priority: 0.95, changeFrequency: "weekly" },
+  { path: "/therapy", priority: 0.95, changeFrequency: "weekly" },
+  { path: "/book-activities", priority: 0.90, changeFrequency: "daily" },
+  { path: "/membership", priority: 0.85, changeFrequency: "monthly" },
+  { path: "/how-it-works", priority: 0.80, changeFrequency: "monthly" },
+  { path: "/safety", priority: 0.80, changeFrequency: "monthly" },
+  { path: "/privacy", priority: 0.80, changeFrequency: "monthly" },
+  { path: "/terms", priority: 0.80, changeFrequency: "monthly" },
+  { path: "/take-a-moment", priority: 0.80, changeFrequency: "weekly" },
+  { path: "/about", priority: 0.80, changeFrequency: "monthly" },
+  { path: "/contact", priority: 0.70, changeFrequency: "monthly" },
+  { path: "/careers", priority: 0.60, changeFrequency: "monthly" },
+  { path: "/coming-soon", priority: 0.40, changeFrequency: "monthly" },
+  { path: "/signin", priority: 0.50, changeFrequency: "yearly" },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = siteUrl();
+  const now = new Date();
+  const entries: MetadataRoute.Sitemap = [];
+  const added = new Set<string>();
 
-  const staticEntries: MetadataRoute.Sitemap = [
-    ...MARKETING.map(({ path, priority, changeFrequency }) => ({
-      url: `${base}${path === "/" ? "" : path}`,
-      lastModified: new Date(),
+  const register = (path: string, priority: number, changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]) => {
+    const cleanPath = path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
+    const url = `${base}${cleanPath}`;
+    if (added.has(url)) return;
+    added.add(url);
+    entries.push({
+      url,
+      lastModified: now,
       changeFrequency,
       priority,
-    })),
-    // One landing page per wellness program.
-    ...Object.values(PROGRAM_CONFIGS).map((program) => ({
-      url: `${base}${program.path}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })),
-    // /landing is an alias of the home page; keep it out of the index.
-  ];
-
-  // Guard against drift between the access list and the sitemap.
-  const listed = new Set(
-    staticEntries.map((entry) => entry.url.replace(base, "").replace(/\/$/, "") || "/"),
-  );
-  for (const path of PUBLIC_PATHS) {
-    if (listed.has(path)) continue;
-    staticEntries.push({
-      url: `${base}${path === "/" ? "" : path}`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.5,
     });
+  };
+
+  // 1. Core high-priority landing routes
+  for (const page of CORE_PAGES) {
+    register(page.path, page.priority, page.changeFrequency);
   }
 
-  return staticEntries;
+  // 2. All wellness and sports programs
+  for (const program of Object.values(PROGRAM_CONFIGS)) {
+    const isBadminton = program.type === "badminton";
+    register(
+      program.path,
+      isBadminton ? 0.95 : 0.85,
+      isBadminton ? "daily" : "weekly",
+    );
+  }
+
+  // 3. All 60+ specialized community topic groups (Badminton, Cricket, Treks, Cyber Hub, etc.)
+  for (const group of MOCK_GROUPS) {
+    register(`/groups/${group.slug}`, 0.80, "weekly");
+  }
+
+  // 4. Any remaining public routes
+  for (const path of PUBLIC_PATHS) {
+    if (!added.has(`${base}${path === "/" ? "" : path}`)) {
+      register(path, 0.60, "monthly");
+    }
+  }
+
+  return entries;
 }

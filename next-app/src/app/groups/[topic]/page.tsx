@@ -47,12 +47,24 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { topic } = await params;
-  const group = await findGroup(decodeURIComponent(topic));
+  const decoded = decodeURIComponent(topic);
+  const group = await findGroup(decoded);
+  const groupName = group?.name ?? "Community Group";
+  const desc =
+    group?.description ||
+    `Join the ${groupName} community in Delhi-NCR to match with peers, participate in activities, and share experiences.`;
+
   return pageMetadata(`/groups/${topic}`, {
-    title: group?.name ?? "Group",
-    description:
-      group?.description ||
-      "Join this subgroup to share posts, replies and upcoming plans with the people in it.",
+    title: `${groupName} · Delhi-NCR Wellness & Sports Community`,
+    description: `${desc} Active members across Gurgaon, Janakpuri, Noida, and South Delhi. 100% employer-blind anonymity.`,
+    keywords: [
+      `${decoded} group delhi ncr`,
+      `${decoded} activities gurgaon`,
+      `${decoded} community meetup`,
+      `${groupName.toLowerCase()} club`,
+      "delhi ncr corporate wellness groups",
+      "anonymous sports matchmaking",
+    ],
   });
 }
 

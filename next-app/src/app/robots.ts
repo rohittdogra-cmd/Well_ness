@@ -24,6 +24,8 @@ export default function robots(): MetadataRoute.Robots {
           // to them and must not be indexed.
           "*/sessions/*",
           "/auth/",
+          "/admin",
+          "/api/",
         ],
       },
     ],

@@ -1786,8 +1786,9 @@ export function HomePage() {
             }}
           >
             <span>© 2026 stress-unwind Technologies. Protected by Auto-Assigned Handles &amp; Enterprise Anonymity.</span>
-            <div style={{ display: "flex", gap: "16px" }}>
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <Link href="/privacy" className="hover:text-white" style={{ color: "inherit", textDecoration: "none" }}>Privacy Policy</Link>
+              <Link href="/terms" className="hover:text-white" style={{ color: "inherit", textDecoration: "none" }}>Terms of Service</Link>
               <Link href="/safety" className="hover:text-white" style={{ color: "inherit", textDecoration: "none" }}>Safety Charter</Link>
               <Link href="/how-it-works" className="hover:text-white" style={{ color: "inherit", textDecoration: "none" }}>How It Works</Link>
               <Link href="/contact" className="hover:text-white" style={{ color: "inherit", textDecoration: "none" }}>Grievance Desk</Link>
