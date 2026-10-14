@@ -169,45 +169,43 @@ export function SignInPage() {
 
     // ── 1. Admin Authentication ──
     if (isAdmin) {
-      if (cleanPass && !isValidAdminCredentials(address, cleanPass)) {
-        setError("Invalid password for admin account. Use Stress@420 or Stress@421.");
+      if (!cleanPass) {
+        setError("Please enter your password to sign in as an administrator.");
         setBusy(false);
         return;
       }
-
-      const finalAdminPass = cleanPass || stored?.password || "Stress@420";
 
       if (isConfigured()) {
         try {
           const auth = getSupabase().auth;
           const { error: supaErr } = await auth.signInWithPassword({
             email: address,
-            password: finalAdminPass,
+            password: cleanPass,
           });
           if (supaErr) {
-            try {
-              await auth.signUp({
-                email: address,
-                password: finalAdminPass,
-                options: { data: { role: "admin", member_type: "professional" } },
-              });
-            } catch {}
+            setError("Invalid credentials. Please check your email and password.");
+            setBusy(false);
+            return;
           }
-        } catch {}
+        } catch {
+          setError("Authentication service is unavailable. Please try again later.");
+          setBusy(false);
+          return;
+        }
       }
 
       saveStoredAccount({
         id: uid,
         email: address,
-        password: finalAdminPass,
+        password: cleanPass,
         memberType: "professional",
-        name: stored?.name || "Chhavi Dogra (Admin)",
+        name: stored?.name || "Administrator",
         role: "admin",
         createdAt: stored?.createdAt || new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       });
       setLastLoginEmail(address);
-      mockLogin(address, "professional", uid, finalAdminPass);
+      mockLogin(address, "professional", uid, cleanPass);
       router.replace("/admin");
       setBusy(false);
       return;
@@ -295,13 +293,17 @@ export function SignInPage() {
 
     // ── 3. Member Account Signup ──
     if (mode === "signup") {
-      const finalPass = cleanPass || "password123";
+      if (!cleanPass || cleanPass.length < 8) {
+        setError("Please create a password with at least 8 characters.");
+        setBusy(false);
+        return;
+      }
       if (isConfigured()) {
         try {
           const auth = getSupabase().auth;
           const { data, error } = await auth.signUp({
             email: address,
-            password: finalPass,
+            password: cleanPass,
             options: {
               emailRedirectTo: window.location.origin + "/auth/callback",
               data: { member_type: audience },
@@ -311,7 +313,7 @@ export function SignInPage() {
             saveStoredAccount({
               id: data.user.id,
               email: address,
-              password: finalPass,
+              password: cleanPass,
               memberType: audience,
               name: generateCuteName({ interests: ["Badminton", "Football"] }),
               createdAt: data.user.created_at,
@@ -334,14 +336,14 @@ export function SignInPage() {
       saveStoredAccount({
         id: uid,
         email: address,
-        password: finalPass,
+        password: cleanPass,
         memberType: audience,
         name: generateCuteName({ interests: ["Badminton", "Football"] }),
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       });
       setLastLoginEmail(address);
-      mockLogin(address, audience, uid, finalPass);
+      mockLogin(address, audience, uid, cleanPass);
       router.replace("/");
       setBusy(false);
       return;

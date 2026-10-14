@@ -73,13 +73,91 @@ export function SafetyPage() {
         />
       </InfoSection>
 
-      <InfoSection heading="Professional support">
+      <InfoSection heading="Emergency & Crisis Support" tone="callout">
         <p>
-          This is a community, not a treatment service. Nothing here is
-          medical advice, and nobody here is a substitute for a clinician. If
-          you are struggling in a way that needs real help, please talk to
-          someone qualified, or to a local crisis line. In an emergency,
-          contact your local emergency services.
+          stress-unwind is a peer wellness community, not an emergency clinical service. If you or someone you know is in severe emotional distress, having thoughts of self-harm, or experiencing a psychiatric emergency, please reach out to these 24/7 free, confidential national helplines immediately:
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", margin: "16px 0" }}>
+          <div style={{ background: "rgba(13, 148, 136, 0.08)", border: "1.5px solid #0d9488", borderRadius: "12px", padding: "16px" }}>
+            <strong style={{ display: "block", color: "#0f766e", fontSize: "16px", marginBottom: "4px" }}>
+              📞 Tele-MANAS
+            </strong>
+            <span style={{ fontSize: "13px", color: "#475569", display: "block", marginBottom: "8px" }}>
+              Ministry of Health &amp; Family Welfare · 24/7 Toll-Free
+            </span>
+            <a
+              href="tel:14416"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#0d9488",
+                color: "#ffffff",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                fontWeight: 700,
+                textDecoration: "none",
+                fontSize: "14px",
+              }}
+            >
+              Call 14416 (or 1800-891-4416)
+            </a>
+          </div>
+
+          <div style={{ background: "rgba(124, 58, 237, 0.08)", border: "1.5px solid #7c3aed", borderRadius: "12px", padding: "16px" }}>
+            <strong style={{ display: "block", color: "#6d28d9", fontSize: "16px", marginBottom: "4px" }}>
+              📞 KIRAN Helpline
+            </strong>
+            <span style={{ fontSize: "13px", color: "#475569", display: "block", marginBottom: "8px" }}>
+              Govt. Mental Health Helpline · 13 Languages · 24/7
+            </span>
+            <a
+              href="tel:18005990019"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#7c3aed",
+                color: "#ffffff",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                fontWeight: 700,
+                textDecoration: "none",
+                fontSize: "14px",
+              }}
+            >
+              Call 1800-599-0019
+            </a>
+          </div>
+
+          <div style={{ background: "#fee2e2", border: "1.5px solid #f87171", borderRadius: "12px", padding: "16px" }}>
+            <strong style={{ display: "block", color: "#991b1b", fontSize: "16px", marginBottom: "4px" }}>
+              🚨 National Emergency
+            </strong>
+            <span style={{ fontSize: "13px", color: "#7f1d1d", display: "block", marginBottom: "8px" }}>
+              Police, Ambulance &amp; Disaster Response · All India
+            </span>
+            <a
+              href="tel:112"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#dc2626",
+                color: "#ffffff",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                fontWeight: 700,
+                textDecoration: "none",
+                fontSize: "14px",
+              }}
+            >
+              Call 112
+            </a>
+          </div>
+        </div>
+        <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>
+          These services are completely free, confidential, and available round the clock across India. Your employer has zero access or visibility into calls made to these helplines.
         </p>
       </InfoSection>
 

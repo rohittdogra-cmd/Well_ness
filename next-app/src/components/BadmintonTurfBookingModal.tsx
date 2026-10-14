@@ -238,6 +238,24 @@ export function BadmintonTurfBookingModal({
           </button>
         </div>
 
+        {/* Beta Demo Notice */}
+        <div
+          style={{
+            background: "#fef9c3",
+            borderBottom: "1px solid #fde047",
+            padding: "8px 24px",
+            fontSize: "11.5px",
+            color: "#854d0e",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontWeight: 600,
+          }}
+        >
+          <span>⚡</span>
+          <span>Beta Preview Simulation: Venue slots and verification passes are demonstration reservations for testing court coordination.</span>
+        </div>
+
         {/* Stepper Indicator */}
         <div
           style={{

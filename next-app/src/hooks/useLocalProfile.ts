@@ -91,17 +91,43 @@ export async function saveLocalProfile(profile: LocalProfile, userId: string) {
   const { isConfigured } = await import("@/lib/supabase/client");
   if (!isConfigured()) {
     if (typeof window !== "undefined") {
+      const existingRaw =
+        (userId ? localStorage.getItem(`wellness_local_profile_${userId}`) : null) ||
+        localStorage.getItem("wellness_local_profile");
+      const profileToSave = { ...profile };
+      if (existingRaw) {
+        try {
+          const parsed = JSON.parse(existingRaw) as LocalProfile;
+          if (parsed?.location && parsed.location.trim().length > 0) {
+            // Enforce locality locking: location cannot be altered once established
+            profileToSave.location = parsed.location;
+          }
+        } catch {}
+      }
       localStorage.setItem(
         `wellness_local_profile_${userId}`,
-        JSON.stringify(profile),
+        JSON.stringify(profileToSave),
       );
-      localStorage.setItem("wellness_local_profile", JSON.stringify(profile));
+      localStorage.setItem("wellness_local_profile", JSON.stringify(profileToSave));
     }
     return;
   }
-  const { error } = await getSupabase()
+  const client = getSupabase();
+  let finalLocation = profile.location;
+  try {
+    const { data: existingData } = await client
+      .from("profiles")
+      .select("location")
+      .eq("id", userId)
+      .maybeSingle();
+    if (existingData?.location && existingData.location.trim().length > 0) {
+      // Enforce locality locking: location cannot be altered once established
+      finalLocation = existingData.location;
+    }
+  } catch {}
+  const { error } = await client
     .from("profiles")
-    .upsert({ ...profile, id: userId }, { onConflict: "id" })
+    .upsert({ ...profile, location: finalLocation, id: userId }, { onConflict: "id" })
     .select()
     .single();
   if (error) throw error;

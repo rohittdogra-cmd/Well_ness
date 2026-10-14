@@ -27,7 +27,7 @@ export function useMyConnections() {
   return useQuery({
     queryKey: ["connections", user?.id],
     enabled: !!user,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     refetchIntervalInBackground: false,
     queryFn: async () =>
       (await rpc("list_connections", {})) as Connection[],

@@ -141,6 +141,31 @@ export function PsychologistsPage() {
         </div>
       </header>
 
+      {/* Beta & Demo Service Notice */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+          border: "1.5px solid #a7f3d0",
+          borderRadius: "16px",
+          padding: "16px 20px",
+          marginBottom: "28px",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "14px",
+          boxShadow: "0 2px 8px rgba(16, 185, 129, 0.08)",
+        }}
+      >
+        <span style={{ fontSize: "22px", lineHeight: 1 }}>🩺</span>
+        <div>
+          <strong style={{ color: "#065f46", fontSize: "14px", display: "block", marginBottom: "4px" }}>
+            Preview &amp; Staging Demo Notice
+          </strong>
+          <p style={{ color: "#047857", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
+            Clinician profiles and appointment booking slots displayed below are prototype representations for demonstration and workflow verification. In-clinic doctor consultations are currently in pilot testing. If you are experiencing acute distress or a psychiatric emergency, please dial <strong>Tele-MANAS (14416)</strong>, <strong>KIRAN (1800-599-0019)</strong>, or <strong>112</strong> immediately.
+          </p>
+        </div>
+      </div>
+
       {/* Your Booked Appointments & Verification Status */}
       {appointments.length > 0 && (
         <motion.div

@@ -92,7 +92,20 @@ export function TermsPage() {
         />
       </InfoSection>
 
-      <InfoSection heading="6. Prohibited Conduct & Employer-Blind Protection">
+      <InfoSection heading="6. Beta Staging, Prototype Demonstrations & Offline Payments" tone="honest">
+        <p>
+          Certain features across the platform — including simulated badminton court booking passes, therapist consultation schedules, and promotional wellness perk codes — are currently deployed in staging and demonstration preview mode.
+        </p>
+        <InfoList
+          items={[
+            "Simulated Booking Passes: Turf slot reservation numbers and doctor appointments generated on this preview platform demonstrate the user experience and verification protocols. Live court and clinic confirmations are subject to venue partner availability and manual concierge processing.",
+            "Offline Payment Settlement: We do not process online credit card charges for in-clinic doctor consultations or turf court hours on this web app. All consultation fees and venue entry tariffs are settled directly offline at the venue or doctor reception upon arrival.",
+            "No Clinical Liability: Directory listings of healthcare providers do not constitute an endorsement, hospital admission, or psychiatric emergency intervention facility.",
+          ]}
+        />
+      </InfoSection>
+
+      <InfoSection heading="7. Prohibited Conduct & Employer-Blind Protection">
         <p>
           Any attempt to compromise the 100% employer-blind architecture of the platform
           is treated with zero tolerance:
@@ -106,7 +119,7 @@ export function TermsPage() {
         />
       </InfoSection>
 
-      <InfoSection heading="7. Intellectual Property & User Content">
+      <InfoSection heading="8. Intellectual Property & User Content">
         <p>
           You retain ownership of the insights and text you share in community groups.
           However, you grant stress-unwind a non-exclusive license to host and display
@@ -114,7 +127,7 @@ export function TermsPage() {
         </p>
       </InfoSection>
 
-      <InfoSection heading="8. Limitation of Liability">
+      <InfoSection heading="9. Limitation of Liability">
         <p>
           To the maximum extent permitted by applicable law, stress-unwind Technologies
           shall not be liable for any indirect, incidental, punitive, or consequential
@@ -123,7 +136,7 @@ export function TermsPage() {
         </p>
       </InfoSection>
 
-      <InfoSection heading="9. Governing Law & Dispute Resolution">
+      <InfoSection heading="10. Governing Law & Dispute Resolution">
         <p>
           These Terms of Service are governed by and construed in accordance with the
           laws of India. Any legal dispute or controversy arising under these terms
@@ -132,7 +145,7 @@ export function TermsPage() {
         </p>
       </InfoSection>
 
-      <InfoSection heading="10. Support & Grievances">
+      <InfoSection heading="11. Support & Grievances">
         <p>
           Have questions about these terms or need clarification regarding court bookings
           or privacy protections? Please reach out via our{" "}

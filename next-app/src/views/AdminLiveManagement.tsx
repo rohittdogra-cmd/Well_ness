@@ -41,6 +41,17 @@ import { isAdminEmail } from "@/lib/authAccounts";
 
 // ─── AUTHORIZED ADMINS BANNER ─────────────────────────────────────
 
+export function LocalStorageWarningBanner({ feature }: { feature: string }) {
+  return (
+    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+      <div>
+        <strong className="font-semibold text-amber-900">Local Browser Storage Notice:</strong> Changes to {feature} are stored in this browser&apos;s localStorage for local preview and testing. To propagate edits to all remote users across devices, apply the Supabase schema migrations for live CMS storage.
+      </div>
+    </div>
+  );
+}
+
 export function AuthorizedAdminsBanner() {
   const { user } = useInternetIdentity();
 
@@ -59,11 +70,11 @@ export function AuthorizedAdminsBanner() {
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               Authorized Live Admin Session
               <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.2">
-                FULL AUTHORITY
+                ADMIN CONSOLE
               </Badge>
             </h3>
             <p className="text-xs text-muted-foreground">
-              Direct live website controls: changes to offers, doctors, and groups reflect immediately for all visitors.
+              Direct CMS controls: edits to offers, doctors, and groups are stored in browser localStorage for preview and staging.
             </p>
           </div>
         </div>
@@ -167,6 +178,7 @@ export function OffersManagementTab() {
 
   return (
     <div className="space-y-6">
+      <LocalStorageWarningBanner feature="live promotional offers and discount codes" />
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -571,6 +583,7 @@ export function DoctorManagementTab() {
 
   return (
     <div className="space-y-6">
+      <LocalStorageWarningBanner feature="doctor profiles, consultation fees, and availability slots" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold font-display text-foreground flex items-center gap-2">
@@ -1041,6 +1054,7 @@ export function GroupsFormationTab() {
 
   return (
     <div className="space-y-6">
+      <LocalStorageWarningBanner feature="peer support groups, categories, and cover images" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold font-display text-foreground flex items-center gap-2">

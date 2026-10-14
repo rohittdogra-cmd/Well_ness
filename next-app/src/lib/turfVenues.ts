@@ -227,7 +227,30 @@ export function calculateProximity(locA?: string, locB?: string): ProximityResul
   }
 
   // Same exact locality / area
-  if (a === b || (a.includes("janakpuri") && b.includes("janakpuri")) || (a.includes("gurgaon") && b.includes("gurgaon")) || (a.includes("noida") && b.includes("noida")) || (a.includes("palwal") && b.includes("palwal"))) {
+  const localityMatch = [
+    "janakpuri",
+    "dwarka",
+    "rohini",
+    "gurgaon",
+    "sohna",
+    "manesar",
+    "noida",
+    "palwal",
+    "faridabad",
+    "ghaziabad",
+    "south delhi",
+    "saket",
+    "vasant kunj",
+    "hauz khas",
+    "connaught place",
+    "indirapuram",
+    "greater noida",
+    "indiranagar",
+    "koramangala",
+    "whitefield",
+  ].find((loc) => a.includes(loc) && b.includes(loc));
+
+  if (a === b || localityMatch) {
     return {
       category: "same_area",
       label: "Same Locality (< 5 km)",
@@ -238,12 +261,55 @@ export function calculateProximity(locA?: string, locB?: string): ProximityResul
     };
   }
 
-  // NCR Metro Combinations (Janakpuri <-> Gurgaon, Gurgaon <-> Noida, etc.)
-  const ncrZones = ["delhi", "gurgaon", "noida", "janakpuri", "palwal", "faridabad", "ghaziabad", "haryana"];
+  // NCR Metro Combinations
+  const ncrZones = [
+    "delhi",
+    "gurgaon",
+    "noida",
+    "janakpuri",
+    "dwarka",
+    "rohini",
+    "saket",
+    "vasant kunj",
+    "hauz khas",
+    "palwal",
+    "faridabad",
+    "ghaziabad",
+    "indirapuram",
+    "greater noida",
+    "haryana",
+    "sohna",
+    "manesar",
+  ];
   const aInNCR = ncrZones.some((z) => a.includes(z));
   const bInNCR = ncrZones.some((z) => b.includes(z));
 
   if (aInNCR && bInNCR) {
+    // West Delhi <-> Dwarka
+    if ((a.includes("janakpuri") && b.includes("dwarka")) || (a.includes("dwarka") && b.includes("janakpuri"))) {
+      return {
+        category: "same_city",
+        label: "West Delhi Hub (~6 km)",
+        approxDistance: "6 km",
+        isViableForMeetup: true,
+        explanation: "Adjacent West Delhi sectors! Quick 12-minute hop via Pankha Road or Metro Blue Line.",
+        suggestedMidpoints: ["SP Arena Janakpuri", "Dwarka Sports Complex"],
+      };
+    }
+
+    // Dwarka <-> Gurgaon (via Dwarka Expressway)
+    if ((a.includes("dwarka") && b.includes("gurgaon")) || (a.includes("gurgaon") && b.includes("dwarka"))) {
+      return {
+        category: "same_city",
+        label: "Dwarka Expressway (~16 km)",
+        approxDistance: "16 km",
+        isViableForMeetup: true,
+        explanation: "Fast connection via the new Dwarka Expressway. Both players reach midpoint in ~20 minutes.",
+        suggestedMidpoints: ["Cyber Hub Arena", "Fitso Cyber Hub", "Dwarka Sports Complex"],
+      };
+    }
+
+    // Janakpuri / West Delhi <-> Gurgaon
     if ((a.includes("janakpuri") && b.includes("gurgaon")) || (a.includes("gurgaon") && b.includes("janakpuri"))) {
       return {
         category: "same_city",
@@ -254,6 +320,23 @@ export function calculateProximity(locA?: string, locB?: string): ProximityResul
         suggestedMidpoints: ["Central Aerocity Racquet Club", "SP Arena Janakpuri", "Fitso Cyber Hub"],
       };
     }
+
+    // South Delhi <-> Gurgaon (MG Road corridor)
+    if (
+      ((a.includes("south delhi") || a.includes("saket") || a.includes("vasant kunj") || a.includes("hauz khas")) && b.includes("gurgaon")) ||
+      ((b.includes("south delhi") || b.includes("saket") || b.includes("vasant kunj") || b.includes("hauz khas")) && a.includes("gurgaon"))
+    ) {
+      return {
+        category: "same_city",
+        label: "MG Road Corridor (~16 km)",
+        approxDistance: "16 km",
+        isViableForMeetup: true,
+        explanation: "Direct Yellow Line Metro corridor. Aerocity or DLF Cyber City is the ideal 50-50 midpoint.",
+        suggestedMidpoints: ["Central Aerocity Racquet Club", "Fitso Smash Arena @ Cyber Hub"],
+      };
+    }
+
+    // Gurgaon <-> Palwal (Sohna corridor)
     if ((a.includes("gurgaon") && b.includes("palwal")) || (a.includes("palwal") && b.includes("gurgaon"))) {
       return {
         category: "same_city",
@@ -264,13 +347,41 @@ export function calculateProximity(locA?: string, locB?: string): ProximityResul
         suggestedMidpoints: ["Sector 54 Sports Dome", "Palwal Sports Arena"],
       };
     }
+
+    // Noida <-> South Delhi
+    if (
+      ((a.includes("noida") || a.includes("greater noida")) && (b.includes("south delhi") || b.includes("saket") || b.includes("lajpat"))) ||
+      ((b.includes("noida") || b.includes("greater noida")) && (a.includes("south delhi") || a.includes("saket") || a.includes("lajpat")))
+    ) {
+      return {
+        category: "same_city",
+        label: "NCR East-South (~17 km)",
+        approxDistance: "17 km",
+        isViableForMeetup: true,
+        explanation: "Connected via DND Flyway or Magenta Line. Fast 20-minute commute to midpoint arenas.",
+        suggestedMidpoints: ["Jasola Sports Complex", "Smash & Drop Noida Sec 62"],
+      };
+    }
+
+    // Noida <-> Gurgaon
+    if ((a.includes("noida") && b.includes("gurgaon")) || (a.includes("gurgaon") && b.includes("noida"))) {
+      return {
+        category: "same_city",
+        label: "NCR Cross-Metro (~38 km)",
+        approxDistance: "38 km",
+        isViableForMeetup: true,
+        explanation: "Direct via Magenta / Yellow Line Metro exchange. Aerocity or South Delhi is the optimal midpoint.",
+        suggestedMidpoints: ["Central Aerocity Racquet Club", "South Delhi Sports Club"],
+      };
+    }
+
     return {
       category: "same_city",
       label: "Same Metro Region (~18 km)",
       approxDistance: "18 km",
       isViableForMeetup: true,
       explanation: "Within Delhi-NCR metro network. Easily coordinated at a central court.",
-      suggestedMidpoints: ["Central Aerocity", "Cyber Hub", "Noida Sec 62"],
+      suggestedMidpoints: ["Central Aerocity Racquet Club", "Cyber Hub", "Noida Sec 62"],
     };
   }
 
@@ -280,7 +391,7 @@ export function calculateProximity(locA?: string, locB?: string): ProximityResul
     label: "Intercity (~280 km)",
     approxDistance: "250-400 km",
     isViableForMeetup: false,
-    explanation: "Different cities/states. Requires advance planning for weekend tournaments or trips.",
+    explanation: "Different cities or states. Requires advance planning for weekend tournaments or trips.",
     suggestedMidpoints: ["Central State Arena"],
   };
 }

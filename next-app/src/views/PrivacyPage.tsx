@@ -29,11 +29,17 @@ export function PrivacyPage() {
         </p>
         <p>
           <strong>Our Absolute Guarantee:</strong> stress-unwind maintains zero
-          corporate management reporting. We do not integrate with enterprise Single
-          Sign-On (SSO) reporting feeds, nor do we provide organizational dashboard
-          audits. Your presence here, the sports turfs you book, the peer circles you
-          frequent, and the therapists you consult remain completely blind to your
-          employer.
+          corporate management reporting. We do not provide organizational dashboard
+          audits, nor do we feed employee logs to corporate HR systems. Your presence here,
+          the sports turfs you book, the peer circles you frequent, and the therapists
+          you consult remain completely blind to your employer.
+        </p>
+        <p>
+          <strong>Authentication &amp; Social Sign-In:</strong> While Google OAuth is supported
+          as an optional convenience login, we do not connect with corporate enterprise
+          identity directories (such as Okta, Azure Active Directory, or Workday). Even if you
+          sign in using a corporate email address, no webhook, log, or telemetry is ever
+          transmitted back to your workplace.
         </p>
       </InfoSection>
 
@@ -50,6 +56,7 @@ export function PrivacyPage() {
             "Real full names, corporate email addresses, and professional job titles are NEVER displayed publicly or to peers.",
             "Display name entry is intentionally algorithm-controlled to prevent members from inadvertently revealing their personal names or corporate designations.",
             "In peer groups and badminton match lobbies, you are only recognized by your cute sports avatar and proximity zone.",
+            "Direct Messages (DMs): 1-on-1 chats between connected members are isolated by database Row Level Security (RLS) ensuring that only the two participating members have read/write access. Messages are scanned client-side solely for acute distress signals to render crisis helpline numbers.",
           ]}
         />
       </InfoSection>
@@ -150,7 +157,7 @@ export function PrivacyPage() {
         <InfoList
           items={[
             "Active Accounts: Maintained while your membership is active to preserve your booked sports passes and community connections.",
-            "Account Deletion: To delete your account permanently, email privacy@stress-unwind.com or submit a request via our Contact Desk. All user rows, check-ins, and match passes are permanently purged within 7 business days.",
+            "Account Deletion: To delete your account permanently, email privacy@stress-unwind.com or submit a ticket via our Contact Desk. Direct self-service account termination is in active development; in the interim, support staff will purge all profile data, direct messages, check-ins, and match passes within 7 business days in full compliance with the DPDP Act 2023.",
             "Security Logs: Network access logs are automatically rotated and deleted after 30 days.",
           ]}
         />

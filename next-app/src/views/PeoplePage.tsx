@@ -15,16 +15,36 @@ import { useLocalProfile } from "@/hooks/useLocalProfile";
 import { BadmintonTurfBookingModal } from "@/components/BadmintonTurfBookingModal";
 import { calculateProximity } from "@/lib/turfVenues";
 import { MapPin } from "lucide-react";
+import { useCrisisDetection, CrisisOverlay } from "@/components/CrisisOverlay";
+import { generateCuteName } from "@/lib/anonymousNameGenerator";
 
 type Member = {
   id: string;
   name: string;
+  assignedCuteName?: string;
   avatar: number;
   bio: string;
   interests: string[];
   location?: string;
 };
 type Message = { id: number; sender: string; body: string; created_at: string };
+
+function getMemberDisplayName(m: Member): string {
+  if (m.assignedCuteName && m.assignedCuteName.trim()) {
+    return m.assignedCuteName;
+  }
+  if (m.name && !m.name.includes("@") && !m.name.includes(".")) {
+    return m.name;
+  }
+  return generateCuteName({ seed: m.id, interests: m.interests });
+}
+
+function getConnectionDisplayName(c: Connection): string {
+  if (c.name && !c.name.includes("@") && !c.name.includes(".")) {
+    return c.name;
+  }
+  return generateCuteName({ seed: c.member_id });
+}
 
 export function PeoplePage() {
   const { user } = useInternetIdentity();
@@ -115,6 +135,7 @@ export function PeoplePage() {
             </p>
           )}
           {members.data?.pages.flat().map((m) => {
+            const displayName = getMemberDisplayName(m);
             const c = connections.data?.find((c) => c.member_id === m.id);
             const mLoc = m.location || "Janakpuri, Delhi";
             const myLoc = localProfile?.location || "Janakpuri, Delhi";
@@ -124,7 +145,7 @@ export function PeoplePage() {
                 <Mascot variant={m.avatar} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <h3 style={{ margin: 0 }}>{m.name}</h3>
+                    <h3 style={{ margin: 0 }}>{displayName}</h3>
                     <span
                       style={{
                         fontSize: "11px",
@@ -201,7 +222,7 @@ export function PeoplePage() {
                     }}
                     onClick={() => {
                       setTurfPartner({
-                        name: m.name,
+                        name: displayName,
                         location: mLoc,
                       });
                       setTurfModalOpen(true);
@@ -240,18 +261,20 @@ export function PeoplePage() {
           )}
           {connections.data
             ?.filter((c) => c.status !== "declined")
-            .map((c) => (
-              <article key={c.id} className="connection-card">
-                <strong>{c.name}</strong>
-                {c.status === "accepted" ? (
-                  <button
-                    className="text-action"
-                    aria-pressed={selected === c.id}
-                    onClick={() => setSelected(c.id)}
-                  >
-                    Chat with {c.name}
-                  </button>
-                ) : c.recipient === user?.id ? (
+            .map((c) => {
+              const cName = getConnectionDisplayName(c);
+              return (
+                <article key={c.id} className="connection-card">
+                  <strong>{cName}</strong>
+                  {c.status === "accepted" ? (
+                    <button
+                      className="text-action"
+                      aria-pressed={selected === c.id}
+                      onClick={() => setSelected(c.id)}
+                    >
+                      Chat with {cName}
+                    </button>
+                  ) : c.recipient === user?.id ? (
                   <div>
                     <button
                       className="text-action"
@@ -282,7 +305,8 @@ export function PeoplePage() {
                   <span>Waiting for acceptance</span>
                 )}
               </article>
-            ))}
+            );
+          })}
           {current && (
             <Chat key={current.id} connection={current} userId={user!.id} />
           )}
@@ -310,6 +334,7 @@ function Chat({
 }) {
   const [body, setBody] = useState("");
   const qc = useQueryClient();
+  const { showOverlay, checkText, dismissOverlay } = useCrisisDetection();
   const key = ["direct-messages", userId, connection.id];
   const messages = useInfiniteQuery({
     queryKey: key,
@@ -328,10 +353,10 @@ function Chat({
     },
     getNextPageParam: (last) =>
       last.length === 50 ? last[last.length - 1].id : undefined,
-    // 15s, not 5s: this refetches every loaded page of the thread on each tick,
-    // so the cost grows with how far back the conversation has been read. It
-    // still only runs while the tab is focused.
-    refetchInterval: 15000,
+    // 30s: reduce polling load. This refetches every loaded page of the thread
+    // on each tick, so the cost grows with how far back the conversation has
+    // been read. It still only runs while the tab is focused.
+    refetchInterval: 30000,
     refetchIntervalInBackground: false,
   });
   const send = useMutation({
@@ -343,14 +368,16 @@ function Chat({
     },
   });
   const rows = [...(messages.data?.pages.flat() || [])].reverse();
+  const partnerName = getConnectionDisplayName(connection);
   return (
     <section
       className="private-chat"
-      aria-label={`Conversation with ${connection.name}`}
+      aria-label={`Conversation with ${partnerName}`}
     >
-      <h3>Chat with {connection.name}</h3>
+      <CrisisOverlay show={showOverlay} onDismiss={dismissOverlay} />
+      <h3>Chat with {partnerName}</h3>
       <small>
-        Private to the two of you. Updates every 15 seconds while this page is
+        Private to the two of you. Updates every 30 seconds while this page is
         active.
       </small>
       {messages.error && (
@@ -407,7 +434,7 @@ function Chat({
           required
           value={body}
           disabled={send.isPending}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => { setBody(e.target.value); checkText(e.target.value); }}
         />
         <button
           className="wellness-button"

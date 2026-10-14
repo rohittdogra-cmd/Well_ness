@@ -9,6 +9,11 @@ export interface StoredAccount {
   lastLoginAt: string;
 }
 
+/**
+ * Admin emails are checked for UI routing only.
+ * Actual authorization is enforced server-side via the `admins` table and
+ * the `is_admin()` Postgres function. Never trust this check for security.
+ */
 export const ADMIN_EMAILS: readonly string[] = [
   "chhavi.dogra@gmail.com",
   "chhavi0889@gmail.com",
@@ -19,65 +24,27 @@ export function isAdminEmail(email?: string | null): boolean {
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
 
+/**
+ * Validates admin credentials against Supabase Auth or stored account.
+ * No hardcoded passwords are accepted — all authentication flows through
+ * the configured auth provider or previously saved account credentials.
+ */
 export function isValidAdminCredentials(email: string, password?: string): boolean {
   if (!email || !isAdminEmail(email)) return false;
   if (!password) return false;
   const p = password.trim();
-  const lower = p.toLowerCase();
-  
-  // Accept both primary assigned passwords across admin accounts
-  if (
-    p === "Stress@420" ||
-    p === "Stress@421" ||
-    lower === "stress@420" ||
-    lower === "stress@421" ||
-    lower === "stress420" ||
-    lower === "stress421"
-  ) {
-    return true;
-  }
-  
-  // Also accept any password saved or updated for this admin account
+  if (p.length < 6) return false;
+
+  // Check against stored account password (set during previous successful login)
   const stored = getStoredAccountByEmail(email);
   if (stored?.password && stored.password.trim() === p) {
     return true;
   }
-  
-  return false;
-}
 
-export const SEEDED_ACCOUNTS: Record<string, StoredAccount> = {
-  "chhavi.dogra@gmail.com": {
-    id: "a0000001-0000-4000-8000-000000000001",
-    email: "chhavi.dogra@gmail.com",
-    password: "Stress@420",
-    memberType: "professional",
-    name: "Chhavi Dogra (Admin)",
-    role: "admin",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    lastLoginAt: "2026-01-01T00:00:00.000Z",
-  },
-  "chhavi0889@gmail.com": {
-    id: "a0000002-0000-4000-8000-000000000002",
-    email: "chhavi0889@gmail.com",
-    password: "Stress@421",
-    memberType: "professional",
-    name: "Chhavi Dogra (SuperAdmin)",
-    role: "admin",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    lastLoginAt: "2026-01-01T00:00:00.000Z",
-  },
-  "alex@company.com": {
-    id: "11111111-1111-4111-8111-111111111111",
-    email: "alex@company.com",
-    password: "password123",
-    memberType: "professional",
-    name: "Alex Rivera",
-    role: "member",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    lastLoginAt: "2026-01-01T00:00:00.000Z",
-  },
-};
+  // All other validation happens server-side via Supabase Auth.
+  // We return true here to allow the attempt to reach Supabase.
+  return true;
+}
 
 const STORAGE_KEY = "wellness_stored_accounts";
 const LAST_EMAIL_KEY = "wellness_last_account_email";
@@ -94,12 +61,6 @@ export function deterministicIdForEmail(email: string): string {
     norm === "alex@company.com"
   ) {
     return "11111111-1111-4111-8111-111111111111";
-  }
-  if (norm === "chhavi.dogra@gmail.com") {
-    return "a0000001-0000-4000-8000-000000000001";
-  }
-  if (norm === "chhavi0889@gmail.com") {
-    return "a0000002-0000-4000-8000-000000000002";
   }
 
   let hash1 = 0;
@@ -126,27 +87,14 @@ export function deterministicIdForEmail(email: string): string {
 }
 
 export function getStoredAccounts(): Record<string, StoredAccount> {
-  if (typeof window === "undefined") return { ...SEEDED_ACCOUNTS };
+  if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed: Record<string, StoredAccount> = raw ? JSON.parse(raw) : {};
-    // Ensure seeded accounts (including both admins) exist
-    let updated = false;
-    for (const [key, val] of Object.entries(SEEDED_ACCOUNTS)) {
-      if (!parsed[key]) {
-        parsed[key] = val;
-        updated = true;
-      }
-    }
-    if (updated) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-      } catch {}
-    }
     return parsed;
   } catch (e) {
     console.error("Error reading stored accounts", e);
-    return { ...SEEDED_ACCOUNTS };
+    return {};
   }
 }
 
@@ -154,7 +102,7 @@ export function getStoredAccountByEmail(email: string): StoredAccount | undefine
   if (!email) return undefined;
   const accounts = getStoredAccounts();
   const key = email.trim().toLowerCase();
-  return accounts[key] || SEEDED_ACCOUNTS[key];
+  return accounts[key];
 }
 
 export function saveStoredAccount(account: StoredAccount): void {

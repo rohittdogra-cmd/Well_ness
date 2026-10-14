@@ -533,8 +533,8 @@ export function createBackend(userId: string): backendInterface {
       if (!error && Array.isArray(data) && data.length > 0) {
         return data.map((r) => sessionFromRow(r));
       }
-    } catch {
-      // ignore
+    } catch (e: any) {
+      console.warn("Direct session_summaries query failed:", e?.message);
     }
 
     try {
@@ -546,11 +546,12 @@ export function createBackend(userId: string): backendInterface {
       if (!error && Array.isArray(data) && data.length > 0) {
         return data.map((r) => sessionFromRow(r));
       }
-    } catch {
-      // ignore
+    } catch (e: any) {
+      console.warn("Direct sessions query failed:", e?.message);
     }
 
     // Resilient fallback to mock backend
+    console.warn("listSessions falling back to mock backend for user:", uid);
     const mock = createMockBackend(uid);
     return mock.listSessions(options);
   };
@@ -573,15 +574,16 @@ export function createBackend(userId: string): backendInterface {
           if (Array.isArray(roster)) {
             rosterIds = roster.map((m: any) => String(m.user_id));
           }
-        } catch {
-          // ignore roster RPC failure
+        } catch (e: any) {
+          console.warn("session_roster RPC error:", e?.message);
         }
         return sessionFromRow(summary, rosterIds, uid);
       }
-    } catch {
-      // fallback
+    } catch (e: any) {
+      console.warn("Direct getSession query failed:", e?.message);
     }
 
+    console.warn("getSession falling back to mock backend for id:", id);
     const mock = createMockBackend(uid);
     return mock.getSession(id);
   };
@@ -719,6 +721,7 @@ export function createBackend(userId: string): backendInterface {
         console.warn("my_sessions RPC error, falling back:", e.message);
       }
 
+      console.warn("getMySessions falling back to mock backend for user:", uid);
       const mock = createMockBackend(uid);
       return mock.getMySessions();
     },
@@ -897,9 +900,10 @@ export function createBackend(userId: string): backendInterface {
             bookingsByProvider: pairs(s.bookings_by_provider),
           };
         }
-      } catch {
-        // ignore
+      } catch (e: any) {
+        console.warn("admin_stats RPC error:", e?.message);
       }
+      console.warn("getAdminStats falling back to mock backend for user:", uid);
       const mock = createMockBackend(uid);
       return mock.getAdminStats();
     },

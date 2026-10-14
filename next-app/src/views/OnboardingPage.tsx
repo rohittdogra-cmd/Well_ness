@@ -47,10 +47,17 @@ const ALL_INTERESTS = [
 
 const POPULAR_LOCATIONS = [
   "Janakpuri, Delhi",
-  "Gurgaon, Haryana",
-  "Noida, Uttar Pradesh",
-  "Palwal, Haryana",
+  "Dwarka, Delhi",
   "South Delhi",
+  "Rohini, Delhi",
+  "Connaught Place, Delhi",
+  "Gurgaon, Haryana",
+  "Sohna Road, Gurgaon",
+  "Noida, Uttar Pradesh",
+  "Greater Noida, Uttar Pradesh",
+  "Faridabad, Haryana",
+  "Ghaziabad, Uttar Pradesh",
+  "Palwal, Haryana",
   "Indiranagar, Bangalore",
   "Auckland, New Zealand",
 ];

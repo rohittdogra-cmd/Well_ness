@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Shield, Lock, ArrowRight, Loader2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { isAdminEmail, isValidAdminCredentials } from "@/lib/authAccounts";
+import { isAdminEmail, getStoredAccountByEmail } from "@/lib/authAccounts";
 
 export default function AdminPage() {
   const { user, isInitializing, mockLogin } = useInternetIdentity();
@@ -52,11 +52,12 @@ export default function AdminPage() {
     );
   }
 
-  // Otherwise, render dedicated Admin Login Gate
-  function handleAdminLogin(email: string, pass: string) {
+  // Dedicated Admin Login Gate
+  async function handleAdminLogin(email: string, pass: string) {
     setError("");
     setLoggingIn(true);
     const norm = email.trim().toLowerCase();
+    const cleanPass = pass.trim();
 
     if (!isAdminEmail(norm)) {
       setError("This email does not have administrative privileges.");
@@ -64,13 +65,40 @@ export default function AdminPage() {
       return;
     }
 
-    if (!isValidAdminCredentials(norm, pass)) {
-      setError("Invalid password for this admin account. Use Stress@420 or Stress@421.");
+    if (!cleanPass) {
+      setError("Please enter your administrator password.");
       setLoggingIn(false);
       return;
     }
 
-    mockLogin(norm, "professional", undefined, pass.trim());
+    const { isConfigured, getSupabase } = await import("@/lib/supabase/client");
+    if (isConfigured()) {
+      try {
+        const auth = getSupabase().auth;
+        const { error: supaErr } = await auth.signInWithPassword({
+          email: norm,
+          password: cleanPass,
+        });
+        if (supaErr) {
+          setError("Invalid credentials. Please verify your email and password.");
+          setLoggingIn(false);
+          return;
+        }
+      } catch {
+        setError("Authentication service is temporarily unavailable. Please try again.");
+        setLoggingIn(false);
+        return;
+      }
+    } else {
+      const stored = getStoredAccountByEmail(norm);
+      if (stored?.password && stored.password !== cleanPass) {
+        setError("Invalid credentials. Please enter the correct administrator password.");
+        setLoggingIn(false);
+        return;
+      }
+    }
+
+    mockLogin(norm, "professional", undefined, cleanPass);
     setLoggingIn(false);
   }
 

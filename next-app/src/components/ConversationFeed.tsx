@@ -11,6 +11,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { useFeed, useCommunityAction, type Post } from "@/hooks/useCommunity";
 import { toast } from "sonner";
+import { useCrisisDetection, CrisisOverlay } from "@/components/CrisisOverlay";
 export function ConversationFeed({
   group = null,
   canPost = true,
@@ -22,6 +23,7 @@ export function ConversationFeed({
   const action = useCommunityAction();
   const [body, setBody] = useState("");
   const [anonymous, setAnonymous] = useState(false);
+  const { showOverlay, checkText, dismissOverlay } = useCrisisDetection();
   async function publish(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -39,6 +41,7 @@ export function ConversationFeed({
   }
   return (
     <div className="conversation-feed">
+      <CrisisOverlay show={showOverlay} onDismiss={dismissOverlay} />
       {canPost ? (
         <form className="composer" onSubmit={publish}>
           <label htmlFor="new-post">What’s on your mind?</label>
@@ -46,7 +49,7 @@ export function ConversationFeed({
             id="new-post"
             placeholder="Share a small win, ask a question, or start a conversation…"
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => { setBody(e.target.value); checkText(e.target.value); }}
             maxLength={3000}
             rows={4}
             required
@@ -116,6 +119,7 @@ export function ConversationFeed({
             post={post}
             group={group}
             canPost={canPost}
+            onCrisisCheck={checkText}
           />
         ))
       )}
@@ -139,10 +143,12 @@ function PostCard({
   post,
   group,
   canPost,
+  onCrisisCheck,
 }: {
   post: Post;
   group: number | null;
   canPost: boolean;
+  onCrisisCheck?: (text: string) => void;
 }) {
   const action = useCommunityAction();
   const [open, setOpen] = useState(false);
@@ -263,7 +269,10 @@ function PostCard({
                 maxLength={3000}
                 required
                 value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                onChange={(e) => {
+                  setReply(e.target.value);
+                  onCrisisCheck?.(e.target.value);
+                }}
                 rows={2}
               />
               <button
