@@ -14,7 +14,9 @@ export default function ConfirmEmailPage() {
     const type = params.get("type");
     if (
       !token_hash ||
-      !["email", "signup", "magiclink", "invite"].includes(type || "")
+      !["email", "signup", "magiclink", "invite", "recovery"].includes(
+        type || "",
+      )
     ) {
       setError(
         "This confirmation link is incomplete. Request a new sign-in email.",
@@ -25,11 +27,15 @@ export default function ConfirmEmailPage() {
     try {
       const { error } = await getSupabase().auth.verifyOtp({
         token_hash,
-        type: type as "email" | "signup" | "magiclink" | "invite",
+        type: type as "email" | "signup" | "magiclink" | "invite" | "recovery",
       });
       if (error) throw error;
       window.history.replaceState(null, "", "/auth/confirm");
-      window.location.replace("/");
+      window.location.replace(
+        type === "recovery" || params.get("next") === "/account"
+          ? "/account"
+          : "/",
+      );
     } catch {
       setError(
         "We couldn’t confirm this link. It may have expired or already been used. Request a new email, or enter the latest email code on the sign-in page.",

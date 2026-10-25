@@ -6,7 +6,7 @@ const alice = "11111111-1111-4111-8111-111111111111",
   bob = "22222222-2222-4222-8222-222222222222",
   admin = "33333333-3333-4333-8333-333333333333";
 await db.exec(
-  `create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;`,
+  `create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;`,
 );
 for (const file of (
   await readdir(new URL("../supabase/migrations/", import.meta.url))
@@ -17,12 +17,13 @@ for (const file of (
       "utf8",
     ),
   );
-await db.query("insert into auth.users values ($1),($2),($3)", [
+await db.query("insert into auth.users(id) values ($1),($2),($3)", [
   alice,
   bob,
   admin,
 ]);
 await db.query("insert into public.admins values ($1)", [admin]);
+await db.exec("update auth.users set email=id::text || '@company.example',email_confirmed_at=now()");
 async function as(id) {
   await db.exec("reset role");
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
@@ -284,4 +285,26 @@ await denied("update groups set category='arts' where id=$1", [subgroup]);
 console.log(
   `PASS: ${checks} database checks covering migrations, RLS, anonymity, membership, reactions, moderation, capacity, ownership, notifications, appointments, audit history, connection consent and private messages.`,
 );
+// Verification must survive direct RPC calls and cannot be self-approved.
+await db.exec("reset role");
+await db.query("update auth.users set email='visitor@gmail.com', email_confirmed_at=now() where id=$1",[alice]);
+await as(alice);
+assert.equal((await scalar("select verification_status() as value")).verified,false); checks++;
+await denied("select publish_post('Blocked',null,null,false)");
+await denied("select create_session('Blocked','Browsing only','meetup',now()+interval '1 day',4,null,null)");
+await denied("select send_direct_message($1,'Blocked')",[cid]);
+await denied("select book_provider($1,now()+interval '10 days')",[pid]);
+await denied("insert into verification_requests(user_id,method,evidence,status) values($1,'linkedin','https://www.linkedin.com/in/visitor','approved')",[alice]);
+await denied("select submit_verification('linkedin','https://fake.example/person')");
+await db.query("select submit_verification('linkedin','https://www.linkedin.com/in/visitor')");
+assert.equal((await scalar("select verification_status() as value")).status,'pending'); checks++;
+const verificationId=await scalar("select id as value from verification_requests where user_id=$1",[alice]);
+await denied("select review_verification($1,true,'')",[verificationId]);
+await as(admin);
+await db.query("select review_verification($1,true,'')",[verificationId]);
+await as(alice);
+assert.equal((await scalar("select verification_status() as value")).verified,true); checks++;
+await db.query("select publish_post('Approved member',null,null,false)");
+assert.equal(await scalar("select evidence as value from verification_requests where user_id=$1",[alice]),'[reviewed; proof removed]'); checks++;
+console.log(`PASS: verification enforcement, review permissions, proof cleanup and ${checks} total checks.`);
 await db.close();

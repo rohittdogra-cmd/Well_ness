@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Boundary adapter: converts persisted Postgres rows to the existing view contracts.
 import { getSupabase } from "./supabase/client";
+import { restrictedActions, requireVerification } from "./verification";
 import { accountId } from "@/hooks/useInternetIdentity";
 import {
   type backendInterface,
@@ -153,9 +154,11 @@ async function result(query: PromiseLike<any>) {
 }
 
 export async function rpc(name: string, args: Record<string, unknown> = {}) {
+  if (restrictedActions.has(name) && !(["join_session", "toggle_group"].includes(name) && args.p_join === false)) await requireVerification();
   try {
     return await result(getSupabase().rpc(name, args));
   } catch (err: any) {
+    if (restrictedActions.has(name)) throw err;
     if (name === "is_admin") return true;
     if (name === "list_connections") return [];
     if (name === "find_members") {

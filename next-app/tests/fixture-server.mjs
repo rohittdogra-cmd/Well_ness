@@ -1,5 +1,24 @@
 /** UI-only fixture server. Never imported by the application or deployed. */
 import { createServer } from "node:http";
+const localDemo = process.env.LOCAL_DEMO === "true";
+let verification = {
+  verified: !localDemo,
+  status: localDemo ? "unverified" : "approved",
+};
+let verificationEmail = "";
+let verificationSentAt = 0;
+const protectedActions = new Set([
+  "create_group",
+  "toggle_group",
+  "react_post",
+  "publish_post",
+  "send_direct_message",
+  "request_connection",
+  "respond_connection",
+  "book_provider",
+  "create_session",
+  "join_session",
+]);
 const id = "11111111-1111-4111-8111-111111111111";
 const user = {
   id,
@@ -101,6 +120,99 @@ createServer(async (req, res) => {
   for await (const chunk of req) raw += chunk;
   const body = raw ? JSON.parse(raw) : {};
   const path = new URL(req.url, "http://localhost").pathname;
+  const action = path.split("/").pop();
+  if (
+    localDemo &&
+    protectedActions.has(action) &&
+    !(
+      ["join_session", "toggle_group"].includes(action) && body.p_join === false
+    ) &&
+    !verification.verified
+  ) {
+    res.statusCode = 403;
+    res.end(
+      JSON.stringify({
+        message: "Verify your profile to chat, message or book",
+      }),
+    );
+    return;
+  }
+  if (action === "verification_status") {
+    res.end(JSON.stringify(verification));
+    return;
+  }
+  if (localDemo && action === "send_work_email") {
+    const email = String(body.p_email || "")
+      .trim()
+      .toLowerCase();
+    if (
+      !/^[^@]+@[^@]+\.[^@]+$/.test(email) ||
+      /@(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|aol|proton|protonmail|mail|yandex)\./.test(
+        email,
+      )
+    ) {
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({ message: "Use an organisation email address." }),
+      );
+      return;
+    }
+    verificationEmail = email;
+    verificationSentAt = Date.now();
+    res.end("null");
+    return;
+  }
+  if (localDemo && action === "verify_work_email") {
+    if (
+      body.p_code !== "123456" ||
+      String(body.p_email).trim().toLowerCase() !== verificationEmail ||
+      !verificationSentAt ||
+      Date.now() - verificationSentAt > 600000
+    ) {
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          message:
+            "Invalid or expired demo code. Use 123456 after requesting a code.",
+        }),
+      );
+      return;
+    }
+    verification = { verified: true, status: "approved", method: "work_email" };
+    verificationSentAt = 0;
+    res.end("null");
+    return;
+  }
+  if (localDemo && action === "submit_verification") {
+    if (
+      !["linkedin", "employee_id", "student_id", "professional_id"].includes(
+        body.p_method,
+      ) ||
+      !body.p_evidence ||
+      verification.status === "pending" ||
+      verification.verified
+    ) {
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          message: "Choose a method and submit valid proof once.",
+        }),
+      );
+      return;
+    }
+    // Preview stores the request state only, never the ID photo.
+    verification = {
+      verified: false,
+      status: "pending",
+      method: body.p_method,
+    };
+    res.end("null");
+    return;
+  }
+  if (localDemo && action === "is_admin") {
+    res.end("false");
+    return;
+  }
   let data = [];
   if (path === "/auth/v1/settings")
     data = { external: { linkedin_oidc: false } };
@@ -109,11 +221,7 @@ createServer(async (req, res) => {
   else if (path === "/auth/v1/user") data = user;
   else if (path === "/auth/v1/otp") data = {};
   else if (path === "/auth/v1/verify") {
-    if (
-      body.token !== "123456" &&
-      !/^\d{6}$/.test(body.token) &&
-      body.token_hash !== "valid-test-hash"
-    ) {
+    if (body.token !== "123456" && body.token_hash !== "valid-test-hash") {
       res.statusCode = 403;
       data = { code: "otp_expired", msg: "Token has expired or is invalid" };
     } else {
@@ -125,10 +233,7 @@ createServer(async (req, res) => {
       new URL(req.url, "http://localhost").searchParams.get("grant_type") ===
       "password"
     ) {
-      if (
-        body.password === "Correct-password1" ||
-        (typeof body.password === "string" && body.password.length >= 6)
-      ) {
+      if (body.password === "Correct-password1") {
         if (body.email) user.email = body.email;
         data = authSession();
       } else {
@@ -162,6 +267,12 @@ createServer(async (req, res) => {
     connections[0].status = "accepted";
     data = null;
   } else if (path === "/test/reset") {
+    verification = {
+      verified: !localDemo,
+      status: localDemo ? "unverified" : "approved",
+    };
+    verificationEmail = "";
+    verificationSentAt = 0;
     connections = [];
     messages = [];
     profile = { ...defaultProfile };
@@ -234,4 +345,6 @@ createServer(async (req, res) => {
       },
     ];
   res.end(JSON.stringify(data));
-}).listen(54329, "127.0.0.1", () => console.log("UI fixture server on 54329"));
+}).listen(Number(process.env.FIXTURE_PORT || 54329), "127.0.0.1", () =>
+  console.log("UI fixture server ready"),
+);

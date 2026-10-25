@@ -1,4 +1,5 @@
 "use client";
+import { VerificationReviews } from "./VerificationReviews";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSupabase } from "@/lib/supabase/client";
@@ -54,6 +55,7 @@ export function OperationsPanel() {
   return (
     <section className="hub-page">
       <h2 className="text-2xl mb-6">Community operations</h2>
+      <VerificationReviews />
       {query.error ? (
         <p role="alert">{query.error.message}</p>
       ) : query.isPending ? (

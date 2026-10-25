@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { useVerification } from "@/hooks/useVerification";
 import { useState } from "react";
 import {
   Heart,
@@ -18,6 +20,7 @@ export function ConversationFeed({
   group?: number | null;
   canPost?: boolean;
 }) {
+  const verification = useVerification();
   const feed = useFeed(group);
   const action = useCommunityAction();
   const [body, setBody] = useState("");
@@ -39,7 +42,18 @@ export function ConversationFeed({
   }
   return (
     <div className="conversation-feed">
-      {canPost ? (
+      {!verification.data?.verified ? (
+        <div className="composer verification-composer">
+          <h3>Read along. Join in when you’re verified.</h3>
+          <p>
+            Verify your work email or use another verification method to post
+            and reply.
+          </p>
+          <Link className="wellness-button" href="/verify">
+            Verify to start a conversation
+          </Link>
+        </div>
+      ) : canPost ? (
         <form className="composer" onSubmit={publish}>
           <label htmlFor="new-post">What’s on your mind?</label>
           <textarea

@@ -2,7 +2,7 @@ import { test, expect, type BrowserContext } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 test.beforeEach(async ({ request, context }) => {
   await context.clearCookies();
-  await request.post("http://127.0.0.1:54329/test/reset");
+  await request.post("http://127.0.0.1:54330/test/reset");
 });
 async function signIn(context: BrowserContext) {
   const id = "11111111-1111-4111-8111-111111111111";
@@ -18,7 +18,7 @@ async function signIn(context: BrowserContext) {
       iat: Math.floor(Date.now() / 1000),
       aud: "authenticated",
       role: "authenticated",
-      iss: "http://127.0.0.1:54329/auth/v1",
+      iss: "http://127.0.0.1:54330/auth/v1",
     }) +
     ".dGVzdA";
   const session = {
@@ -79,7 +79,7 @@ test("account without a profile can complete onboarding and reload", async ({
   context,
   request,
 }) => {
-  await request.post("http://127.0.0.1:54329/test/missing-profile");
+  await request.post("http://127.0.0.1:54330/test/missing-profile");
   await signIn(context);
   await page.goto("/");
   await expect(page).toHaveURL(/onboarding/, { timeout: 20000 });
@@ -158,7 +158,7 @@ test("member request and private conversation on mobile", async ({
   context,
   request,
 }) => {
-  await request.post("http://127.0.0.1:54329/test/reset");
+  await request.post("http://127.0.0.1:54330/test/reset");
   await signIn(context);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/people");
@@ -167,7 +167,7 @@ test("member request and private conversation on mobile", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
-  await request.post("http://127.0.0.1:54329/test/accept-connection");
+  await request.post("http://127.0.0.1:54330/test/accept-connection");
   await page.reload();
   await page
     .getByRole("button", { name: "Chat with Maya", exact: true })
@@ -276,14 +276,13 @@ test("student signup requires verification with corporate and student id options
   page,
 }) => {
   await page.goto("/signin");
-  await page.getByRole("button", { name: "Student", exact: true }).click();
-  await expect(page.getByPlaceholder("you@college.edu")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: /LinkedIn/i }),
-  ).toHaveCount(0);
+
+  await expect(page.getByRole("button", { name: /LinkedIn/i })).toHaveCount(0);
   await page
     .getByRole("button", { name: "Create an account", exact: true })
     .click();
+  await page.getByRole("button", { name: "Student", exact: true }).click();
+  await expect(page.getByPlaceholder("you@college.edu")).toBeVisible();
   await page.getByLabel("Email address").fill("alex@example.test");
   await page
     .getByLabel("Create a password", { exact: true })
@@ -359,9 +358,7 @@ test("category browsing, subgroup creation, and responsive redesigned pages", as
 test("redesigned sign-in screenshots", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/signin");
-  await expect(
-    page.getByRole("button", { name: /LinkedIn/i }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /LinkedIn/i })).toHaveCount(0);
   await page.screenshot({
     path: "artifacts/redesign-signin-desktop.png",
     fullPage: true,
@@ -415,7 +412,9 @@ test("home page renders stress statistics banner and Smash Scorer persona, profi
   // Home page loads directly
   await expect(page).toHaveURL("http://localhost:3101/");
   // Greeting welcomes Smash Scorer, not Alex
-  await expect(page.getByRole("heading", { name: /Smash Scorer/ })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Smash Scorer/ }),
+  ).toBeVisible();
   // Stress banner is visible at the top of the home page with stress metrics
   const banner = page.locator('[data-ocid="home.stress_banner"]');
   await expect(banner).toBeVisible();
@@ -425,9 +424,13 @@ test("home page renders stress statistics banner and Smash Scorer persona, profi
 
   // Profile navigation and page functionality
   await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: /Welcome, Smash Scorer/ })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Welcome, Smash Scorer/ }),
+  ).toBeVisible();
   await expect(page.getByLabel("Display Name")).toHaveValue("Smash Scorer");
-  await expect(page.getByText("Assigned Persona", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Assigned Persona", { exact: true }),
+  ).toBeVisible();
 });
 
 test("interactive 60-second breathing reset and ambient soundscapes on home page", async ({
@@ -450,7 +453,9 @@ test("interactive 60-second breathing reset and ambient soundscapes on home page
   await page.getByRole("button", { name: /Guided Breathing/ }).click();
   await expect(page.getByText("Box Breathing")).toBeVisible();
   await page.getByRole("button", { name: /Begin 60s Breathwork/ }).click();
-  await expect(page.getByRole("button", { name: /Pause & Reset/ })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Pause & Reset/ }),
+  ).toBeVisible();
   await page.getByRole("button", { name: /Pause & Reset/ }).click();
   await expect(
     page.getByRole("button", { name: /Begin 60s Breathwork/ }),
@@ -464,7 +469,9 @@ test("interactive 2-minute ergonomic desk stretch and micro-break station on hom
   await signIn(context);
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Relieve Desk Stiffness & Screen Fatigue" }),
+    page.getByRole("heading", {
+      name: "Relieve Desk Stiffness & Screen Fatigue",
+    }),
   ).toBeVisible();
 
   // Test preset switching
@@ -477,9 +484,13 @@ test("interactive 2-minute ergonomic desk stretch and micro-break station on hom
 
   // Test stretch start and pause
   await page.getByRole("button", { name: "Start Stretch" }).click();
-  await expect(page.getByRole("button", { name: "Pause Stretch" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Pause Stretch" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Pause Stretch" }).click();
-  await expect(page.getByRole("button", { name: "Resume Stretch" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Resume Stretch" }),
+  ).toBeVisible();
 
   // Test next step button
   await page.getByRole("button", { name: "Next stretch" }).click();
@@ -494,5 +505,59 @@ test("interactive 2-minute ergonomic desk stretch and micro-break station on hom
   await noOverflow(page);
 });
 
-
-
+test("legacy local demo state never authenticates a live session", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "wellness_mock_session",
+      JSON.stringify({
+        id: "11111111-1111-4111-8111-111111111111",
+        email: "forged@example.test",
+      }),
+    ),
+  );
+  await page.goto("/people");
+  await expect(page).toHaveURL(/signin/);
+  await expect(
+    page.getByRole("heading", { name: "Welcome to your hub." }),
+  ).toBeVisible();
+});
+test("wrong six-digit code is rejected without demo fallback", async ({
+  page,
+}) => {
+  await page.goto("/signin");
+  await page.getByLabel("Email address").fill("alex@example.test");
+  await page
+    .getByRole("button", { name: "No password yet? Use email access" })
+    .click();
+  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await page.getByLabel("Email verification code").fill("654321");
+  await page.getByRole("button", { name: "Verify code and continue" }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page).toHaveURL(/signin/);
+});
+test("authentication failures do not create offline sessions", async ({
+  page,
+}) => {
+  await page.route("**/auth/v1/token**", (route) =>
+    route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "invalid_credentials",
+        msg: "Invalid login credentials",
+      }),
+    }),
+  );
+  await page.goto("/signin");
+  await page.getByLabel("Email address").fill("alex@example.test");
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("arbitrary-password123");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Invalid login credentials" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/signin/);
+});

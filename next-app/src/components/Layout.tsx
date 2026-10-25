@@ -2,6 +2,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import Link from "next/link";
 import { Notifications } from "./Notifications";
+import { VerificationBanner } from "./VerificationBanner";
 import { AuthGate } from "./AuthGate";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useQueryClient } from "@tanstack/react-query";
@@ -124,6 +125,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
             <main id="main-content" key={path}>
+              {path !== "/verify" && <VerificationBanner />}
               {children}
             </main>
             <footer className="wellness-footer">

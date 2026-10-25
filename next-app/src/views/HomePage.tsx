@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { StressBanner } from "@/components/StressBanner";
 import { DailyCheckIn } from "@/components/DailyCheckIn";
 import { MindfulResetSanctuary } from "@/components/MindfulResetSanctuary";
 import { ErgonomicDeskStretch } from "@/components/ErgonomicDeskStretch";
@@ -10,7 +9,6 @@ import {
   Users,
   CalendarDays,
   MessageCircle,
-  Sparkles,
   Compass,
 } from "lucide-react";
 import { useLocalProfile } from "@/hooks/useLocalProfile";
@@ -29,51 +27,87 @@ export function HomePage() {
 
   return (
     <div className="member-home">
-      {/* Top Global Stress Statistics & Reality */}
-      <div className="mb-6 -mx-4 sm:mx-0 rounded-2xl overflow-hidden border border-border/60 shadow-sm" data-ocid="home.stress_banner">
-        <StressBanner />
-      </div>
-
-      <header className="member-greeting">
+      <header className="member-greeting fresh-greeting">
         <div>
-          <span className="eyebrow">YOUR DAILY DOSE OF CONNECTION</span>
+          <span className="eyebrow">A LITTLE SPACE FOR YOU</span>
           <h1>
-            Good to see you
-            {profile?.name ? `, ${profile.name}` : ", Smash Scorer"}.
+            Good to see you{profile?.name ? `, ${profile.name}` : ""}{" "}
+            <span>✦</span>
           </h1>
-          <p>Make a little time for the things—and people—you enjoy.</p>
+          <p>Close a few tabs. Open up to something good.</p>
         </div>
-        <span className="greeting-mark">
-          <Sparkles size={27} />
-        </span>
       </header>
-      <section className="member-hero">
-        <div>
-          <span className="hero-pill">
-            <span /> YOUR NEXT GOOD THING
+      <section className="connection-hero">
+        <div className="connection-copy">
+          <span className="connection-kicker">
+            <span /> LESS WORK MODE. MORE YOU.
           </span>
           <h2>
-            Less scrolling.
+            Your people.
             <br />
-            <em>More belonging.</em>
+            Your pause.
+            <br />
+            <em>Your kind of happy.</em>
           </h2>
           <p>
-            Find your weekend team, your study circle, or someone who gets your
-            favourite hobby.
+            A lunchtime walk. A badminton buddy. A conversation that just
+            clicks. Make room for the things that make you, you.
           </p>
-          <Link className="wellness-button" href="/groups">
-            Explore your interests <ArrowUpRight size={18} />
-          </Link>
+          <div className="connection-ctas">
+            <Link className="wellness-button" href="/groups">
+              Find your people <ArrowUpRight size={19} />
+            </Link>
+            <Link href="/book-activities" className="text-action">
+              Explore experiences <ArrowRight size={17} />
+            </Link>
+          </div>
+          <div className="connection-footer">
+            <span className="hero-mini-avatars">
+              <img src="/images/student-wellness.jpg" alt="" />
+              <img src="/images/mindful-support.jpg" alt="" />
+              <img src="/images/community-hero.webp" alt="" />
+            </span>
+            <span>
+              Different days. Shared interests.
+              <br />
+              <strong>There’s a little room for everyone.</strong>
+            </span>
+          </div>
         </div>
-        <div className="member-hero-image">
-          <img
-            src="/images/corporate-wellness.jpg"
-            alt="Colleagues and friends taking a mindful wellness break together outdoors"
-            width="1000"
-            height="560"
-          />
-          <span>
-            <Users size={18} /> Better with good company.
+        <div className="connection-collage">
+          <div className="hero-orbit" aria-hidden="true" />
+          <span className="hero-spark" aria-hidden="true">
+            ✳
+          </span>
+          <figure className="hero-photo-main">
+            <img
+              src="/images/walk-together.webp"
+              alt="Friends enjoying a refreshing walk together outdoors"
+              width="640"
+              height="760"
+            />
+            <figcaption>
+              <span>🌿</span> A walk. A chat. A fresh start.
+            </figcaption>
+          </figure>
+          <figure className="hero-photo-small">
+            <img
+              src="/images/community-hero.webp"
+              alt="A warm conversation with good company"
+              width="360"
+              height="300"
+            />
+            <figcaption>Good company, great energy.</figcaption>
+          </figure>
+          <div className="hero-floating-note">
+            <span>☀</span>
+            <div>
+              <strong>Make time for your kind of good.</strong>
+              <small>Your next connection starts here.</small>
+            </div>
+          </div>
+          <span className="hero-interest-chip">
+            <Users size={16} /> Find your circle
           </span>
         </div>
       </section>

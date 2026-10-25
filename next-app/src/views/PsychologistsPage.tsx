@@ -1,4 +1,5 @@
 "use client";
+import { useVerification } from "@/hooks/useVerification";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -7,6 +8,7 @@ import { rpc } from "@/lib/backend";
 import { toast } from "sonner";
 export function PsychologistsPage() {
   const qc = useQueryClient();
+  const verification = useVerification();
   const [busy, setBusy] = useState<number | null>(null);
   const query = useQuery({
     queryKey: ["provider-directory"],
@@ -87,8 +89,20 @@ export function PsychologistsPage() {
                   Preferred date and time
                   <input type="datetime-local" name="date" required />
                 </label>
-                <button className="wellness-button" disabled={busy !== null}>
-                  {busy === p.id ? "Requesting…" : "Request appointment"}
+                <button
+                  type={verification.data?.verified ? "submit" : "button"}
+                  onClick={() => {
+                    if (!verification.data?.verified)
+                      window.location.assign("/verify");
+                  }}
+                  className="wellness-button"
+                  disabled={busy !== null || verification.isPending}
+                >
+                  {busy === p.id
+                    ? "Requesting…"
+                    : verification.data?.verified
+                      ? "Request appointment"
+                      : "Verify to book"}
                 </button>
               </form>
               <small className="privacy-note">

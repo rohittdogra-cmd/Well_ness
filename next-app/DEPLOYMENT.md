@@ -183,3 +183,24 @@ Features included in this synchronized release:
 4. **Corporate & Student Hub Pathways**: Dedicated authentication cards and pillars with zero employer visibility privacy pledge.
 5. **Profile Experience**: Direct access to `/profile` with persona details, avatar picker, and wellness goal management.
 
+
+### Member verification
+
+Apply `supabase/migrations/202610250001_verification.sql` with the other migrations before deploying this version. Unverified members can browse; database triggers block group creation/joining, reactions, posts/replies, connection requests/responses, direct messages, activity creation/joining and provider bookings. The client checks status before these actions and links to `/verify`.
+
+Work email verification uses Supabase's email-change OTP flow, retaining the current account ID and changing its sign-in email. Configure the **Change Email Address** email template to include `{{ .Token }}`. With Secure Email Change enabled, users must confirm both inboxes. Supabase manages expiry and delivery limits. A confirmed organisation email qualifies; common personal-email domains are excluded. This proves inbox access, not current employment. For stricter employer eligibility, add an approved organisation-domain list.
+
+Alternate verification accepts a LinkedIn profile URL or a JPG/PNG employee, government, student, educator or professional ID (up to 2 MB). Submissions stay pending until an administrator reviews them in **Admin → Community operations → Verification requests**. RLS restricts proof to its owner and administrators. Members cannot approve themselves, and submitted proof is removed after a decision. Pending proof remains until review or account deletion; establish a review/deletion schedule before collecting live identity documents.
+
+`npm run dev:local` uses an isolated demo API: any organisation email plus demo code **123456** demonstrates email verification. No email is sent and no employment is actually verified. Alternate submissions demonstrate pending status only; the demo does not retain ID images. Production builds cannot enable this development bypass. Demo verification resets with the API.
+
+
+### Secure sign-in release — 25 October 2026
+
+The current linked project is `well-ness` (`prj_KxAZERUYAyajBupkdIHykg9ewypV`, team `well-ness1`), with production alias `https://well-ness-pink.vercel.app` and root `next-app`.
+
+Live sign-in now accepts only successful Supabase responses. Arbitrary-password and arbitrary-code fallbacks and one-click production demo accounts were removed. Legacy mock sessions and stored passwords are discarded on startup. Local guest access remains available only with the development-only `dev:local` command. The login page now uses the warm photo-led design, supports password login, signup, email-link/code login, resends with a cooldown, and password recovery. Recovery redirects are limited to `/account`; arbitrary redirect destinations are not accepted.
+
+**External setup still required:** the current Vercel project had no Production environment variables when inspected. The historical Supabase hostname `pclwqijgxsxzvvciilka.supabase.co` returned DNS `ENOTFOUND`. Choose an active, dedicated Supabase project; apply all migrations, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to Vercel Production, configure Site URL `https://well-ness-pink.vercel.app` and exact callback `https://well-ness-pink.vercel.app/auth/callback` (including recovery query `?next=/account`), configure SMTP and confirmation/magic-link/recovery/change-email templates, then redeploy so public values are embedded. Test real email delivery with an account controlled by the owner. Fixture tests cannot prove email delivery.
+
+The live page explicitly shows unavailable sign-in when no backend is configured; it never silently creates a local session.

@@ -14,7 +14,8 @@ export default defineConfig({
   webServer: [
     {
       command: "node tests/fixture-server.mjs",
-      url: "http://127.0.0.1:54329",
+      env: { FIXTURE_PORT: "54330" },
+      url: "http://127.0.0.1:54330",
       reuseExistingServer: false,
     },
     {
@@ -23,7 +24,7 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120000,
       env: {
-        NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329",
+        NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54330",
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "ui-test-publishable-key",
         NEXT_DIST_DIR: ".next-ui-test",
       },

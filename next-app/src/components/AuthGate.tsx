@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useProfileQuery } from "../hooks/useLocalProfile";
+import { localAccess } from "@/lib/localAccess";
 export function AuthGate({ children }: { children: ReactNode }) {
   const { user, isInitializing } = useInternetIdentity();
   const profile = useProfileQuery();
@@ -13,10 +14,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const needsProfile =
     !!user && !profile.data?.name.trim() && path !== "/onboarding";
   useEffect(() => {
+    if (localAccess && path === "/signin") {
+      router.replace("/");
+      return;
+    }
     if (publicPage || loading || profile.error) return;
     if (!user) router.replace("/signin");
     else if (needsProfile) router.replace("/onboarding");
-  }, [publicPage, loading, user, needsProfile, profile.error, router]);
+  }, [publicPage, loading, user, needsProfile, profile.error, router, path]);
   if (publicPage) return children;
   if (profile.error)
     return (
