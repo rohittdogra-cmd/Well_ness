@@ -150,7 +150,7 @@ test("failed legacy callback returns to sign-in", async ({ page }) => {
   await expect(
     page
       .getByRole("alert")
-      .filter({ hasText: "couldn’t complete email confirmation" }),
+      .filter({ hasText: "sign-in link could not be confirmed" }),
   ).toBeVisible();
 });
 test("member request and private conversation on mobile", async ({
@@ -403,7 +403,7 @@ test("existing email-link member can set a password in account settings", async 
   );
 });
 
-test("home page renders stress statistics banner and Smash Scorer persona, profile page works", async ({
+test("photo-led home hero and profile navigation work", async ({
   page,
   context,
 }) => {
@@ -415,12 +415,16 @@ test("home page renders stress statistics banner and Smash Scorer persona, profi
   await expect(
     page.getByRole("heading", { name: /Smash Scorer/ }),
   ).toBeVisible();
-  // Stress banner is visible at the top of the home page with stress metrics
-  const banner = page.locator('[data-ocid="home.stress_banner"]');
-  await expect(banner).toBeVisible();
-  await expect(banner).toContainText("The Stress Reality");
-  await expect(banner).toContainText("Global Awareness Series");
-  await expect(banner).toContainText("What Is Stress?");
+  await expect(
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Find your people", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".hero-photo-main img")).toHaveAttribute(
+    "src",
+    "/images/walk-together.webp",
+  );
 
   // Profile navigation and page functionality
   await page.goto("/profile");
@@ -560,4 +564,35 @@ test("authentication failures do not create offline sessions", async ({
     page.getByRole("alert").filter({ hasText: "Invalid login credentials" }),
   ).toBeVisible();
   await expect(page).toHaveURL(/signin/);
+});
+
+test("password recovery uses the account destination", async ({ page }) => {
+  await page.goto("/signin");
+  await page.getByLabel("Email address").fill("alex@example.test");
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  const request = page.waitForRequest(
+    (r) => r.url().includes("/auth/v1/recover") && r.method() === "POST",
+  );
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  expect((await request).url()).toContain(
+    encodeURIComponent("/auth/callback?next=/account"),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Check your inbox." }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Email verification code")).toHaveCount(0);
+});
+test("recovery reaches account settings before profile onboarding", async ({
+  page,
+  request,
+}) => {
+  await request.post("http://127.0.0.1:54330/test/missing-profile");
+  await page.goto(
+    "/auth/confirm?token_hash=valid-test-hash&type=recovery&next=/account",
+  );
+  await page.getByRole("button", { name: "Confirm and continue" }).click();
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(
+    page.getByRole("heading", { name: "Make signing in simpler." }),
+  ).toBeVisible();
 });

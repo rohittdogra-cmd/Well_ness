@@ -17,13 +17,13 @@ create function public.verification_status() returns jsonb language plpgsql stab
 declare u uuid:=require_user(); r verification_requests; work_verified boolean;
 begin
  select * into r from verification_requests where user_id=u;
- select coalesce(email_confirmed_at is not null and email ~ '^[^@]+@[^@]+\.[^@]+$' and lower(split_part(email,'@',2)) !~ '^(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|aol|proton|protonmail|mail|yandex)\.',false) into work_verified from auth.users where id=u;
+ select coalesce(email_confirmed_at is not null and email ~ '^[^@]+@[^@]+[.][^@]+$' and lower(split_part(email,'@',2)) !~ '^(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|aol|proton|protonmail|mail|yandex)[.]',false) into work_verified from auth.users where id=u;
  return jsonb_build_object('verified',coalesce(work_verified,false) or coalesce(r.status='approved',false),'status',case when work_verified then 'approved' else coalesce(r.status,'unverified') end,'method',case when work_verified then 'work_email' else r.method end,'reason',r.reason);
 end $$;
 create function public.submit_verification(p_method text,p_evidence text) returns void language plpgsql security definer set search_path=public as $$
 declare u uuid:=require_user();
 begin
- if p_method='linkedin' and p_evidence !~ '^https://(www\.)?linkedin\.com/in/[^/ ]+/?$' then raise exception 'Enter a valid LinkedIn profile URL'; end if;
+ if p_method='linkedin' and p_evidence !~ '^https://(www[.])?linkedin[.]com/in/[^/ ]+/?$' then raise exception 'Enter a valid LinkedIn profile URL'; end if;
  if p_method<>'linkedin' and p_evidence !~ '^data:image/(jpeg|png);base64,[A-Za-z0-9+/=]+$' then raise exception 'Upload a JPG or PNG ID image'; end if;
  if exists(select 1 from verification_requests where user_id=u and status in ('pending','approved')) then raise exception 'Your verification is already submitted'; end if;
  insert into verification_requests(user_id,method,evidence) values(u,p_method,p_evidence)

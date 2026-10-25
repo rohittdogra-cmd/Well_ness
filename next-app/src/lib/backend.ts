@@ -159,7 +159,7 @@ export async function rpc(name: string, args: Record<string, unknown> = {}) {
     return await result(getSupabase().rpc(name, args));
   } catch (err: any) {
     if (restrictedActions.has(name)) throw err;
-    if (name === "is_admin") return true;
+    if (name === "is_admin") return false;
     if (name === "list_connections") return [];
     if (name === "find_members") {
       return [

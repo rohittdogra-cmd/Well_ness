@@ -62,7 +62,10 @@ export default function VerificationPage() {
           );
           if (error) throw error;
         } else if (!sent) {
-          const { error } = await db.auth.updateUser({ email: email.trim() });
+          const { error } = await db.auth.updateUser(
+            { email: email.trim() },
+            { emailRedirectTo: window.location.origin + "/auth/callback" },
+          );
           if (error) throw error;
         } else {
           const { error } = await db.auth.verifyOtp({

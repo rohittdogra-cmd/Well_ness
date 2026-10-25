@@ -12,7 +12,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const publicPage = path === "/signin" || path.startsWith("/auth/");
   const loading = isInitializing || (!!user && profile.isPending);
   const needsProfile =
-    !!user && !profile.data?.name.trim() && path !== "/onboarding";
+    !!user &&
+    !profile.data?.name.trim() &&
+    !["/onboarding", "/account"].includes(path);
   useEffect(() => {
     if (localAccess && path === "/signin") {
       router.replace("/");

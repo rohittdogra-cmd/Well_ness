@@ -1,4 +1,6 @@
--- Generated fresh-install bundle. Run only in a dedicated project without these tables.
+-- Wellness Hub: apply to an empty, dedicated Supabase project.
+
+-- Migration: 202609270001_wellness.sql
 -- One private community per deployment. All authorization lives in Postgres.
 begin;
 create table public.profiles (
@@ -227,6 +229,8 @@ insert into groups(slug,name,description) values
 commit;
 
 
+
+-- Migration: 202609270002_operations.sql
 -- Additions to the core migration: read-only audit history and moderation content.
 begin;
 create table public.activity_logs (
@@ -267,6 +271,8 @@ revoke execute on function public.audit_wellness(),public.get_reports() from pub
 grant execute on function public.get_reports() to authenticated;
 commit;
 
+
+-- Migration: 202609270003_session_updates.sql
 begin;
 create function public.update_session(p_session bigint,p_title text default null,p_description text default null,p_date timestamptz default null,p_capacity integer default null,p_space text default null,p_location text default null) returns void language plpgsql security definer set search_path=public as $$
 declare s sessions; begin
@@ -282,6 +288,8 @@ revoke execute on function public.update_session(bigint,text,text,timestamptz,in
 grant execute on function public.update_session(bigint,text,text,timestamptz,integer,text,text) to authenticated;
 commit;
 
+
+-- Migration: 202609300001_connections.sql
 begin;
 -- Expose only intentional public profile fields through the directory function.
 -- Existing profile policies continue protecting preferences and alias seeds.
@@ -369,6 +377,8 @@ revoke all on function public.find_members(text,integer),public.request_connecti
 grant execute on function public.find_members(text,integer),public.request_connection(uuid),public.respond_connection(bigint,boolean),public.list_connections(),public.send_direct_message(bigint,text) to authenticated;
 commit;
 
+
+-- Migration: 202610010001_group_categories.sql
 begin;
 alter table public.groups add column category text not null default 'social'
   check(category in ('sports','wellbeing','arts','learning','social','outdoors'));
@@ -411,4 +421,62 @@ declare u uuid:=require_user(); gid bigint; begin
 end $$;
 revoke all on function public.create_group(text,text,text) from public,anon;
 grant execute on function public.create_group(text,text,text) to authenticated;
+commit;
+
+
+-- Migration: 202610250001_verification.sql
+begin;
+create table public.verification_requests (
+ id bigint generated always as identity primary key,
+ user_id uuid not null unique references auth.users on delete cascade,
+ method text not null check(method in ('linkedin','employee_id','student_id','professional_id')),
+ evidence text not null check(length(evidence) between 10 and 2800000),
+ status text not null default 'pending' check(status in ('pending','approved','rejected')),
+ reason text,
+ reviewed_by uuid references auth.users,
+ created_at timestamptz not null default now()
+);
+alter table public.verification_requests enable row level security;
+revoke all on public.verification_requests from public,anon,authenticated;
+grant select on public.verification_requests to authenticated;
+create policy verification_private on public.verification_requests for select to authenticated using(user_id=auth.uid() or public.is_admin());
+create function public.verification_status() returns jsonb language plpgsql stable security definer set search_path=public as $$
+declare u uuid:=require_user(); r verification_requests; work_verified boolean;
+begin
+ select * into r from verification_requests where user_id=u;
+ select coalesce(email_confirmed_at is not null and email ~ '^[^@]+@[^@]+[.][^@]+$' and lower(split_part(email,'@',2)) !~ '^(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|aol|proton|protonmail|mail|yandex)[.]',false) into work_verified from auth.users where id=u;
+ return jsonb_build_object('verified',coalesce(work_verified,false) or coalesce(r.status='approved',false),'status',case when work_verified then 'approved' else coalesce(r.status,'unverified') end,'method',case when work_verified then 'work_email' else r.method end,'reason',r.reason);
+end $$;
+create function public.submit_verification(p_method text,p_evidence text) returns void language plpgsql security definer set search_path=public as $$
+declare u uuid:=require_user();
+begin
+ if p_method='linkedin' and p_evidence !~ '^https://(www[.])?linkedin[.]com/in/[^/ ]+/?$' then raise exception 'Enter a valid LinkedIn profile URL'; end if;
+ if p_method<>'linkedin' and p_evidence !~ '^data:image/(jpeg|png);base64,[A-Za-z0-9+/=]+$' then raise exception 'Upload a JPG or PNG ID image'; end if;
+ if exists(select 1 from verification_requests where user_id=u and status in ('pending','approved')) then raise exception 'Your verification is already submitted'; end if;
+ insert into verification_requests(user_id,method,evidence) values(u,p_method,p_evidence)
+ on conflict(user_id) do update set method=excluded.method,evidence=excluded.evidence,status='pending',reason=null,reviewed_by=null,created_at=now();
+end $$;
+create function public.review_verification(p_request bigint,p_approve boolean,p_reason text default '') returns void language plpgsql security definer set search_path=public as $$
+begin
+ if not is_admin() then raise exception 'Administrator access required'; end if;
+ if exists(select 1 from verification_requests where id=p_request and user_id=auth.uid()) then raise exception 'You cannot review your own verification'; end if;
+ update verification_requests set status=case when p_approve then 'approved' else 'rejected' end,reason=left(p_reason,500),reviewed_by=auth.uid(),evidence='[reviewed; proof removed]' where id=p_request and status='pending';
+ if not found then raise exception 'No pending request found'; end if;
+end $$;
+create function public.require_verified_interaction() returns trigger language plpgsql security definer set search_path=public as $$
+begin
+ if not coalesce((verification_status()->>'verified')::boolean,false) then raise exception 'Verify your profile to chat, message or book'; end if;
+ return new;
+end $$;
+create trigger verify_group before insert on public.groups for each row execute function require_verified_interaction();
+create trigger verify_group_member before insert on public.group_members for each row execute function require_verified_interaction();
+create trigger verify_reaction before insert on public.post_likes for each row execute function require_verified_interaction();
+create trigger verify_post before insert on public.posts for each row execute function require_verified_interaction();
+create trigger verify_message before insert on public.direct_messages for each row execute function require_verified_interaction();
+create trigger verify_connection before insert or update on public.connections for each row execute function require_verified_interaction();
+create trigger verify_booking before insert on public.provider_bookings for each row execute function require_verified_interaction();
+create trigger verify_session before insert on public.sessions for each row execute function require_verified_interaction();
+create trigger verify_session_member before insert on public.session_members for each row execute function require_verified_interaction();
+revoke all on function public.verification_status(),public.submit_verification(text,text),public.review_verification(bigint,boolean,text),public.require_verified_interaction() from public,anon;
+grant execute on function public.verification_status(),public.submit_verification(text,text),public.review_verification(bigint,boolean,text) to authenticated;
 commit;
