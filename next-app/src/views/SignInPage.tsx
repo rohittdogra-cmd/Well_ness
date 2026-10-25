@@ -246,7 +246,7 @@ export function SignInPage() {
               : mode === "signup"
                 ? "A little connection. A lot of possibility. Create your account to get started."
                 : mode === "code"
-                  ? "We’ll send a secure sign-in link to your inbox. No password needed."
+                  ? "Enter your account email to receive a secure sign-in link. No password needed. New here? Create an account first."
                   : mode === "reset"
                     ? "Enter your account email and we’ll send a secure password reset link."
                     : "Your circles, conversations and next good thing are waiting."}
@@ -407,7 +407,7 @@ export function SignInPage() {
                       {mode === "signup"
                         ? "Create account"
                         : mode === "code"
-                          ? "Send sign-in email"
+                          ? "Email me a sign-in link"
                           : mode === "reset"
                             ? "Send reset link"
                             : "Sign in"}
@@ -426,11 +426,11 @@ export function SignInPage() {
                   <button
                     type="button"
                     className="welcome-email-button"
-                    aria-label="No password yet? Use email access"
                     onClick={() => changeMode("code")}
                   >
-                    <Mail size={18} /> Email me a sign-in link
-                    <ArrowRight size={17} />
+                    <Mail size={18} aria-hidden="true" />
+                    <span>Sign in with an email link</span>
+                    <ArrowRight size={17} aria-hidden="true" />
                   </button>
                   <p className="welcome-switch">
                     New around here?{" "}

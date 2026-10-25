@@ -3349,24 +3349,34 @@
   flex: 1;
 }
 .welcome-email-button {
-  display: flex;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
   align-items: center;
   justify-content: center;
   gap: 12px;
   width: 100%;
   min-height: 49px;
+  padding: 14px 18px;
   border: 1px solid #dbe0d1;
   border-radius: 10px;
-  background: transparent;
+  background: #fafbf7;
   color: #526548;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
 }
-.welcome-email-button svg:last-child {
-  margin-left: auto;
+.welcome-email-button:hover {
+  background: #f0f4e9;
+  border-color: #8b9e7b;
 }
-.welcome-email-button svg:first-child {
-  margin-right: auto;
+.welcome-email-button:focus-visible {
+  outline: 3px solid #8b9e7b;
+  outline-offset: 3px;
+}
+.welcome-email-button svg {
+  flex-shrink: 0;
 }
 .welcome-switch {
   text-align: center;

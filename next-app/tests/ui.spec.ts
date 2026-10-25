@@ -62,9 +62,9 @@ test("email sign in and mobile layout", async ({ page }) => {
   ).toBeVisible();
   await page.getByLabel("Email address").fill("alex@example.test");
   await page
-    .getByRole("button", { name: "No password yet? Use email access" })
+    .getByRole("button", { name: "Sign in with an email link" })
     .click();
-  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
   await expect(
     page.getByRole("heading", { name: "Check your inbox." }),
   ).toBeVisible();
@@ -106,9 +106,9 @@ test("email code signs in without the browser that requested the email", async (
   await page.goto("/signin");
   await page.getByLabel("Email address").fill("alex@example.test");
   await page
-    .getByRole("button", { name: "No password yet? Use email access" })
+    .getByRole("button", { name: "Sign in with an email link" })
     .click();
-  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
   await page.getByLabel("Email verification code").fill("123456");
   await page.getByRole("button", { name: "Verify code and continue" }).click();
   await expect(page).toHaveURL("http://localhost:3101/");
@@ -533,9 +533,9 @@ test("wrong six-digit code is rejected without demo fallback", async ({
   await page.goto("/signin");
   await page.getByLabel("Email address").fill("alex@example.test");
   await page
-    .getByRole("button", { name: "No password yet? Use email access" })
+    .getByRole("button", { name: "Sign in with an email link" })
     .click();
-  await page.getByRole("button", { name: "Send sign-in email" }).click();
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
   await page.getByLabel("Email verification code").fill("654321");
   await page.getByRole("button", { name: "Verify code and continue" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
