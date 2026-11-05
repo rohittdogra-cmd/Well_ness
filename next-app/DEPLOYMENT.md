@@ -7,7 +7,9 @@ The maintained application is `next-app/`. The original Caffeine export under `s
 - GitHub: https://github.com/rohittdogra-cmd/Well_ness
 - Production branch: `codex/live-auth-and-verification`
 - Vercel: `well-ness`, team `well-ness1`, root directory `next-app`
-- Live site: https://well-ness-pink.vercel.app
+- Custom domain: https://stress-unwind.com (`www` redirects to the apex)
+- Vercel verification URL: https://well-ness-pink.vercel.app
+- Scheduled public opening: 5 November 2026 at 11:12 PM IST (`2026-11-05T17:42:00.000Z`)
 - Supabase: project `lxtsiwgepjrglxdvhvpm`, owned by `rohittdogra-cmd`
 
 The updated branch preserves the repository's separate `scalable-backend-and-seo` history. Future pushes to the production branch deploy through Vercel's existing GitHub connection.
@@ -88,3 +90,9 @@ npm run build
 ```
 
 The browser tests use an isolated fixture backend on port 54330 and a separate app on port 3101. They do not require the live project, send real emails, or authenticate test identities against production. The production connection was checked for healthy Auth settings, rejection of invalid passwords, denied anonymous profile access, and denied anonymous verification RPC access.
+
+## Timed custom-domain launch
+
+Production `LAUNCH_AT` is `2026-11-05T17:42:00.000Z`; `LAUNCH_HOSTS` is `stress-unwind.com,www.stress-unwind.com`. The server proxy serves an uncached launch screen on those hosts before that instant, then passes requests through to the authenticated hub. The countdown uses server time, and the page reloads automatically at opening. Vercel URLs remain available for release checks. DNS and HTTPS must be validated before launch. No later manual deployment or scheduled chat is required to open the hub.
+
+Run `node --test tests/launch.mjs` to verify the exact time boundary and host scoping. Authentication callbacks for both custom-domain hosts are allowlisted in Supabase. Set the Supabase Site URL to `https://stress-unwind.com` when DNS is connected.

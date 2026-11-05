@@ -1,6 +1,24 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { launchGate } from "@/lib/launchGate.mjs";
 export async function proxy(request: NextRequest) {
+  const launchPage = launchGate(
+    request.nextUrl.hostname,
+    process.env.LAUNCH_AT,
+    process.env.LAUNCH_HOSTS,
+  );
+  if (launchPage) {
+    return new NextResponse(launchPage, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "private, no-store, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+        "X-Robots-Tag": "noindex, nofollow",
+        "Referrer-Policy": "no-referrer",
+      },
+    });
+  }
   let response = NextResponse.next({ request });
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
