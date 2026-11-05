@@ -1,4 +1,5 @@
 /** UI-only fixture server. Never imported by the application or deployed. */
+import { maskContent } from "../src/lib/moderation.mjs";
 import { createServer } from "node:http";
 const localDemo = process.env.LOCAL_DEMO === "true";
 let verification = {
@@ -104,7 +105,7 @@ function authSession() {
     user,
   };
 }
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader(
@@ -118,7 +119,7 @@ createServer(async (req, res) => {
   }
   let raw = "";
   for await (const chunk of req) raw += chunk;
-  const body = raw ? JSON.parse(raw) : {};
+  const body = maskContent(raw ? JSON.parse(raw) : {});
   const path = new URL(req.url, "http://localhost").pathname;
   const action = path.split("/").pop();
   if (
@@ -229,10 +230,16 @@ createServer(async (req, res) => {
       data = authSession();
     }
   } else if (path === "/auth/v1/token") {
-    if (
-      new URL(req.url, "http://localhost").searchParams.get("grant_type") ===
-      "password"
-    ) {
+    const grantType = new URL(req.url, "http://localhost").searchParams.get("grant_type");
+    if (grantType === "refresh_token") {
+      // Local sessions expire just like real sessions; let the SDK renew them.
+      if (body.refresh_token === "test") {
+        data = authSession();
+      } else {
+        res.statusCode = 400;
+        data = { code: "refresh_token_not_found", msg: "Invalid refresh token" };
+      }
+    } else if (grantType === "password") {
       if (body.password === "Correct-password1") {
         if (body.email) user.email = body.email;
         data = authSession();
@@ -344,7 +351,7 @@ createServer(async (req, res) => {
         session_members: [{ user_id: id }],
       },
     ];
-  res.end(JSON.stringify(data));
+  res.end(JSON.stringify(maskContent(data)));
 }).listen(Number(process.env.FIXTURE_PORT || 54329), "127.0.0.1", () =>
-  console.log("UI fixture server ready"),
+  console.log(`UI fixture server ready on ${server.address().port}`),
 );

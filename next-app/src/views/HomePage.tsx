@@ -1,8 +1,10 @@
 "use client";
+
 import Link from "next/link";
+import { ConnectionStory } from "@/components/ConnectionStory";
 import { DailyCheckIn } from "@/components/DailyCheckIn";
-import { MindfulResetSanctuary } from "@/components/MindfulResetSanctuary";
-import { ErgonomicDeskStretch } from "@/components/ErgonomicDeskStretch";
+import { StressArcade } from "@/components/StressArcade";
+import { GlobalStressPulse } from "@/components/GlobalStressPulse";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -10,14 +12,15 @@ import {
   CalendarDays,
   MessageCircle,
   Compass,
+  Gamepad2,
+  Globe,
+  Sparkles,
 } from "lucide-react";
-import { useLocalProfile } from "@/hooks/useLocalProfile";
 import { useGroups } from "@/hooks/useCommunity";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { groupCategories, getCategory } from "@/lib/groupCategories";
 
 export function HomePage() {
-  const profile = useLocalProfile();
   const groups = useGroups();
   const { user } = useInternetIdentity();
   const joined =
@@ -27,28 +30,19 @@ export function HomePage() {
 
   return (
     <div className="member-home">
-      <header className="member-greeting fresh-greeting">
-        <div>
-          <span className="eyebrow">A LITTLE SPACE FOR YOU</span>
-          <h1>
-            Good to see you{profile?.name ? `, ${profile.name}` : ""}{" "}
-            <span>✦</span>
-          </h1>
-          <p>Close a few tabs. Open up to something good.</p>
-        </div>
-      </header>
+      {/* 2. Signature Connection Hero */}
       <section className="connection-hero">
         <div className="connection-copy">
           <span className="connection-kicker">
             <span /> LESS WORK MODE. MORE YOU.
           </span>
-          <h2>
+          <h1>
             Your people.
             <br />
             Your pause.
             <br />
             <em>Your kind of happy.</em>
-          </h2>
+          </h1>
           <p>
             A lunchtime walk. A badminton buddy. A conversation that just
             clicks. Make room for the things that make you, you.
@@ -57,9 +51,9 @@ export function HomePage() {
             <Link className="wellness-button" href="/groups">
               Find your people <ArrowUpRight size={19} />
             </Link>
-            <Link href="/book-activities" className="text-action">
-              Explore experiences <ArrowRight size={17} />
-            </Link>
+            <a href="#stress-arcade" className="text-action">
+              Play De-Stress Games <ArrowRight size={17} />
+            </a>
           </div>
           <div className="connection-footer">
             <span className="hero-mini-avatars">
@@ -112,6 +106,15 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* 3. Global Workplace Stress Monitor (Data, Epidemic Scale & Vitals) */}
+      <GlobalStressPulse />
+
+      {/* 4. The Daily De-Stress Arcade & Micro-Games Studio */}
+      <StressArcade />
+
+      <ConnectionStory />
+
+      {/* 5. Quick Action Cards */}
       <div className="quick-actions">
         <Link href="/people">
           <span className="mint">
@@ -145,12 +148,7 @@ export function HomePage() {
         </Link>
       </div>
 
-      {/* Interactive 60-Second Breathing Reset & Ambient Soundscape Sanctuary */}
-      <MindfulResetSanctuary />
-
-      {/* 2-Minute Ergonomic Desk Stretch & Micro-Break Timer */}
-      <ErgonomicDeskStretch />
-
+      {/* 6. Interest Categories */}
       <section className="home-interests">
         <div className="section-title">
           <div>
@@ -176,6 +174,8 @@ export function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* 7. Bottom Grid: Groups & Daily Check-In */}
       <div className="home-bottom-grid">
         <section className="your-groups">
           <div className="section-title">

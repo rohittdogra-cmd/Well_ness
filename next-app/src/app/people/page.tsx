@@ -33,7 +33,13 @@ export default function PeoplePage() {
   const { user } = useInternetIdentity();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    return (
+      Number(new URLSearchParams(window.location.search).get("connection")) ||
+      null
+    );
+  });
   const qc = useQueryClient();
   const members = useInfiniteQuery({
     queryKey: ["members", user?.id, filter],

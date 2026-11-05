@@ -32,7 +32,7 @@ function message(error: unknown) {
     : "Could not connect. Please try again.";
 }
 export function SignInPage() {
-  const { user, isInitializing } = useInternetIdentity();
+  const { user, isInitializing, skipLogin } = useInternetIdentity();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
   const [audience, setAudience] = useState("professional");
@@ -189,7 +189,7 @@ export function SignInPage() {
           <figure className="welcome-photo-large">
             <Image
               src="/images/walk-together.webp"
-                loading="eager"
+              loading="eager"
               alt="Friends taking a sunny walk together"
               width="660"
               height="600"
@@ -438,15 +438,82 @@ export function SignInPage() {
                       Create an account
                     </button>
                   </p>
+                  {process.env.NODE_ENV === "development" && (
+                    <>
+                      <div
+                        className="welcome-divider"
+                        style={{ marginTop: "16px", marginBottom: "16px" }}
+                      >
+                        <span />
+                        or explore directly
+                        <span />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={skipLogin}
+                        className="wellness-button"
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          backgroundColor: "var(--color-surface, #f4f4f5)",
+                          color: "var(--color-foreground, #18181b)",
+                          border: "1px solid var(--color-border, #e4e4e7)",
+                          padding: "11px 16px",
+                          borderRadius: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                        }}
+                      >
+                        <Sparkles size={16} className="text-primary" />
+                        <span>Skip Login &amp; Explore Hub</span>
+                        <ArrowRight size={16} />
+                      </button>
+                    </>
+                  )}
                 </>
               ) : (
-                <button
-                  type="button"
-                  className="welcome-back"
-                  onClick={() => changeMode("signin")}
-                >
-                  <ArrowLeft size={16} /> Back to sign in
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="welcome-back"
+                    onClick={() => changeMode("signin")}
+                  >
+                    <ArrowLeft size={16} /> Back to sign in
+                  </button>
+                  {process.env.NODE_ENV === "development" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={skipLogin}
+                        className="wellness-button"
+                        style={{
+                          marginTop: "16px",
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          backgroundColor: "var(--color-surface, #f4f4f5)",
+                          color: "var(--color-foreground, #18181b)",
+                          border: "1px solid var(--color-border, #e4e4e7)",
+                          padding: "11px 16px",
+                          borderRadius: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                        }}
+                      >
+                        <Sparkles size={16} className="text-primary" />
+                        <span>Skip Login &amp; Explore Hub</span>
+                        <ArrowRight size={16} />
+                      </button>
+                    </>
+                  )}
+                </>
               )}
             </>
           )}

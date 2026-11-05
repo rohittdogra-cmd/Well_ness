@@ -97,7 +97,7 @@ test("account without a profile can complete onboarding and reload", async ({
   await page.reload();
   await expect(page).toHaveURL("http://localhost:3101/");
   await expect(
-    page.getByRole("link", { name: /Hey, New member/ }),
+    page.getByRole("link", { name: /New member My profile/ }),
   ).toBeVisible();
 });
 test("email code signs in without the browser that requested the email", async ({
@@ -113,7 +113,7 @@ test("email code signs in without the browser that requested the email", async (
   await page.getByRole("button", { name: "Verify code and continue" }).click();
   await expect(page).toHaveURL("http://localhost:3101/");
   await expect(
-    page.getByRole("heading", { name: /Good to see you/ }),
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
 });
 test("cross-device link waits for confirmation and persists the session", async ({
@@ -132,7 +132,7 @@ test("cross-device link waits for confirmation and persists the session", async 
   await expect(page).toHaveURL("http://localhost:3101/");
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: /Good to see you/ }),
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
 });
 test("invalid email link gives a recoverable error", async ({ page }) => {
@@ -195,7 +195,7 @@ test("mobile home, groups, join, conversation and calendar", async ({
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Good to see you/ }),
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
   await noOverflow(page);
   await mkdir("artifacts", { recursive: true });
@@ -265,7 +265,7 @@ test("password sign in, invalid credentials, and sign out", async ({
   await page.getByLabel("Password", { exact: true }).fill("Correct-password1");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /Good to see you/ }),
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/signin/);
@@ -296,7 +296,7 @@ test("student signup requires verification with corporate and student id options
   await page.getByLabel("Email verification code").fill("123456");
   await page.getByRole("button", { name: "Verify code and continue" }).click();
   await expect(
-    page.getByRole("heading", { name: /Good to see you/ }),
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
 });
 test("category browsing, subgroup creation, and responsive redesigned pages", async ({
@@ -307,7 +307,7 @@ test("category browsing, subgroup creation, and responsive redesigned pages", as
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Good to see you/ }),
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
   await page.screenshot({
     path: "artifacts/redesign-home-desktop.png",
@@ -413,7 +413,7 @@ test("photo-led home hero and profile navigation work", async ({
   await expect(page).toHaveURL("http://localhost:3101/");
   // Greeting welcomes Smash Scorer, not Alex
   await expect(
-    page.getByRole("heading", { name: /Smash Scorer/ }),
+    page.getByRole("link", { name: /Smash Scorer My profile/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: /Your people.*Your pause/ }),
@@ -431,7 +431,9 @@ test("photo-led home hero and profile navigation work", async ({
   await expect(
     page.getByRole("heading", { name: /Welcome, Smash Scorer/ }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Edit profile & interests" }).click();
   await expect(page.getByLabel("Display Name")).toHaveValue("Smash Scorer");
+  await page.getByText("Avatar & persona options", { exact: true }).click();
   await expect(
     page.getByText("Assigned Persona", { exact: true }),
   ).toBeVisible();
@@ -443,8 +445,9 @@ test("interactive 60-second breathing reset and ambient soundscapes on home page
 }) => {
   await signIn(context);
   await page.goto("/");
+  await page.getByRole("button", { name: /Breathe 60 seconds/ }).click();
   await expect(
-    page.getByRole("heading", { name: /60-Second Reset & Ambient Sanctuary/ }),
+    page.getByRole("heading", { name: "Your 60-second reset" }),
   ).toBeVisible();
 
   // Test ambient sounds tab
@@ -472,6 +475,7 @@ test("interactive 2-minute ergonomic desk stretch and micro-break station on hom
 }) => {
   await signIn(context);
   await page.goto("/");
+  await page.getByRole("button", { name: /Desk stretch 2 minutes/ }).click();
   await expect(
     page.getByRole("heading", {
       name: "Relieve Desk Stiffness & Screen Fatigue",

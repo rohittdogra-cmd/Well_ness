@@ -21,10 +21,21 @@ export const accountId = (id: string) =>
     toString: () => id,
     isAnonymous: () => false,
   }) as Principal;
+export const DEMO_USER: User = {
+  id: "11111111-1111-4111-8111-111111111111",
+  aud: "authenticated",
+  role: "authenticated",
+  email: "alex@example.test",
+  app_metadata: {},
+  user_metadata: { name: "Smash Scorer", member_type: "professional" },
+  created_at: "2026-10-25T00:00:00.000Z",
+};
+
 type AuthContext = {
   user?: User;
   identity?: { getPrincipal: () => Principal };
   login: () => void;
+  skipLogin: () => void;
   clear: () => Promise<void>;
   isInitializing: boolean;
   isLoggingIn: boolean;
@@ -38,28 +49,57 @@ export function useInternetIdentity() {
 }
 export function InternetIdentityProvider({ children }: PropsWithChildren) {
   const router = useRouter();
-  const [user, setUser] = useState<User | undefined>(
-    localAccess
-      ? {
-          id: "11111111-1111-4111-8111-111111111111",
-          aud: "authenticated",
-          role: "authenticated",
-          email: "alex@example.test",
-          app_metadata: {},
-          user_metadata: { name: "Smash Scorer", member_type: "professional" },
-          created_at: "2026-10-25T00:00:00.000Z",
-        }
-      : undefined,
-  );
-  const [isInitializing, setInitializing] = useState(
-    !localAccess && isConfigured(),
-  );
+  const [user, setUser] = useState<User | undefined>(() => {
+    if (localAccess) return DEMO_USER;
+    if (
+      process.env.NODE_ENV === "development" &&
+      typeof window !== "undefined" &&
+      localStorage.getItem("wellness_skip_auth") === "true"
+    ) {
+      return DEMO_USER;
+    }
+    return undefined;
+  });
+  const [isInitializing, setInitializing] = useState(() => {
+    if (localAccess) return false;
+    if (
+      process.env.NODE_ENV === "development" &&
+      typeof window !== "undefined" &&
+      localStorage.getItem("wellness_skip_auth") === "true"
+    ) {
+      return false;
+    }
+    return isConfigured();
+  });
   const [loginError, setError] = useState<Error>();
   const qc = useQueryClient();
   const currentUser = useRef<string | undefined>(undefined);
+
+  function skipLogin() {
+    if (process.env.NODE_ENV !== "development") return;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("wellness_skip_auth", "true");
+    }
+    setUser(DEMO_USER);
+    setInitializing(false);
+    router.replace("/");
+  }
+
   useEffect(() => {
-    if (localAccess) return;
+    if (
+      localAccess ||
+      (process.env.NODE_ENV === "development" &&
+        typeof window !== "undefined" &&
+        localStorage.getItem("wellness_skip_auth") === "true")
+    ) {
+      if (!user) setUser(DEMO_USER);
+      setInitializing(false);
+      return;
+    }
     // Discard legacy demo state. It is never an authentication credential.
+    if (process.env.NODE_ENV !== "development") {
+      localStorage.removeItem("wellness_skip_auth");
+    }
     localStorage.removeItem("wellness_mock_session");
     localStorage.removeItem("wellness_stored_accounts");
     if (!isConfigured()) return;
@@ -104,14 +144,19 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
     };
   }, [qc]);
   async function clear() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("wellness_skip_auth");
+    }
     if (!localAccess && isConfigured()) {
-      const { error } = await getSupabase().auth.signOut();
-      if (error) throw error;
+      try {
+        const { error } = await getSupabase().auth.signOut();
+        if (error) console.warn("Supabase signOut error:", error);
+      } catch {}
     }
     await qc.cancelQueries();
     qc.clear();
-    if (!localAccess) setUser(undefined);
-    router.replace(localAccess ? "/" : "/signin");
+    setUser(undefined);
+    router.replace("/signin");
     router.refresh();
   }
   return createElement(
@@ -121,6 +166,7 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
         user,
         identity: user ? { getPrincipal: () => accountId(user.id) } : undefined,
         login: () => router.push("/signin"),
+        skipLogin,
         clear,
         isInitializing,
         isLoggingIn: false,

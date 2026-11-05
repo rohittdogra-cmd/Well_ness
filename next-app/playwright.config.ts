@@ -27,6 +27,8 @@ export default defineConfig({
         NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54330",
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "ui-test-publishable-key",
         NEXT_DIST_DIR: ".next-ui-test",
+        NEXT_PUBLIC_LOCAL_ACCESS: "false",
+        NEXT_PUBLIC_SKIP_AUTH: "false",
       },
     },
   ],

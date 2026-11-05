@@ -244,6 +244,60 @@ class AmbientAudioEngine {
     this.activeSound = null;
   }
 
+  public playPopSound(pitchMultiplier = 1) {
+    try {
+      this.initContext();
+      if (!this.ctx || !this.masterGain) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = "sine";
+      const baseFreq = (520 + Math.random() * 140) * pitchMultiplier;
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.07);
+
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + 0.09);
+    } catch {
+      // Audio playback can be silent if blocked
+    }
+  }
+
+  public playCelebrationChime() {
+    try {
+      this.initContext();
+      if (!this.ctx || !this.masterGain) return;
+      const now = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6 arpeggio
+
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+
+        gain.gain.setValueAtTime(0.001, now + idx * 0.1);
+        gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.1 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 1.2);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+
+        osc.start(now + idx * 0.1);
+        osc.stop(now + idx * 0.1 + 1.3);
+      });
+    } catch {
+      // ignore
+    }
+  }
+
   public getActiveSound(): SoundscapeType | null {
     return this.activeSound;
   }

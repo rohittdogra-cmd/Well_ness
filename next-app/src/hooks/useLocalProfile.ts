@@ -1,4 +1,5 @@
 "use client";
+import { maskContent } from "@/lib/moderation.mjs";
 import { useQuery } from "@tanstack/react-query";
 import { getSupabase } from "@/lib/supabase/client";
 import { useInternetIdentity } from "./useInternetIdentity";
@@ -47,7 +48,7 @@ export function useProfileQuery() {
           );
           if (local) {
             try {
-              return JSON.parse(local) as LocalProfile;
+              return maskContent(JSON.parse(local)) as LocalProfile;
             } catch {}
           }
         }
@@ -56,7 +57,7 @@ export function useProfileQuery() {
           user?.email?.split("@")[0] ||
           "Smash Scorer";
         return {
-          name: defaultName,
+          name: maskContent({ name: defaultName }).name,
           avatar: 0,
           bio: "Active member in the wellness hub.",
           interests: ["Badminton", "Health & Wellness"],
@@ -74,6 +75,7 @@ export function useLocalProfile(): LocalProfile | null {
 }
 
 export async function saveLocalProfile(profile: LocalProfile, userId: string) {
+  profile = maskContent(profile) as LocalProfile;
   if (typeof window !== "undefined") {
     localStorage.setItem(
       "wellness_local_profile_" + userId,

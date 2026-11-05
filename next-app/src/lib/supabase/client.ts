@@ -1,3 +1,4 @@
+import { createModeratedFetch } from "../moderation.mjs";
 import { createBrowserClient } from "@supabase/ssr";
 export const isConfigured = () =>
   Boolean(
@@ -12,5 +13,6 @@ export function getSupabase() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { global: { fetch: createModeratedFetch() } },
   );
 }

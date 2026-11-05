@@ -256,10 +256,10 @@ export function MindfulResetSanctuary() {
             <Sparkles size={14} /> INSTANT WELLNESS RESET
           </span>
           <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#123c43] sm:text-3xl">
-            60-Second Reset & Ambient Sanctuary
+            Your 60-second reset
           </h2>
           <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">
-            Lower your heart rate, reset workplace fatigue, and regain mental clarity.
+            Follow the circle, or choose a sound to settle into.
           </p>
         </div>
 
@@ -300,9 +300,9 @@ export function MindfulResetSanctuary() {
 
       {/* Main Content Area */}
       {activeTab === "breathe" ? (
-        <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+        <div className="breathing-layout mt-6 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
           {/* Left: Technique selector & statistics */}
-          <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="breathing-options lg:col-span-5 flex flex-col gap-4">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Choose Technique
@@ -366,7 +366,7 @@ export function MindfulResetSanctuary() {
           </div>
 
           {/* Right: Guided Breathing Circle */}
-          <div className="lg:col-span-7 flex flex-col items-center justify-center py-4">
+          <div className="breathing-stage lg:col-span-7 flex flex-col items-center justify-center py-4">
             {justCompleted ? (
               <div className="flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-300">
                 <div className="rounded-full bg-emerald-100 p-4 text-[#126d66]">
@@ -390,7 +390,7 @@ export function MindfulResetSanctuary() {
             ) : (
               <div className="relative flex flex-col items-center justify-center">
                 {/* Visual Breathing Ring */}
-                <div className="relative flex h-64 w-64 items-center justify-center sm:h-72 sm:w-72">
+                <div className="breathing-orb relative flex h-64 w-64 items-center justify-center sm:h-72 sm:w-72">
                   {/* Outer aura glow */}
                   <div
                     className={`absolute inset-0 rounded-full bg-gradient-to-tr ${circleColor} blur-2xl transition-all duration-1000 ease-in-out`}

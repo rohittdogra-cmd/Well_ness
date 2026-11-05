@@ -18,6 +18,8 @@ import {
   MessageCircle,
   Users,
   LogOut,
+  ArrowRight,
+  UserRound,
 } from "lucide-react";
 import { MotionConfig } from "motion/react";
 import { Mascot } from "./Mascot";
@@ -36,6 +38,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
+  const pageTitle =
+    nav.find(
+      (item) =>
+        path === item.href ||
+        (item.href !== "/" && path.startsWith(item.href + "/")),
+    )?.label ||
+    {
+      "/profile": "My profile",
+      "/account": "Account",
+      "/verify": "Verification",
+      "/dashboard": "Dashboard",
+    }[path] ||
+    "Your wellness hub";
+  const PageIcon =
+    nav.find((item) => item.label === pageTitle)?.icon || UserRound;
   const isActive = (href: string) =>
     path === href || (href !== "/" && path.startsWith(href + "/"));
   if (path === "/signin" || path.startsWith("/auth/"))
@@ -88,17 +105,36 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </aside>
           <div className="wellness-content">
             <header className="wellness-topbar">
-              <span className="topbar-label">
-                {nav.find((item) => isActive(item.href))?.label ||
-                  "Your wellness hub"}
-                <small>Make room for connection</small>
-              </span>
+              <div className="topbar-location">
+                <span className="topbar-page-icon">
+                  <PageIcon size={18} />
+                </span>
+                <div>
+                  <span className="topbar-breadcrumb">YOUR DAILY SPACE</span>
+                  <strong>{pageTitle}</strong>
+                </div>
+              </div>
               <div className="account-actions">
                 <Notifications />
+                <span className="topbar-divider" aria-hidden="true" />
+                <Link
+                  href="/profile"
+                  className="topbar-profile-pill"
+                  title="My profile"
+                >
+                  <Mascot variant={profile?.avatar ?? 0} />
+                  <span>
+                    <strong>{profile?.name || "Your profile"}</strong>
+                    <small>My profile</small>
+                  </span>
+                  <ArrowRight size={14} />
+                </Link>
                 <button
                   className="signout-button"
                   type="button"
                   disabled={signingOut}
+                  title={signingOut ? "Signing out…" : "Sign out"}
+                  aria-label={signingOut ? "Signing out…" : "Sign out"}
                   onClick={async () => {
                     setSigningOut(true);
                     try {
@@ -111,21 +147,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     }
                   }}
                 >
-                  <LogOut size={16} />{" "}
-                  {signingOut ? "Signing out…" : "Sign out"}
+                  <LogOut size={17} />
                 </button>
-                <Link
-                  href="/profile"
-                  className="topbar-account"
-                  title="My Profile"
-                >
-                  {profile ? `Hey, ${profile.name}` : "Hey, Smash Scorer"}
-                  <Mascot variant={profile?.avatar ?? 0} />
-                </Link>
               </div>
             </header>
             <main id="main-content" key={path}>
-              {path !== "/verify" && <VerificationBanner />}
+              {path !== "/" && path !== "/verify" && <VerificationBanner />}
               {children}
             </main>
             <footer className="wellness-footer">
