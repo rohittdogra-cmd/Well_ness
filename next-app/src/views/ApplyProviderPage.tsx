@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,7 @@ const BENEFITS = [
     icon: Zap,
     title: "Instant Visibility",
     description:
-      "Get discovered by thousands of corporate employees actively seeking wellness support.",
+      "Help community members and guests find the support your practice offers.",
     color: "text-amber-600",
     bg: "bg-amber-500/10",
   },
@@ -25,7 +26,7 @@ const BENEFITS = [
     icon: Trophy,
     title: "Verified Badge",
     description:
-      "Our admin review ensures only credible providers are listed — boosting trust and bookings.",
+      "Your application is reviewed before your practice appears in the directory.",
     color: "text-emerald-600",
     bg: "bg-emerald-500/10",
   },
@@ -33,7 +34,7 @@ const BENEFITS = [
     icon: CheckCircle2,
     title: "Seamless Booking",
     description:
-      "Employees can book sessions directly through the platform — no scheduling back-and-forth.",
+      "Review preferred appointment times and confirm requests in your provider workspace.",
     color: "text-blue-600",
     bg: "bg-blue-500/10",
   },
@@ -82,6 +83,7 @@ export function ApplyProviderPage() {
       data-ocid="apply_provider.page"
     >
       <div className="container max-w-5xl mx-auto">
+        <Link className="text-action" href="/provider">My provider workspace →</Link>
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
@@ -305,8 +307,7 @@ export function ApplyProviderPage() {
                   </Button>
 
                   <p className="text-xs text-muted-foreground text-center">
-                    No login required. Applications are reviewed within 2–3
-                    business days.
+                    Sign in to apply and manage your practice. Your listing stays private until an administrator approves it.
                   </p>
                 </form>
               </CardContent>

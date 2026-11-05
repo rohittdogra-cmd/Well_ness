@@ -1,8 +1,9 @@
+import { safeReturnPath } from "@/lib/returnPath.mjs";
 import { NextResponse, type NextRequest } from "next/server";
 import { serverSupabase } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const destination = params.get("next") === "/account" ? "/account" : "/";
+  const destination = safeReturnPath(params.get("next"));
   // Custom email templates land here without depending on a PKCE verifier
   // in the browser that originally requested the email.
   if (params.has("token_hash")) {

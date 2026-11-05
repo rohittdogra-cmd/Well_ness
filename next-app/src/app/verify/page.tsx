@@ -169,7 +169,7 @@ export default function VerificationPage() {
                   }}
                   aria-pressed={!alternate}
                 >
-                  <Mail size={18} /> Work email <small>Fastest</small>
+                  <Mail size={18} /> Organisation email <small>Approved domains</small>
                 </button>
                 <button
                   onClick={() => {
@@ -191,7 +191,7 @@ export default function VerificationPage() {
                 <p>
                   {alternate
                     ? "Students, educators, healthcare and government professionals — choose what works for you. A moderator will review your proof."
-                    : "Confirm access to your organisation’s inbox. Your email stays off your public profile."}
+                    : "Confirm an approved corporate or student email domain. If your organisation is not approved yet, submit evidence for administrator review. Your email stays off your public profile."}
                 </p>
                 {alternate ? (
                   <>

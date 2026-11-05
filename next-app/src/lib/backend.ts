@@ -10,8 +10,6 @@ import {
   type ProviderApplication,
   type ProviderBooking,
   UserRole,
-  ProgramType,
-  ProviderType,
 } from "@/backend.types";
 
 const ns = (date: string) => BigInt(new Date(date).getTime()) * 1_000_000n;
@@ -60,93 +58,6 @@ const booking = (r: any): ProviderBooking => ({
   createdAt: ns(r.created_at),
 });
 
-const DEFAULT_SESSIONS: Session[] = [
-  {
-    id: 1n,
-    title: "Lunchtime Mindful Walk & Reset",
-    description: "Take a step back from screens. Fresh air, casual walk, and reset.",
-    creator: accountId("11111111-1111-4111-8111-111111111111"),
-    participants: [
-      accountId("11111111-1111-4111-8111-111111111111"),
-      accountId("22222222-2222-4222-8222-222222222222"),
-    ],
-    createdAt: ns(new Date().toISOString()),
-    dateTime: ns(new Date(Date.now() + 86400000).toISOString()),
-    maxParticipants: 10n,
-    programType: ProgramType.meetup,
-    spaceName: "Garden Courtyard",
-    location: "Courtyard Gate 2",
-  },
-  {
-    id: 2n,
-    title: "Evening Badminton Friendly Rallies",
-    description: "Rackets, shuttles, and quick 15-minute sets for all skill levels.",
-    creator: accountId("11111111-1111-4111-8111-111111111111"),
-    participants: [accountId("11111111-1111-4111-8111-111111111111")],
-    createdAt: ns(new Date().toISOString()),
-    dateTime: ns(new Date(Date.now() + 172800000).toISOString()),
-    maxParticipants: 8n,
-    programType: ProgramType.badminton,
-    spaceName: "Indoor Sports Court",
-    location: "Level 1 Sports Hub",
-  },
-  {
-    id: 3n,
-    title: "Morning Vinyasa Yoga & Breathwork",
-    description: "Guided 30-minute stretch to start the day balanced and clear-headed.",
-    creator: accountId("33333333-3333-4333-8333-333333333333"),
-    participants: [accountId("33333333-3333-4333-8333-333333333333")],
-    createdAt: ns(new Date().toISOString()),
-    dateTime: ns(new Date(Date.now() + 259200000).toISOString()),
-    maxParticipants: 15n,
-    programType: ProgramType.exercise,
-    spaceName: "Wellness Studio",
-    location: "Block B, Room 302",
-  },
-];
-
-const DEFAULT_TASKS: Task[] = [
-  {
-    id: 1n,
-    sessionId: 1n,
-    title: "Bring reusable water bottles",
-    description: "Encourage hydration throughout the walking circle.",
-    assignedTo: accountId("11111111-1111-4111-8111-111111111111"),
-    completed: true,
-    createdAt: ns(new Date().toISOString()),
-  },
-  {
-    id: 2n,
-    sessionId: 2n,
-    title: "Reserve badminton court 3",
-    description: "Confirm court timing with front desk.",
-    assignedTo: accountId("11111111-1111-4111-8111-111111111111"),
-    completed: false,
-    createdAt: ns(new Date().toISOString()),
-  },
-];
-
-const DEFAULT_PROVIDERS: ProviderApplication[] = [
-  {
-    id: 1n,
-    name: "Dr. Claire Montgomery",
-    description: "Licensed Clinical Psychologist specializing in burnout and workplace mindfulness.",
-    providerType: ProviderType.psychologist,
-    isApproved: true,
-    isRejected: false,
-    submittedAt: ns(new Date().toISOString()),
-  },
-  {
-    id: 2n,
-    name: "Apex Corporate Sports Hub",
-    description: "Turf management, racquet sports clinics, and corporate leagues.",
-    providerType: ProviderType.sportsCompany,
-    isApproved: true,
-    isRejected: false,
-    submittedAt: ns(new Date().toISOString()),
-  },
-];
-
 async function result(query: PromiseLike<any>) {
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -154,131 +65,38 @@ async function result(query: PromiseLike<any>) {
 }
 
 export async function rpc(name: string, args: Record<string, unknown> = {}) {
-  if (restrictedActions.has(name) && !(["join_session", "toggle_group"].includes(name) && args.p_join === false)) await requireVerification();
-  try {
-    return await result(getSupabase().rpc(name, args));
-  } catch (err: any) {
-    if (restrictedActions.has(name)) throw err;
-    if (name === "is_admin") return false;
-    if (name === "list_connections") return [];
-    if (name === "find_members") {
-      return [
-        {
-          id: "22222222-2222-4222-8222-222222222222",
-          name: "Maya Lin",
-          avatar: 1,
-          bio: "Lunch walks, mindfulness and books.",
-          interests: ["Books", "Mindfulness"],
-        },
-        {
-          id: "33333333-3333-4333-8333-333333333333",
-          name: "Marcus T.",
-          avatar: 2,
-          bio: "Tech Lead • 15-minute desk breathing & weekend running.",
-          interests: ["Running", "Fitness"],
-        },
-        {
-          id: "44444444-4444-4444-8444-444444444444",
-          name: "Priya Sharma",
-          avatar: 3,
-          bio: "Campus Scholar • Exam de-stress debriefs & study music.",
-          interests: ["Study Circles", "Music"],
-        },
-        {
-          id: "55555555-5555-5555-8555-555555555555",
-          name: "Dr. Claire Montgomery",
-          avatar: 4,
-          bio: "Lead Psychologist • 1-on-1 confidential burnout support.",
-          interests: ["Mental Health", "Mindfulness"],
-        },
-      ];
-    }
-    if (name === "admin_stats") {
-      return {
-        totalTasks: 18n,
-        completedTasks: 12n,
-        sessionsByType: [],
-        totalBookings: 6n,
-        rejectedProviders: 0n,
-        approvedProviders: 4n,
-        totalProviders: 5n,
-        totalUsers: 150n,
-        totalSessions: 8n,
-        pendingProviders: 1n,
-      };
-    }
-    if (name === "get_feed") {
-      return [
-        {
-          id: 1,
-          body: "Anyone up for a lunchtime mindful walk this week?",
-          created_at: new Date().toISOString(),
-          alias: "Alex Chen",
-          mine: false,
-          anonymous: false,
-          likes: 3,
-          liked: false,
-          replies: [],
-        },
-      ];
-    }
-    return 1;
-  }
+  if (
+    restrictedActions.has(name) &&
+    !(["join_session", "toggle_group"].includes(name) && args.p_join === false)
+  )
+    await requireVerification();
+  return await result(getSupabase().rpc(name, args));
 }
 
 export function createBackend(userId: string): backendInterface {
   const db = getSupabase();
 
-  const sessions = async () => {
-    try {
-      const res = await result(
+  const sessions = async () =>
+    (
+      (await result(
         db
           .from("sessions")
           .select("*,session_members(user_id)")
           .order("date_time"),
-      );
-      if (Array.isArray(res) && res.length > 0)
-        return res.map(session) as Session[];
-    } catch {
-      // Fallback to default sessions
-    }
-    return DEFAULT_SESSIONS;
-  };
-
-  const tasks = async () => {
-    try {
-      const res = await result(db.from("tasks").select("*"));
-      if (Array.isArray(res) && res.length > 0)
-        return res.map(task) as Task[];
-    } catch {
-      // Fallback
-    }
-    return DEFAULT_TASKS;
-  };
-
-  const providers = async () => {
-    try {
-      const res = await result(db.from("providers").select("*"));
-      if (Array.isArray(res) && res.length > 0)
-        return res.map(provider) as ProviderApplication[];
-    } catch {
-      // Fallback
-    }
-    return DEFAULT_PROVIDERS;
-  };
-
-  const bookings = async () => {
-    try {
-      const res = await result(
+      )) ?? []
+    ).map(session) as Session[];
+  const tasks = async () =>
+    ((await result(db.from("tasks").select("*"))) ?? []).map(task) as Task[];
+  const providers = async () =>
+    ((await result(db.from("providers").select("*"))) ?? []).map(
+      provider,
+    ) as ProviderApplication[];
+  const bookings = async () =>
+    (
+      (await result(
         db.from("provider_bookings").select("*").order("booking_time"),
-      );
-      if (Array.isArray(res) && res.length > 0)
-        return res.map(booking) as ProviderBooking[];
-    } catch {
-      // Fallback
-    }
-    return [];
-  };
+      )) ?? []
+    ).map(booking) as ProviderBooking[];
 
   const one = <T>(items: T[], predicate: (item: T) => boolean): T => {
     const item = items.find(predicate);
@@ -296,40 +114,24 @@ export function createBackend(userId: string): backendInterface {
     isCallerAdmin: () => rpc("is_admin"),
     getCallerUserRole: async () =>
       (await rpc("is_admin")) ? UserRole.admin : UserRole.user,
-    getCallerUserProfile: async () => {
-      try {
-        const p = await result(
-          db.from("profiles").select("name").eq("id", userId).single(),
-        );
-        if (p?.name && p.name.trim()) return p;
-      } catch {}
-      return { name: "Smash Scorer" };
-    },
-    getUserProfile: async (user) => {
-      try {
-        const p = await result(
-          db
-            .from("profiles")
-            .select("name")
-            .eq("id", user.toString())
-            .maybeSingle(),
-        );
-        if (p?.name && p.name.trim()) return p;
-      } catch {}
-      return { name: "Smash Scorer" };
-    },
+    getCallerUserProfile: async () =>
+      result(db.from("profiles").select("name").eq("id", userId).maybeSingle()),
+    getUserProfile: async (user) =>
+      result(
+        db
+          .from("profiles")
+          .select("name")
+          .eq("id", user.toString())
+          .maybeSingle(),
+      ),
     saveCallerUserProfile: async (profile) => {
-      try {
-        await result(
-          db
-            .from("profiles")
-            .upsert({ id: userId, name: profile.name }, { onConflict: "id" })
-            .select()
-            .single(),
-        );
-      } catch (e) {
-        console.warn("Could not save profile to remote, kept local:", e);
-      }
+      await result(
+        db
+          .from("profiles")
+          .upsert({ id: userId, name: profile.name }, { onConflict: "id" })
+          .select()
+          .single(),
+      );
     },
     getAllSessions: sessions,
     getSessionsByProgramType: async (type) =>
@@ -454,37 +256,26 @@ export function createBackend(userId: string): backendInterface {
     },
     getAllUserProfiles: async () => {
       const all = await sessions();
-      try {
-        const res = await result(db.from("profiles").select("id,name"));
-        if (Array.isArray(res) && res.length > 0) {
-          return res.map((p: any) => ({
-            principal: accountId(p.id),
-            name: p.name,
-            sessionsCreated: BigInt(
-              all.filter((s) => s.creator.toString() === p.id).length,
-            ),
-            sessionsJoined: BigInt(
-              all.filter((s) => s.participants.some((u) => u.toString() === p.id))
-                .length,
-            ),
-          }));
-        }
-      } catch {}
-      return [
-        {
-          principal: accountId("11111111-1111-4111-8111-111111111111"),
-          name: "Smash Scorer",
-          sessionsCreated: 2n,
-          sessionsJoined: 3n,
-        },
-      ];
+      const profiles = await result(db.from("profiles").select("id,name"));
+      return (profiles ?? []).map((p: any) => ({
+        principal: accountId(p.id),
+        name: p.name,
+        sessionsCreated: BigInt(
+          all.filter((s) => s.creator.toString() === p.id).length,
+        ),
+        sessionsJoined: BigInt(
+          all.filter((s) => s.participants.some((u) => u.toString() === p.id))
+            .length,
+        ),
+      }));
     },
     getAdminStats: async () => {
-      const [ss, tt, pp, bb] = await Promise.all([
+      const [ss, tt, pp, bb, profiles] = await Promise.all([
         sessions(),
         tasks(),
         providers(),
         bookings(),
+        result(db.from("profiles").select("id")),
       ]);
       return {
         totalTasks: BigInt(tt.length),
@@ -494,7 +285,7 @@ export function createBackend(userId: string): backendInterface {
         rejectedProviders: BigInt(pp.filter((p) => p.isRejected).length),
         approvedProviders: BigInt(pp.filter((p) => p.isApproved).length),
         totalProviders: BigInt(pp.length),
-        totalUsers: 150n,
+        totalUsers: BigInt(profiles?.length ?? 0),
         totalSessions: BigInt(ss.length),
         pendingProviders: BigInt(
           pp.filter((p) => !p.isApproved && !p.isRejected).length,
@@ -502,35 +293,21 @@ export function createBackend(userId: string): backendInterface {
       };
     },
     getAllActivityLogs: async () => {
-      try {
-        const res = await result(
-          db
-            .from("activity_logs")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(200),
-        );
-        if (Array.isArray(res) && res.length > 0) {
-          return res.map((r: any) => ({
-            id: BigInt(r.id),
-            user: accountId(r.user_id),
-            activityType: r.activity_type,
-            relatedId: BigInt(r.related_id),
-            createdAt: ns(r.created_at),
-            activityTime: ns(r.created_at),
-          }));
-        }
-      } catch {}
-      return [
-        {
-          id: 1n,
-          user: accountId("11111111-1111-4111-8111-111111111111"),
-          activityType: "check_in",
-          relatedId: 1n,
-          createdAt: ns(new Date().toISOString()),
-          activityTime: ns(new Date().toISOString()),
-        },
-      ];
+      const rows = await result(
+        db
+          .from("activity_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(200),
+      );
+      return (rows ?? []).map((r: any) => ({
+        id: BigInt(r.id),
+        user: accountId(r.user_id),
+        activityType: r.activity_type,
+        relatedId: BigInt(r.related_id),
+        createdAt: ns(r.created_at),
+        activityTime: ns(r.created_at),
+      }));
     },
     getActivityLogsForUser: async (user) =>
       (await actor.getAllActivityLogs()).filter(

@@ -23,6 +23,7 @@ await db.query("insert into auth.users(id) values ($1),($2),($3)", [
   admin,
 ]);
 await db.query("insert into public.admins values ($1)", [admin]);
+await db.exec("insert into organisation_domains(domain,member_type) values ('company.example','corporate')");
 await db.exec("update auth.users set email=id::text || '@company.example',email_confirmed_at=now()");
 async function as(id) {
   await db.exec("reset role");

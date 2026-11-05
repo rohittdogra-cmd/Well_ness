@@ -1,4 +1,5 @@
 "use client";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSupabase } from "@/lib/supabase/client";
@@ -6,20 +7,23 @@ import { rpc } from "@/lib/backend";
 import { toast } from "sonner";
 export function AppointmentList() {
   const qc = useQueryClient();
+  const { user } = useInternetIdentity();
   const [busy, setBusy] = useState<number | null>(null);
   const query = useQuery({
-    queryKey: ["bookings", "calendar"],
+    queryKey: ["bookings", "calendar", user?.id],
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await getSupabase()
         .from("provider_bookings")
         .select("id,booking_time,confirmed,providers(name)")
+        .eq("user_id", user!.id)
         .order("booking_time");
       if (error) throw error;
       return data;
     },
   });
   return (
-    <section className="mt-12">
+    <section className="mt-12" id="appointments">
       <h2 className="text-2xl font-semibold mb-4">My appointments</h2>
       {query.isPending ? (
         <p>Loading…</p>

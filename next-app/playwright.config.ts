@@ -29,6 +29,7 @@ export default defineConfig({
         NEXT_DIST_DIR: ".next-ui-test",
         NEXT_PUBLIC_LOCAL_ACCESS: "false",
         NEXT_PUBLIC_SKIP_AUTH: "false",
+        GUEST_BOOKING_SERVER_KEY: "local-fixture-only",
       },
     },
   ],

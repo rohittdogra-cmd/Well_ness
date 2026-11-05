@@ -105,6 +105,50 @@ function authSession() {
     user,
   };
 }
+const seedProviders = () => [
+  {
+    id: 1,
+    applicant: id,
+    name: "Dr. Asha Sen",
+    description:
+      "Clinical psychologist supporting adults with workplace stress and life transitions.",
+    provider_type: "psychologist",
+    status: "approved",
+    created_at: new Date().toISOString(),
+  },
+];
+let careProviders = seedProviders();
+let careBookings = localDemo
+  ? [
+      {
+        id: 1,
+        user_id: id,
+        provider_id: 1,
+        booking_time: new Date(Date.now() + 3 * 86400000).toISOString(),
+        confirmed: true,
+        created_at: new Date().toISOString(),
+      },
+    ]
+  : [];
+let guestAppointments = [];
+let notifications = [];
+let adminMode = false;
+let approvedDomains = localDemo
+  ? [
+      { domain: "company.example", member_type: "corporate" },
+      { domain: "college.example", member_type: "student" },
+    ]
+  : [];
+function bookingRow(b) {
+  return {
+    ...b,
+    providers: {
+      name:
+        careProviders.find((p) => p.id === b.provider_id)?.name ||
+        "Care provider",
+    },
+  };
+}
 const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
@@ -122,6 +166,228 @@ const server = createServer(async (req, res) => {
   const body = maskContent(raw ? JSON.parse(raw) : {});
   const path = new URL(req.url, "http://localhost").pathname;
   const action = path.split("/").pop();
+  const url = new URL(req.url, "http://localhost");
+  const fail = (message, status = 400) => {
+    res.statusCode = status;
+    res.end(JSON.stringify({ message }));
+  };
+  if (path === "/test/verification") {
+    verification = body;
+    res.end("null");
+    return;
+  }
+  if (path === "/test/admin") {
+    adminMode = !!body.enabled;
+    res.end("null");
+    return;
+  }
+  if (path === "/rest/v1/providers") {
+    let rows = careProviders;
+    for (const field of ["applicant", "status", "provider_type"]) {
+      const filter = url.searchParams.get(field);
+      if (filter?.startsWith("eq."))
+        rows = rows.filter((p) => p[field] === filter.slice(3));
+    }
+    res.end(JSON.stringify(rows));
+    return;
+  }
+  if (path === "/rest/v1/provider_bookings") {
+    res.end(JSON.stringify(careBookings.map(bookingRow)));
+    return;
+  }
+  if (path === "/rest/v1/notifications") {
+    if (req.method === "PATCH") {
+      const target = Number(url.searchParams.get("id")?.slice(3));
+      notifications = notifications.map((n) =>
+        n.id === target ? { ...n, read: true } : n,
+      );
+      res.end("null");
+      return;
+    }
+    res.end(JSON.stringify(notifications));
+    return;
+  }
+  if (path === "/rest/v1/organisation_domains") {
+    res.end(JSON.stringify(approvedDomains));
+    return;
+  }
+  if (action === "set_organisation_domain") {
+    if (!adminMode) {
+      fail("Administrator access required", 403);
+      return;
+    }
+    approvedDomains = approvedDomains.filter((d) => d.domain !== body.p_domain);
+    if (!body.p_remove)
+      approvedDomains.push({ domain: body.p_domain, member_type: body.p_type });
+    res.end("null");
+    return;
+  }
+  if (action === "request_guest_appointment") {
+    if (
+      !careProviders.some(
+        (p) => p.id === body.p_provider && p.status === "approved",
+      )
+    ) {
+      fail("Provider unavailable");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.p_email)) {
+      fail("Enter a valid contact email");
+      return;
+    }
+    if (new Date(body.p_time).getTime() <= Date.now()) {
+      fail("Choose a future time");
+      return;
+    }
+    const receipt = crypto.randomUUID() + crypto.randomUUID();
+    const row = {
+      id: crypto.randomUUID(),
+      provider_id: body.p_provider,
+      email: body.p_email,
+      receipt,
+      booking_time: body.p_time,
+      status: "pending",
+    };
+    guestAppointments.push(row);
+    notifications.unshift({
+      id: Date.now(),
+      message: "New private appointment request.",
+      href: "/provider",
+      read: false,
+    });
+    res.end(JSON.stringify({ id: row.id, receipt }));
+    return;
+  }
+  if (
+    action === "guest_appointment_status" ||
+    action === "cancel_guest_appointment"
+  ) {
+    const row = guestAppointments.find((a) => a.receipt === body.p_receipt);
+    if (!row) {
+      fail("Appointment link not found");
+      return;
+    }
+    if (action === "cancel_guest_appointment") {
+      row.status = "cancelled";
+      res.end("null");
+      return;
+    }
+    res.end(
+      JSON.stringify({
+        id: row.id,
+        provider: careProviders.find((p) => p.id === row.provider_id)?.name,
+        booking_time: row.booking_time,
+        status: row.status,
+      }),
+    );
+    return;
+  }
+  if (action === "provider_appointments") {
+    res.end(
+      JSON.stringify([
+        ...careBookings.map((b) => ({
+          ...b,
+          id: String(b.id),
+          kind: "member",
+          provider: careProviders.find((p) => p.id === b.provider_id)?.name,
+          client: "Private member",
+          email: null,
+          status: b.confirmed ? "confirmed" : "pending",
+        })),
+        ...guestAppointments.map((b) => ({
+          id: b.id,
+          kind: "guest",
+          provider_id: b.provider_id,
+          provider: careProviders.find((p) => p.id === b.provider_id)?.name,
+          client: "Guest client",
+          email: b.email,
+          booking_time: b.booking_time,
+          status: b.status,
+        })),
+      ]),
+    );
+    return;
+  }
+  if (action === "confirm_guest_appointment") {
+    const row = guestAppointments.find((b) => b.id === body.p_booking);
+    if (!row) {
+      fail("Request not found");
+      return;
+    }
+    row.status = "confirmed";
+    res.end("null");
+    return;
+  }
+  if (action === "apply_provider") {
+    const provider = {
+      id: careProviders.length + 1,
+      applicant: id,
+      name: body.p_name,
+      description: body.p_description,
+      provider_type: body.p_type,
+      status: "pending",
+      created_at: new Date().toISOString(),
+    };
+    careProviders.push(provider);
+    notifications.unshift({
+      id: Date.now(),
+      message: "Your provider application is awaiting review.",
+      href: "/provider",
+      read: false,
+    });
+    res.end(JSON.stringify(provider.id));
+    return;
+  }
+  if (action === "review_provider") {
+    if (!adminMode) {
+      fail("Administrator access required", 403);
+      return;
+    }
+    const provider = careProviders.find(
+      (p) => p.id === Number(body.p_provider),
+    );
+    if (!provider) {
+      fail("Provider unavailable");
+      return;
+    }
+    provider.status = body.p_approve ? "approved" : "rejected";
+    notifications.unshift({
+      id: Date.now(),
+      message: "Your provider application is " + provider.status + ".",
+      href: "/provider",
+      read: false,
+    });
+    res.end("null");
+    return;
+  }
+  if (action === "confirm_booking") {
+    const row = careBookings.find((b) => b.id === Number(body.p_booking));
+    if (!row) {
+      fail("Request not found");
+      return;
+    }
+    row.confirmed = true;
+    notifications.unshift({
+      id: Date.now(),
+      message: "Your appointment is confirmed.",
+      href: "/my-sessions#appointments",
+      read: false,
+    });
+    res.end("null");
+    return;
+  }
+  if (action === "cancel_booking") {
+    careBookings = careBookings.filter((b) => b.id !== Number(body.p_booking));
+    notifications.unshift({
+      id: Date.now(),
+      message: "Your appointment was cancelled.",
+      href: "/my-sessions#appointments",
+      read: false,
+    });
+    res.end("null");
+    return;
+  }
+
   if (
     localDemo &&
     protectedActions.has(action) &&
@@ -136,6 +402,29 @@ const server = createServer(async (req, res) => {
         message: "Verify your profile to chat, message or book",
       }),
     );
+    return;
+  }
+  if (action === "book_provider") {
+    if (!verification.verified) {
+      fail("Verify your profile to chat, message or book", 403);
+      return;
+    }
+    const row = {
+      id: careBookings.length + 1,
+      user_id: id,
+      provider_id: Number(body.p_provider),
+      booking_time: body.p_time,
+      confirmed: false,
+      created_at: new Date().toISOString(),
+    };
+    careBookings.push(row);
+    notifications.unshift({
+      id: Date.now(),
+      message: "Your appointment request is awaiting confirmation.",
+      href: "/my-sessions#appointments",
+      read: false,
+    });
+    res.end(JSON.stringify(row.id));
     return;
   }
   if (action === "verification_status") {
@@ -179,7 +468,14 @@ const server = createServer(async (req, res) => {
       );
       return;
     }
-    verification = { verified: true, status: "approved", method: "work_email" };
+    const approved = approvedDomains.some(
+      (d) => d.domain === verificationEmail.split("@")[1],
+    );
+    verification = {
+      verified: approved,
+      status: approved ? "approved" : "unverified",
+      method: approved ? "organisation_email" : undefined,
+    };
     verificationSentAt = 0;
     res.end("null");
     return;
@@ -210,8 +506,8 @@ const server = createServer(async (req, res) => {
     res.end("null");
     return;
   }
-  if (localDemo && action === "is_admin") {
-    res.end("false");
+  if (action === "is_admin") {
+    res.end(JSON.stringify(adminMode));
     return;
   }
   let data = [];
@@ -230,14 +526,19 @@ const server = createServer(async (req, res) => {
       data = authSession();
     }
   } else if (path === "/auth/v1/token") {
-    const grantType = new URL(req.url, "http://localhost").searchParams.get("grant_type");
+    const grantType = new URL(req.url, "http://localhost").searchParams.get(
+      "grant_type",
+    );
     if (grantType === "refresh_token") {
       // Local sessions expire just like real sessions; let the SDK renew them.
       if (body.refresh_token === "test") {
         data = authSession();
       } else {
         res.statusCode = 400;
-        data = { code: "refresh_token_not_found", msg: "Invalid refresh token" };
+        data = {
+          code: "refresh_token_not_found",
+          msg: "Invalid refresh token",
+        };
       }
     } else if (grantType === "password") {
       if (body.password === "Correct-password1") {
@@ -283,6 +584,12 @@ const server = createServer(async (req, res) => {
     connections = [];
     messages = [];
     profile = { ...defaultProfile };
+    careProviders = seedProviders();
+    careBookings = [];
+    guestAppointments = [];
+    notifications = [];
+    adminMode = false;
+    approvedDomains = [];
     data = null;
   } else if (path === "/test/missing-profile") {
     profile = null;
@@ -301,7 +608,13 @@ const server = createServer(async (req, res) => {
   } else if (path === "/rest/v1/profiles") {
     if (req.method === "POST" || req.method === "PATCH")
       profile = { ...profile, ...body };
-    data = profile;
+    data =
+      ["id,name", "id"].includes(url.searchParams.get("select")) &&
+      !url.searchParams.get("id")
+        ? profile
+          ? [{ ...profile, id }]
+          : []
+        : profile;
   } else if (path === "/rest/v1/rpc/create_group") {
     const group = {
       id: groups.length + 1,
@@ -335,6 +648,7 @@ const server = createServer(async (req, res) => {
     data = null;
   } else if (path === "/rest/v1/rpc/is_admin") data = false;
   else if (path === "/rest/v1/check_ins") data = null;
+  else if (path === "/rest/v1/rpc/get_reports") data = [];
   else if (path === "/rest/v1/sessions")
     data = [
       {
@@ -351,6 +665,17 @@ const server = createServer(async (req, res) => {
         session_members: [{ user_id: id }],
       },
     ];
+  if (
+    path.startsWith("/rest/v1/rpc/") &&
+    Array.isArray(data) &&
+    data.length === 0 &&
+    !["get_feed", "find_members", "list_connections", "get_reports"].includes(
+      action,
+    )
+  ) {
+    fail("Local preview does not implement this action", 404);
+    return;
+  }
   res.end(JSON.stringify(maskContent(data)));
 }).listen(Number(process.env.FIXTURE_PORT || 54329), "127.0.0.1", () =>
   console.log(`UI fixture server ready on ${server.address().port}`),

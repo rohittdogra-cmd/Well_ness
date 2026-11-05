@@ -168,6 +168,7 @@ test(
     }
     const alice = "11111111-1111-4111-8111-111111111111",
       bob = "22222222-2222-4222-8222-222222222222";
+    await db.exec("insert into organisation_domains(domain,member_type) values ('company.example','corporate')");
     await db.query(
       "insert into auth.users values($1,'alice@company.example',now()),($2,'bob@company.example',now())",
       [alice, bob],

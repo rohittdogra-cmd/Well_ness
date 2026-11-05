@@ -4,9 +4,9 @@ test.beforeEach(async ({ request, context }) => {
   await context.clearCookies();
   await request.post("http://127.0.0.1:54330/test/reset");
 });
-async function signIn(context: BrowserContext) {
+async function signIn(context: BrowserContext, expired = false) {
   const id = "11111111-1111-4111-8111-111111111111";
-  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const exp = Math.floor(Date.now() / 1000) + (expired ? -60 : 3600);
   const enc = (v: unknown) =>
     Buffer.from(JSON.stringify(v)).toString("base64url");
   const token =
@@ -267,7 +267,8 @@ test("password sign in, invalid credentials, and sign out", async ({
   await expect(
     page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/signin/);
   await page.goto("/people");
   await expect(page).toHaveURL(/signin/);
@@ -598,5 +599,286 @@ test("recovery reaches account settings before profile onboarding", async ({
   await expect(page).toHaveURL(/\/account$/);
   await expect(
     page.getByRole("heading", { name: "Make signing in simpler." }),
+  ).toBeVisible();
+});
+
+test("responsive header, accessible mobile drawer and member return shortcuts", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/");
+  await expect(
+    page
+      .getByRole("navigation", { name: "Main navigation", exact: true })
+      .getByRole("link", { name: "Home", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("heading", { name: "Good to have you back, Smash." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /YOUR CIRCLES Cricket/ }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  await expect(
+    page.getByRole("menuitem", { name: "Provider workspace" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    await noOverflow(page);
+    await page
+      .getByRole("button", { name: "Open navigation", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+  await page
+    .getByRole("button", { name: "Open navigation", exact: true })
+    .click();
+  await page
+    .getByRole("navigation", { name: "Expanded navigation" })
+    .getByRole("link", { name: "Care", exact: true })
+    .click();
+  await expect(page).toHaveURL(/psychologists/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("returning member reaches the original protected deep link after sign in", async ({
+  page,
+}) => {
+  await page.goto("/groups/music");
+  await expect(page).toHaveURL(/signin\?next=/);
+  await page.getByLabel("Email address").fill("alex@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("Correct-password1");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL("http://localhost:3101/groups/music");
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Music", exact: true }),
+  ).toBeVisible();
+});
+
+test("unverified personal-email member can browse but cannot book or chat", async ({
+  page,
+  context,
+  request,
+}) => {
+  await request.post("http://127.0.0.1:54330/test/verification", {
+    data: { verified: false, status: "unverified" },
+  });
+  await signIn(context);
+  await page.goto("/psychologists");
+  await expect(
+    page.getByRole("heading", { name: "Dr. Asha Sen" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Verify to book" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Verify to book" }).click();
+  await expect(page).toHaveURL(/verify/);
+});
+
+test("member bookings appear with provider names on profile and update after confirmation", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await page.goto("/psychologists");
+  const date = new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16);
+  await page.getByLabel("Preferred date and time").fill(date);
+  await page
+    .getByRole("button", { name: "Request appointment", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Appointment requested. Track confirmation in your calendar.",
+    ),
+  ).toBeVisible();
+  await page.goto("/profile?view=bookings");
+  await expect(page.getByRole("link", { name: /Dr. Asha Sen/ })).toBeVisible();
+  await expect(page.getByText(/Awaiting confirmation/)).toBeVisible();
+  await page.goto("/provider");
+  await page
+    .getByRole("button", { name: "Confirm appointment", exact: true })
+    .click();
+  await expect(page.getByText("No pending requests.")).toBeVisible();
+  await page.goto("/my-sessions");
+  await expect(
+    page.getByRole("heading", { name: "My appointments" }),
+  ).toBeVisible();
+  await expect(page.getByText(/Confirmed/, { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: /Notifications,/ }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Notifications" })
+      .getByText("Your appointment is confirmed."),
+  ).toBeVisible();
+});
+
+test("signed-out guests request private care, keep a receipt and see provider confirmation", async ({
+  page,
+  context,
+  request,
+}) => {
+  await page.goto("/psychologists");
+  await expect(page).toHaveURL(/psychologists/);
+  await expect(
+    page.getByRole("heading", { name: "Dr. Asha Sen" }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Preferred date and time")
+    .fill(new Date(Date.now() + 86400000 * 5).toISOString().slice(0, 16));
+  await page.getByLabel("Contact email").fill("private-guest@example.test");
+  await page.getByRole("checkbox", { name: /I agree to share/ }).check();
+  await page
+    .getByRole("button", { name: "Request appointment", exact: true })
+    .click();
+  await expect(page).toHaveURL(/appointments\/guest#/);
+  const receiptUrl = page.url();
+  await expect(
+    page.getByText("Awaiting provider confirmation", { exact: true }),
+  ).toBeVisible();
+  await signIn(context);
+  await page.goto("/provider");
+  await expect(
+    page.getByText("Contact: private-guest@example.test"),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Confirm appointment", exact: true })
+    .click();
+  await expect(
+    page.getByText("Appointment confirmed", { exact: true }),
+  ).toBeVisible();
+  await page.goto(receiptUrl);
+  await expect(
+    page.getByText("Your appointment has been accepted by the provider."),
+  ).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: "Cancel request", exact: true })
+    .click();
+  await expect(
+    page.getByText("This request has been cancelled."),
+  ).toBeVisible();
+});
+
+test("provider applications persist as pending and failed writes never report success", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.goto("/apply-provider");
+  await page.getByLabel("Full Name", { exact: true }).fill("Dr. New Provider");
+  await page
+    .getByLabel("About Your Practice")
+    .fill(
+      "A detailed practice description and qualifications for administrator review.",
+    );
+  await page
+    .getByRole("button", { name: "Submit Application", exact: true })
+    .click();
+  await expect(
+    page.getByText("Application submitted successfully!"),
+  ).toBeVisible();
+  await page.goto("/provider");
+  await expect(
+    page.getByRole("heading", { name: "Dr. New Provider" }),
+  ).toBeVisible();
+  await expect(page.getByText(/Awaiting administrator review/)).toBeVisible();
+  await page.route("**/rest/v1/rpc/apply_provider", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Service unavailable" }),
+    }),
+  );
+  await page.goto("/apply-provider");
+  await page
+    .getByLabel("Full Name", { exact: true })
+    .fill("Dr. Failed Request");
+  await page
+    .getByLabel("About Your Practice")
+    .fill(
+      "Another detailed practice description with registration and experience.",
+    );
+  await page
+    .getByRole("button", { name: "Submit Application", exact: true })
+    .click();
+  await expect(
+    page.getByText("Failed to submit application. Please try again."),
+  ).toBeVisible();
+});
+
+test("expired returning session renews and stays on the requested page", async ({
+  page,
+  context,
+}) => {
+  await signIn(context, true);
+  await page.goto("/groups/music");
+  await expect(
+    page.getByRole("heading", { name: "Music", exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL("http://localhost:3101/groups/music");
+  const stored = (await context.cookies()).find(
+    (c) => c.name === "sb-127-auth-token",
+  );
+  expect(stored).toBeDefined();
+  const session = JSON.parse(
+    Buffer.from(
+      decodeURIComponent(stored!.value).replace(/^base64-/, ""),
+      "base64url",
+    ).toString(),
+  );
+  expect(session.expires_at).toBeGreaterThan(Date.now() / 1000);
+  await page.reload();
+  await expect(page).toHaveURL("http://localhost:3101/groups/music");
+});
+
+test("administrator approves a provider and the listing becomes bookable", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await page.goto("/apply-provider");
+  await page
+    .getByLabel("Full Name", { exact: true })
+    .fill("Dr. Reviewed Provider");
+  await page
+    .getByLabel("About Your Practice")
+    .fill(
+      "Registration, qualifications and practice details for the community administrator.",
+    );
+  await page
+    .getByRole("button", { name: "Submit Application", exact: true })
+    .click();
+  await expect(
+    page.getByText("Application submitted successfully!"),
+  ).toBeVisible();
+  await page.goto("/psychologists");
+  await expect(
+    page.getByRole("heading", { name: "Dr. Reviewed Provider" }),
+  ).toHaveCount(0);
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: true },
+  });
+  await page.goto("/dashboard");
+  await page.getByRole("tab", { name: "Provider Review", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Approve provider Dr. Reviewed Provider",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByText("Provider approved!", { exact: true }),
+  ).toBeVisible();
+  await page.goto("/psychologists");
+  await expect(
+    page.getByRole("heading", { name: "Dr. Reviewed Provider" }),
   ).toBeVisible();
 });

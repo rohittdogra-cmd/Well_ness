@@ -23,6 +23,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { getSupabase, isConfigured } from "@/lib/supabase/client";
+import { safeReturnPath } from "@/lib/returnPath.mjs";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 const subscribe = () => () => {};
 type Mode = "signin" | "signup" | "code" | "reset";
@@ -34,6 +35,8 @@ function message(error: unknown) {
 export function SignInPage() {
   const { user, isInitializing, skipLogin } = useInternetIdentity();
   const router = useRouter();
+  const returnTo = () =>
+    safeReturnPath(new URLSearchParams(window.location.search).get("next"));
   const [mode, setMode] = useState<Mode>("signin");
   const [audience, setAudience] = useState("professional");
   const [email, setEmail] = useState("");
@@ -50,7 +53,7 @@ export function SignInPage() {
     () => false,
   );
   useEffect(() => {
-    if (user && !isInitializing) router.replace("/");
+    if (user && !isInitializing) router.replace(returnTo());
   }, [user, isInitializing, router]);
   useEffect(() => {
     if (!cooldown) return;
@@ -65,10 +68,14 @@ export function SignInPage() {
     setPassword("");
     setCooldown(0);
   }
+  const callbackUrl = (next = "/") =>
+    location.origin +
+    "/auth/callback" +
+    (next === "/account" ? "?next=/account" : "");
   async function send() {
     const auth = getSupabase().auth;
     const address = email.trim().toLowerCase();
-    const callback = location.origin + "/auth/callback";
+    const callback = callbackUrl();
     if (mode === "signup") {
       const { data, error } = await auth.signUp({
         email: address,
@@ -77,13 +84,13 @@ export function SignInPage() {
       });
       if (error) throw error;
       if (data.session) {
-        router.replace("/");
+        router.replace(returnTo());
         router.refresh();
         return;
       }
     } else if (mode === "reset") {
       const { error } = await auth.resetPasswordForEmail(address, {
-        redirectTo: callback + "?next=/account",
+        redirectTo: callbackUrl("/account"),
       });
       if (error) throw error;
     } else {
@@ -109,7 +116,7 @@ export function SignInPage() {
         if (error) throw error;
         if (!data.session)
           throw new Error("Please confirm your email before signing in.");
-        router.replace("/");
+        router.replace(returnTo());
         router.refresh();
       } else await send();
     } catch (e) {
@@ -133,7 +140,7 @@ export function SignInPage() {
         throw new Error(
           "The code did not create a session. Request a new email.",
         );
-      router.replace("/");
+      router.replace(returnTo());
       router.refresh();
     } catch (e) {
       setError(message(e));
@@ -149,7 +156,7 @@ export function SignInPage() {
         const { error } = await getSupabase().auth.resend({
           type: "signup",
           email: email.trim().toLowerCase(),
-          options: { emailRedirectTo: location.origin + "/auth/callback" },
+          options: { emailRedirectTo: callbackUrl() },
         });
         if (error) throw error;
         setCooldown(60);

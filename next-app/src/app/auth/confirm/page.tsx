@@ -1,4 +1,5 @@
 "use client";
+import { safeReturnPath } from "@/lib/returnPath.mjs";
 import Link from "next/link";
 import { useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
@@ -34,7 +35,7 @@ export default function ConfirmEmailPage() {
       window.location.replace(
         type === "recovery" || params.get("next") === "/account"
           ? "/account"
-          : "/",
+          : safeReturnPath(params.get("next")),
       );
     } catch {
       setError(

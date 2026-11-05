@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { HomeReturnPanel } from "@/components/HomeReturnPanel";
 import { ConnectionStory } from "@/components/ConnectionStory";
 import { DailyCheckIn } from "@/components/DailyCheckIn";
 import { StressArcade } from "@/components/StressArcade";
@@ -109,10 +110,12 @@ export function HomePage() {
       {/* 3. Global Workplace Stress Monitor (Data, Epidemic Scale & Vitals) */}
       <GlobalStressPulse />
 
+      <HomeReturnPanel />
+
       {/* 4. The Daily De-Stress Arcade & Micro-Games Studio */}
       <StressArcade />
 
-      <ConnectionStory />
+      <details className="connection-guide"><summary>New here? Find your first little connection <ArrowRight size={18} /></summary><ConnectionStory /></details>
 
       {/* 5. Quick Action Cards */}
       <div className="quick-actions">

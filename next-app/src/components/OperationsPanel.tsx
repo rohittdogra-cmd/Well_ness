@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { OrganisationDomains } from "./OrganisationDomains";
 import { VerificationReviews } from "./VerificationReviews";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -56,6 +58,8 @@ export function OperationsPanel() {
     <section className="hub-page">
       <h2 className="text-2xl mb-6">Community operations</h2>
       <VerificationReviews />
+      <OrganisationDomains />
+      <p><Link className="text-action" href="/provider">Review member and guest appointment requests →</Link></p>
       {query.error ? (
         <p role="alert">{query.error.message}</p>
       ) : query.isPending ? (

@@ -51,7 +51,9 @@ if (!ready || stopping) {
     ],
     {
       ...process.env,
-      NEXT_PUBLIC_LOCAL_ACCESS: "true",
+      NEXT_PUBLIC_LOCAL_ACCESS: process.env.LOCAL_ACCESS === "false" ? "false" : "true",
+      NEXT_PUBLIC_SKIP_AUTH: "false",
+      GUEST_BOOKING_SERVER_KEY: "local-preview-only",
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "local-demo-publishable-key",
       NEXT_DIST_DIR: ".next-local",

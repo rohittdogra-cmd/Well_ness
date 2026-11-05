@@ -48,6 +48,8 @@ For a **new, empty, dedicated project**, apply `supabase_setup.sql` once. It con
 4. `202609300001_connections.sql`
 5. `202610010001_group_categories.sql`
 6. `202610250001_verification.sql`
+7. `202611010001_content_masking.sql`
+8. `202611050001_member_provider_workflows.sql`
 
 For an existing installation, apply only missing migrations. Never rerun the fresh-install bundle or apply it to an unrelated shared database. This deployment uses one private community per project, without company-level tenant isolation.
 
@@ -74,7 +76,7 @@ The configured SMTP provider remains responsible for delivery, sender limits and
 
 Unverified members may browse. Database triggers protect group creation/joining, reactions, posts/replies, connections, direct messages, activity creation/joining and provider bookings. Reports, account management, private check-ins, leaving groups/activities and cancellation remain available according to their existing permissions.
 
-Work-email verification uses Supabase's email-change flow while retaining the account ID. It changes the sign-in email after confirmation. Secure Email Change may require approval in both inboxes. A confirmed organisation email qualifies; common personal-email domains are excluded. Inbox access is not proof of current employment. A stricter organisation policy needs an explicit domain allowlist.
+Work-email verification uses Supabase's email-change flow while retaining the account ID. It changes the sign-in email after confirmation. Secure Email Change may require approval in both inboxes. A confirmed email qualifies only when its exact domain is on the administrator-approved corporate/student allowlist. Other members need individually reviewed evidence. Inbox access alone is not proof of current employment.
 
 Alternate verification accepts a LinkedIn URL or a JPG/PNG employee, government, student, educator or professional ID, up to 2 MB. Requests stay pending until reviewed through Dashboard → Community operations → Verification requests. RLS limits evidence to its owner and administrators; members cannot approve themselves. Proof is removed after the decision. Pending evidence remains until review or account deletion.
 
@@ -96,3 +98,24 @@ The browser tests use an isolated fixture backend on port 54330 and a separate a
 Production `LAUNCH_AT` is `2026-11-05T17:42:00.000Z`; `LAUNCH_HOSTS` is `stress-unwind.com,www.stress-unwind.com`. The server proxy serves an uncached launch screen on those hosts before that instant, then passes requests through to the authenticated hub. The countdown uses server time, and the page reloads automatically at opening. Vercel URLs remain available for release checks. DNS and HTTPS must be validated before launch. No later manual deployment or scheduled chat is required to open the hub.
 
 Run `node --test tests/launch.mjs` to verify the exact time boundary and host scoping. Authentication callbacks for both custom-domain hosts are allowlisted in Supabase. Set the Supabase Site URL to `https://stress-unwind.com` when DNS is connected.
+
+## Navigation and care release
+
+Developed and reviewed on `codex/local-navigation-and-care`; production releases use `codex/live-auth-and-verification`. Start the member preview with `npm run dev:local` at `http://127.0.0.1:3100`. Its automatic member access and sample records are development-only. No real emails, appointments or medical services are delivered by this fixture API. Set `LOCAL_ACCESS=false` when starting the local script to exercise real sign-in UI against the isolated API (fixture password `Correct-password1`, verification code `123456`). The automatic preview recognises only the sample domains `company.example` and `college.example`; an arbitrary custom mailbox does not qualify.
+
+This release adds a responsive top navigation and mobile drawer, five-item mobile navigation, home shortcuts to the member's groups/plans/care, profile appointment provider names, a provider workspace (`/provider`), appointment notifications, private guest care requests and safe return-to-page sign-in. Provider application writes, profile saves, and adapter RPC failures now surface errors instead of returning sample success. Empty live directories remain empty.
+
+Pre-release audit: the old verification rule trusted confirmed domains outside a short personal-email blacklist; it is not a corporate/student allowlist. Provider applications require sign-in despite the old page saying otherwise. Approval exists, but the shipped database does not create booking/application status notifications. Calendar queries can include provider/admin-visible requests instead of only the client's requests. These are addressed by this release.
+
+Apply only `202611050001_member_provider_workflows.sql` to an existing production database **after the localhost review and release approval**. Do not rerun the complete fresh-install bundle. This migration:
+
+- Replaces the custom-domain blacklist with approved exact corporate/student domains or individually admin-approved evidence. The new allowlist starts empty. Approve the owner's verified organisation/institution domains through Community operations before rollout; do not approve personal-email services. Existing custom-domain users without an approved domain or approved evidence will lose interaction privileges until reviewed.
+- Creates private guest appointment records and server-only gateway configuration. Signed-out visitors can read only approved psychologist listing columns. Guest requests cannot enter chat, create member accounts, expose guest contact details to community users, or confirm themselves.
+- Generates in-site application/request/confirmation/cancellation notifications. Provider/admin workspace can review member and guest requests. Member bookings remain limited by verified-member rules. Both booking types share one-hour overlap checks and the next-180-days window.
+- Allows a guest to view/cancel only through their unguessable receipt token. Its SHA-256 hash is stored, and the raw receipt is returned once and carried in a URL fragment (not query strings). The receipt response omits contact email. Keep links private.
+
+Before enabling guest requests in production, generate a cryptographically random server key, store it as Vercel's **server-only** `GUEST_BOOKING_SERVER_KEY`, and insert its SHA-256 hex digest into `booking_gateway_config` (single row with `id=true`). Never put the plaintext key in Git or a `NEXT_PUBLIC_` variable. The API fails closed when it is missing. The gateway uses a keyed hash of the request address for a persistent 20-per-hour limit, plus three requests per contact email per day. Keep the configured platform proxy's request-address header trustworthy. No raw IP is stored. Rate limits are abuse reduction, not proof of email ownership or human identity.
+
+Email booking notifications, SMS, payments, automatic clinician credential verification, availability calendars, and video consultations are not implemented. Supabase's existing SMTP handles authentication emails only; it does not deliver these care notifications. Guest pages explicitly tell visitors to save their status link and that no booking email is sent. Provider review remains a human responsibility. A preferred-time request is not a confirmed session until accepted.
+
+Validate with `npm run typecheck`, `npm run test:db`, `npm run test:auth`, `npm run test:moderation`, `npm run test:workflows`, `npm run test:ui`, and `npm run build`. Database workflow tests run the actual migrations in isolated Postgres (PGlite), separately from UI fixtures. Browser tests cover mobile menu focus/Escape/navigation, returning and expired sessions, personal-email verification gating, provider application/admin approval, profile appointments, member and guest confirmation, notifications, and cancellation. Real inbox delivery cannot be established by fixtures.

@@ -522,6 +522,7 @@ function ProviderCard({
             size="sm"
             variant="outline"
             className="rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+            aria-label={`Approve provider ${provider.name}`}
             onClick={() => onApprove(provider.id)}
             disabled={approvePending}
             data-ocid="admin.confirm_button"
@@ -536,6 +537,7 @@ function ProviderCard({
             size="sm"
             variant="outline"
             className="rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5"
+            aria-label={`Reject provider ${provider.name}`}
             onClick={() => onReject(provider.id)}
             disabled={rejectPending}
             data-ocid="admin.delete_button"

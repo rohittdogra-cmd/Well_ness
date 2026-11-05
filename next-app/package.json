@@ -10,6 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:db": "node tests/database.mjs",
+    "test:workflows": "node --test tests/workflows.mjs",
     "test:auth": "node --test tests/local-auth.mjs",
     "test:moderation": "node --test tests/moderation.mjs",
     "moderation:sql": "node scripts/build-moderation-sql.mjs",

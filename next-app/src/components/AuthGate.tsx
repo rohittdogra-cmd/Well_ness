@@ -9,7 +9,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const profile = useProfileQuery();
   const path = usePathname();
   const router = useRouter();
-  const publicPage = path === "/signin" || path.startsWith("/auth/");
+  const publicPage =
+    path === "/signin" ||
+    path.startsWith("/auth/") ||
+    ["/psychologists", "/appointments/guest"].includes(path);
   const loading = isInitializing || (!!user && profile.isPending);
   const needsProfile =
     !!user &&
@@ -21,7 +24,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
     if (publicPage || loading || profile.error) return;
-    if (!user) router.replace("/signin");
+    if (!user)
+      router.replace(
+        "/signin?next=" +
+          encodeURIComponent(window.location.pathname + window.location.search),
+      );
     else if (needsProfile) router.replace("/onboarding");
   }, [publicPage, loading, user, needsProfile, profile.error, router, path]);
   if (publicPage) return children;

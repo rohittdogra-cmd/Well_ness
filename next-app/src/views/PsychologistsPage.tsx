@@ -1,4 +1,6 @@
 "use client";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useRouter } from "next/navigation";
 import { useVerification } from "@/hooks/useVerification";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,6 +10,9 @@ import { rpc } from "@/lib/backend";
 import { toast } from "sonner";
 export function PsychologistsPage() {
   const qc = useQueryClient();
+  const { user, isInitializing } = useInternetIdentity();
+  const router = useRouter();
+  const [error, setError] = useState("");
   const verification = useVerification();
   const [busy, setBusy] = useState<number | null>(null);
   const query = useQuery({
@@ -32,10 +37,28 @@ export function PsychologistsPage() {
           request becomes confirmed when the provider accepts it.
         </p>
         <div className="page-links">
-          <Link href="/my-sessions">Your appointments ↗</Link>
+          {user && (
+            <Link href="/profile?view=bookings">Your appointments ↗</Link>
+          )}
           <Link href="/apply-provider">Apply as a provider ↗</Link>
         </div>
       </header>
+      {!user && (
+        <aside className="guest-care-note">
+          <strong>Private care, without a community account.</strong>
+          <p>
+            Request a preferred time as a guest. Your contact email is shared
+            only with the provider and authorised administrators. Save your
+            private status link to see confirmation; we do not send booking
+            emails.
+          </p>
+        </aside>
+      )}
+      {error && (
+        <p role="alert" className="error-box">
+          {error}
+        </p>
+      )}
       {query.isPending ? (
         <p role="status">Loading providers…</p>
       ) : query.error ? (
@@ -65,7 +88,29 @@ export function PsychologistsPage() {
                     "date",
                   ) as string;
                   setBusy(p.id);
+                  setError("");
                   try {
+                    if (!user) {
+                      const contact = new FormData(e.currentTarget).get(
+                        "email",
+                      ) as string;
+                      const response = await fetch("/api/guest-appointments", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          provider: p.id,
+                          time: new Date(date).toISOString(),
+                          email: contact,
+                        }),
+                      });
+                      const data = await response.json();
+                      if (!response.ok)
+                        throw new Error(
+                          data.message || "Could not request appointment",
+                        );
+                      router.push("/appointments/guest#" + data.receipt);
+                      return;
+                    }
                     await rpc("book_provider", {
                       p_provider: p.id,
                       p_time: new Date(date).toISOString(),
@@ -75,6 +120,11 @@ export function PsychologistsPage() {
                       "Appointment requested. Track confirmation in your calendar.",
                     );
                   } catch (e) {
+                    setError(
+                      e instanceof Error
+                        ? e.message
+                        : "Could not request appointment",
+                    );
                     toast.error(
                       e instanceof Error
                         ? e.message
@@ -87,20 +137,55 @@ export function PsychologistsPage() {
               >
                 <label className="field-label">
                   Preferred date and time
-                  <input type="datetime-local" name="date" required />
+                  <input
+                    type="datetime-local"
+                    name="date"
+                    required
+                    min={new Date(
+                      Date.now() - new Date().getTimezoneOffset() * 60000,
+                    )
+                      .toISOString()
+                      .slice(0, 16)}
+                  />
                 </label>
+                {!user && (
+                  <>
+                    <label className="field-label">
+                      Contact email
+                      <input
+                        type="email"
+                        name="email"
+                        autoComplete="email"
+                        maxLength={254}
+                        required
+                        placeholder="you@example.com"
+                      />
+                    </label>
+                    <label className="guest-consent">
+                      <input type="checkbox" required />I agree to share this
+                      email with the provider and authorised administrators for
+                      this request.
+                    </label>
+                  </>
+                )}
                 <button
-                  type={verification.data?.verified ? "submit" : "button"}
+                  type={
+                    !user || verification.data?.verified ? "submit" : "button"
+                  }
                   onClick={() => {
-                    if (!verification.data?.verified)
+                    if (user && !verification.data?.verified)
                       window.location.assign("/verify");
                   }}
                   className="wellness-button"
-                  disabled={busy !== null || verification.isPending}
+                  disabled={
+                    busy !== null ||
+                    isInitializing ||
+                    (!!user && verification.isPending)
+                  }
                 >
                   {busy === p.id
                     ? "Requesting…"
-                    : verification.data?.verified
+                    : !user || verification.data?.verified
                       ? "Request appointment"
                       : "Verify to book"}
                 </button>

@@ -114,8 +114,10 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
       authEventReceived = true;
       const nextId = session?.user.id;
       if (currentUser.current !== nextId) {
-        void qc.cancelQueries();
-        qc.clear();
+        if (currentUser.current !== undefined) {
+          void qc.cancelQueries();
+          qc.clear();
+        }
         currentUser.current = nextId;
       }
       setUser(session?.user);
@@ -127,7 +129,10 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
         if (!active) return;
         if (error && error.name !== "AuthSessionMissingError")
           setError(new Error(error.message));
-        if (!authEventReceived) setUser(data.user ?? undefined);
+        if (!authEventReceived) {
+          currentUser.current = data.user?.id;
+          setUser(data.user ?? undefined);
+        }
         setInitializing(false);
       })
       .catch(() => {
@@ -148,10 +153,8 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
       localStorage.removeItem("wellness_skip_auth");
     }
     if (!localAccess && isConfigured()) {
-      try {
-        const { error } = await getSupabase().auth.signOut();
-        if (error) console.warn("Supabase signOut error:", error);
-      } catch {}
+      const { error } = await getSupabase().auth.signOut();
+      if (error) throw error;
     }
     await qc.cancelQueries();
     qc.clear();

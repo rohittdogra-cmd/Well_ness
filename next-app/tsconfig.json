@@ -38,7 +38,9 @@
     ".next-ui-test/types/**/*.ts",
     ".next-ui-test/dev/types/**/*.ts",
     ".next-local/types/**/*.ts",
-    ".next-local/dev/types/**/*.ts"
+    ".next-local/dev/types/**/*.ts",
+    ".next-local-auth/types/**/*.ts",
+    ".next-local-auth/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

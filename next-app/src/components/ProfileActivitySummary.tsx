@@ -34,6 +34,7 @@ type Booking = {
   provider_id: number;
   booking_time: string;
   confirmed: boolean;
+  providers: { name: string } | { name: string }[] | null;
 };
 type View = "activities" | "past" | "groups" | "people" | "bookings";
 const views = [
@@ -45,7 +46,11 @@ const views = [
 ] as const;
 export function ProfileActivitySummary() {
   const { user } = useInternetIdentity();
-  const [view, setView] = useState<View>("activities");
+  const [view, setView] = useState<View>(() => {
+    if (typeof window === "undefined") return "activities";
+    const value = new URLSearchParams(window.location.search).get("view");
+    return views.some((v) => v.id === value) ? (value as View) : "activities";
+  });
   const [sort, setSort] = useState("date");
   const sessions = useQuery({
     queryKey: ["sessions", "profile", user?.id],
@@ -92,7 +97,7 @@ export function ProfileActivitySummary() {
     queryFn: async () => {
       const { data, error } = await getSupabase()
         .from("provider_bookings")
-        .select("id,user_id,provider_id,booking_time,confirmed")
+        .select("id,user_id,provider_id,booking_time,confirmed,providers(name)")
         .eq("user_id", user!.id)
         .order("booking_time");
       if (error) throw error;
@@ -152,9 +157,12 @@ export function ProfileActivitySummary() {
         : view === "bookings"
           ? (bookings.data ?? []).map((b) => ({
               id: b.id,
-              title: `Appointment #${b.id}`,
+              title:
+                (Array.isArray(b.providers)
+                  ? b.providers[0]?.name
+                  : b.providers?.name) || `Appointment #${b.id}`,
               detail: `${date(b.booking_time)} · ${b.confirmed ? "Confirmed" : "Awaiting confirmation"}`,
-              href: "/psychologists",
+              href: "/my-sessions#appointments",
               time: new Date(b.booking_time).getTime(),
               avatar: undefined as number | undefined,
             }))
