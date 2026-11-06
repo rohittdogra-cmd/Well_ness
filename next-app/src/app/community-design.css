@@ -6607,3 +6607,87 @@
 .map-india-label { fill:#4c705b; }
 .map-india-label.is-selected { fill:#f1f7ef; }
 .regional-island-marker { fill:#90b299; }
+
+/* Home palette study: forest, warm paper, apricot, lavender and blue water. */
+.member-home {
+  --home-forest:#254d42;
+  --home-text:#5f7066;
+  --home-paper:#fffdf7;
+  --home-sage:#d9e8d3;
+  --home-apricot:#f4d5b5;
+  --home-lavender:#e0d8f0;
+  --home-terracotta:#ac5839;
+}
+.home-next-steps { background:linear-gradient(135deg,#e8efdf,#f3f2e6); border-color:#d4dfc8; }
+.next-steps-heading h2,.next-step-copy h3 { color:var(--home-forest); }
+.next-steps-heading h2 em { color:#64834f; }
+.next-steps-heading .eyebrow,.next-steps-heading > p { color:#62745d; }
+.next-step-card { background:var(--home-paper); border-color:#dce3d2; box-shadow:0 5px 18px #324a2b06; --card-accent:#416548; }
+.next-step-card:hover { border-color:#9fb99b; box-shadow:0 12px 28px #35472a13; }
+.next-step-scene { background:linear-gradient(140deg,#d6e8cb,#e7eedb); }
+.next-scene-number,.next-scene-caption { color:#596f51; }
+.next-interest { background:#fffdf3; color:#526e44; }
+.next-step-plans { --card-accent:#85532f; }
+.next-step-plans .next-step-scene { background:linear-gradient(140deg,#efcba6,#fae5cd); }
+.next-step-plans .next-scene-number { color:#805a38; }
+.next-plan-sheet { background:#fffaf0; border-color:#dfbd94; color:#986536; box-shadow:6px 8px 0 #bf8e5820; }
+.next-plan-sheet > span,.next-plan-sheet small { color:#876440; }
+.next-plan-sheet strong { color:#7c4e2c; }
+.next-plan-spark { color:#b27640; }
+.next-step-conversations { --card-accent:#675181; }
+.next-step-conversations .next-step-scene { background:linear-gradient(140deg,#d8cce8,#ece5f4); }
+.next-step-conversations .next-scene-number { color:#77628e; }
+.next-chat-bubble { background:#fffaf8; border-color:#d8c9e5; color:#6b527e; }
+.next-chat-bubble + .next-chat-bubble { background:#cabbde; border-color:#c0add7; color:#59436e; }
+.next-chat-dots i { background:#806394; }
+.next-step-kicker { color:var(--card-accent); }
+.next-step-copy p { color:var(--home-text); }
+.next-step-link { color:var(--card-accent); border-color:#e3e6da; }
+.next-step-link > span { background:#dce9d4; }
+.next-step-plans .next-step-link > span { background:#f3d8b8; color:#85532f; }
+.next-step-conversations .next-step-link > span { background:#dfd3ed; color:#675181; }
+.next-steps-footer > p,.next-steps-footer > a { color:#62735b; }
+.next-steps-footer > a > span { color:#365e42; }
+.next-open-dot { background:#5f8955; }
+.regional-wellbeing { background:linear-gradient(145deg,#fffdf6,#f6f5ea); border-color:#ddded0; }
+.regional-heading h2 { color:var(--home-forest); }
+.regional-heading h2 em { color:var(--home-terracotta); }
+.regional-heading .eyebrow,.regional-heading > p { color:#687765; }
+.regional-view-controls button { background:#fffcf5; border-color:#d8dfd1; color:#546e5f; }
+.regional-view-controls button[aria-pressed="true"] { background:var(--home-forest); border-color:var(--home-forest); color:#fffdf5; }
+.regional-view-controls > span { color:#687265; }
+.regional-content { background:#fffaf1; border-color:#d3dfd8; box-shadow:0 7px 26px #3c5e4806; }
+.regional-map-panel { background:linear-gradient(150deg,#e2eff3,#eaf3ee); }
+.regional-map-top { color:#57746f; }
+.regional-map-top > span + span { color:#355f53; }
+.regional-map-top i { background:#4c8b7a; }
+.regional-map-panel[data-geography="india"] .regional-map-top i { background:var(--home-terracotta); }
+.regional-country { fill:#ccdcd4; stroke:#eff6f3; }
+.regional-country.is-highlighted,.regional-island-marker { fill:#5c9685; }
+.regional-country.country-india.is-highlighted { fill:var(--home-terracotta); }
+.map-context-label { fill:#78958d; }
+.map-water-label { fill:#658b9d; }
+.map-india-label { fill:#143f32; }
+.map-india-label.is-selected { fill:#fff9ed; }
+.regional-map-note { color:#4f7066; background:#ffffffad; }
+.regional-map-credit { color:#566f68; }
+.regional-figures { background:linear-gradient(150deg,#fffcf5,#faf2e5); }
+.regional-figures > .eyebrow { color:#7e6549; }
+.regional-main-number { color:var(--home-forest); }
+.regional-main-number > span { color:#a8623f; }
+.regional-number-caption { color:#435e4e; }
+.regional-date { background:#f1e0c7; color:#73502d; }
+.regional-date > span { background:#a16b3c; }
+.regional-estimate-detail { color:#647064; }
+.regional-supporting-stats { border-color:#e2d9c7; }
+.regional-supporting-stats strong { color:#8e5433; }
+.regional-supporting-stats p { color:#647064; }
+.regional-supporting-stats a,.regional-main-source { color:#386650; }
+.regional-main-source { border-color:#e2d9c7; }
+.regional-method-note { color:#677160; }
+.regional-method-note strong { color:#556849; }
+.regional-support-footer { border-color:#dedfcf; }
+.regional-support-footer > div { color:#64805b; }
+.regional-support-footer strong { color:var(--home-forest); }
+.regional-support-footer small { color:#66745e; }
+.regional-support-footer > a { background:#e1ead6; border-color:#c8d7ba; color:#355e3e; }

@@ -124,7 +124,7 @@ export function RegionalWellbeing() {
         <span>Published estimates · source dates shown</span>
       </div>
       <div className="regional-content">
-        <div className="regional-map-panel">
+        <div className="regional-map-panel" data-geography={view}>
           <div className="regional-map-top">
             <span>ASIA / REGIONAL CONTEXT</span>
             <span>
@@ -157,7 +157,7 @@ export function RegionalWellbeing() {
                 height="17"
                 patternUnits="userSpaceOnUse"
               >
-                <circle cx="1" cy="1" r=".7" fill="#c7d7cd" />
+                <circle cx="1" cy="1" r=".7" fill="#bed1d8" />
               </pattern>
             </defs>
             <rect width="640" height="435" fill={`url(#map-dots-${id})`} />
