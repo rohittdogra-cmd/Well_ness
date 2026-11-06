@@ -1029,3 +1029,38 @@ test("visitor navigation and care directory fit a small mobile screen", async ({
     page.getByRole("heading", { name: "No matches just yet." }),
   ).toBeVisible();
 });
+
+test("regional map keeps each estimate with its scope and source date", async ({
+  page,
+}) => {
+  await page.goto("/#wellbeing-near-us");
+  const section = page.getByRole("region", { name: /Behind every number/ });
+  await expect(section.getByText("150", { exact: true })).toBeVisible();
+  await expect(
+    section.getByText("NMHS · 2015–16", { exact: true }),
+  ).toBeVisible();
+  await expect(section.getByText("10.6%", { exact: true })).toBeVisible();
+  await expect(
+    section.getByRole("link", { name: /Government of India/ }),
+  ).toHaveAttribute("href", /pib\.gov\.in/);
+  await section
+    .getByRole("button", { name: "WHO South-East Asia", exact: true })
+    .click();
+  await expect(section.getByText("289", { exact: true })).toBeVisible();
+  await expect(
+    section.getByText("WHO statement · 24 Jul 2025", { exact: true }),
+  ).toBeVisible();
+  await expect(section.getByText("10.6%", { exact: true })).toHaveCount(0);
+  await expect(
+    section.getByRole("link", { name: /WHO · July 2025 announcement/ }),
+  ).toHaveAttribute("href", /who\.int/);
+  await expect(
+    section.getByText(/two totals should not be directly compared or added/),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 740 });
+  await noOverflow(page);
+  await section.getByRole("button", { name: "India", exact: true }).click();
+  await expect(section.getByText("150", { exact: true })).toBeVisible();
+  await expect(section.getByText("12 states", { exact: true })).toBeVisible();
+  await noOverflow(page);
+});

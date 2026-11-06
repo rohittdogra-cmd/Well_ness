@@ -6546,3 +6546,64 @@
 @media(max-width:1000px) { .home-next-steps { padding:25px; } .next-steps-grid { gap:12px; } .next-step-copy { padding:20px 10px 10px; } .next-step-copy h3 { font-size:23px; } .next-steps-footer { flex-direction:column; align-items:flex-start; gap:13px; } .next-plan-sheet { width:150px; } .next-chat-bubble { font-size:11px; padding:12px 10px; } .next-chat-scene { padding-left:11px; padding-right:11px; } }
 @media(max-width:650px) { .home-next-steps { margin-top:38px; padding:24px 17px 22px; border-radius:21px; } .next-steps-heading { flex-direction:column; align-items:flex-start; gap:14px; margin-bottom:24px; } .next-steps-heading h2 { font-size:32px; } .next-steps-heading > p { font-size:12px; } .next-steps-grid { grid-template-columns:1fr; gap:17px; } .next-step-scene { height:185px; } .next-step-copy { padding:22px 15px 12px; } .next-step-copy h3 { font-size:28px; } .next-step-copy p { font-size:13px; margin-bottom:20px; } .next-step-kicker { font-size:8px; } .next-step-link { font-size:12px; } .next-step-link > span { width:34px; height:34px; } .next-plan-sheet { width:200px; } .next-chat-scene { padding-left:25px; padding-right:25px; } .next-chat-bubble { font-size:14px; } .next-steps-footer > p, .next-steps-footer > a { font-size:11px; } }
 @media(prefers-reduced-motion:reduce) { .next-step-card { transition:none; } .next-step-card:hover { transform:none; } }
+
+/* Published regional context: geographic focus rather than a prevalence heatmap. */
+.regional-wellbeing { margin:48px 0 34px; padding:35px; border:1px solid #dce6df; border-radius:26px; background:#fbfcf9; scroll-margin-top:105px; }
+.regional-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:35px; margin-bottom:29px; }
+.regional-heading .eyebrow { display:flex; align-items:center; gap:7px; font-size:9px; letter-spacing:1.5px; color:#7a927d; }
+.regional-heading h2 { font:400 clamp(30px,3.6vw,44px)/1.15 Georgia,serif; letter-spacing:-1px; color:#304c3c; margin-top:14px; }
+.regional-heading h2 em { color:#7f9475; font-weight:400; }
+.regional-heading > p { font-size:12px; color:#859181; line-height:1.85; max-width:370px; }
+.regional-view-controls { display:flex; align-items:center; gap:7px; margin-bottom:22px; flex-wrap:wrap; }
+.regional-view-controls button { display:flex; align-items:center; gap:7px; min-height:42px; border:1px solid #dfe7dc; border-radius:25px; padding:10px 16px; font-size:11px; color:#788b73; background:#fff; transition:background .18s,color .18s; }
+.regional-view-controls button[aria-pressed="true"] { background:#3e6b53; color:#fff; border-color:#3e6b53; }
+.regional-view-controls button:focus-visible { outline:3px solid #8bb49d; outline-offset:3px; }
+.regional-view-controls > span { margin-left:auto; font-size:9px; color:#98a08f; }
+.regional-content { display:grid; grid-template-columns:1.35fr 1fr; border:1px solid #dfe8df; border-radius:20px; overflow:hidden; background:#fffefa; }
+.regional-map-panel { background:#edf4ef; padding:23px 20px 17px; min-width:0; display:flex; flex-direction:column; }
+.regional-map-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:8px; letter-spacing:1.3px; color:#8b9d8e; }
+.regional-map-top > span + span { display:flex; align-items:center; gap:6px; color:#5f826b; font-size:9px; letter-spacing:0; }
+.regional-map-top i { width:6px; height:6px; background:#729a7f; border-radius:50%; }
+.wellbeing-asia-map { display:block; width:100%; height:auto; margin:17px 0 11px; overflow:hidden; flex:1; min-height:0; }
+.regional-country { fill:#dae5dc; stroke:#f1f6f0; stroke-width:1.2; vector-effect:non-scaling-stroke; transition:fill .3s; }
+.regional-country.is-highlighted { fill:#90b299; }
+.regional-country.country-india.is-highlighted { fill:#527e64; }
+.regional-island-marker { fill:#527e64; stroke:#f1f6f0; stroke-width:1; }
+.map-context-label { font:11px sans-serif; fill:#9aad9e; letter-spacing:6px; }
+.map-india-label { font:600 10px sans-serif; fill:#f1f7ef; letter-spacing:2px; text-anchor:middle; }
+.map-water-label { font:italic 10px Georgia,serif; fill:#9bb1a3; letter-spacing:4px; }
+.regional-map-note { display:flex; align-items:flex-start; gap:8px; padding:12px; background:#ffffff85; border-radius:10px; color:#7b9281; margin-top:auto; }
+.regional-map-note > svg { flex:none; margin-top:2px; }
+.regional-map-note p { font-size:10px; line-height:1.7; }
+.regional-map-credit { display:flex; justify-content:space-between; flex-wrap:wrap; gap:7px; margin-top:13px; font-size:8px; color:#9eafa0; }
+.regional-map-credit a { text-decoration:underline; text-underline-offset:3px; }
+.regional-figures { padding:29px; min-width:0; }
+.regional-figures > .eyebrow { font-size:8px; letter-spacing:1.3px; color:#879779; }
+.regional-main-number { display:flex; gap:12px; align-items:baseline; color:#3d624a; margin-top:20px; }
+.regional-main-number strong { font:400 clamp(66px,7vw,94px)/1 Georgia,serif; letter-spacing:-5px; }
+.regional-main-number > span { font:italic 23px Georgia,serif; color:#8ba17f; }
+.regional-number-caption { max-width:260px; font:20px/1.35 Georgia,serif; color:#596b52; margin:12px 0 18px; }
+.regional-date { display:inline-flex; align-items:center; gap:7px; color:#7f9772; font-size:9px; border-radius:20px; background:#eff4e9; padding:8px 11px; }
+.regional-date > span { width:4px; height:4px; border-radius:50%; background:#8fa779; }
+.regional-estimate-detail { font-size:10px; line-height:1.85; color:#919988; margin:14px 0 21px; }
+.regional-supporting-stats { display:grid; grid-template-columns:1fr 1fr; gap:17px; border-top:1px solid #e6ebdf; padding-top:19px; }
+.regional-supporting-stats strong { font:27px/1.2 Georgia,serif; color:#627a55; letter-spacing:-.5px; }
+.regional-supporting-stats p { font-size:9px; color:#919986; line-height:1.8; margin-top:7px; }
+.regional-supporting-stats a { display:inline-block; color:#7c946e; font-size:8px; margin-top:10px; text-decoration:underline; text-underline-offset:3px; }
+.regional-main-source { display:flex; align-items:center; justify-content:space-between; gap:9px; border-top:1px solid #e6ebdf; color:#749064; margin-top:22px; padding-top:15px; font-size:9px; line-height:1.7; }
+.regional-main-source svg { flex:none; }
+.regional-method-note { display:flex; align-items:flex-start; gap:10px; color:#8a9683; margin-top:20px; }
+.regional-method-note > svg { flex:none; margin-top:2px; }
+.regional-method-note strong { font-size:11px; font-weight:600; color:#75896c; }
+.regional-method-note p { font-size:10px; line-height:1.8; margin-top:5px; }
+.regional-support-footer { margin-top:24px; padding:20px 0 0; border-top:1px solid #e3e9df; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.regional-support-footer > div { display:flex; align-items:center; gap:13px; color:#77946e; }
+.regional-support-footer strong { display:block; font:19px Georgia,serif; color:#536d48; }
+.regional-support-footer small { display:block; font-size:10px; color:#919c87; margin-top:7px; line-height:1.7; }
+.regional-support-footer > a { display:flex; align-items:center; gap:14px; flex:none; font-size:11px; font-weight:600; color:#5c7c4e; padding:12px 15px; border:1px solid #d8e3cd; border-radius:25px; }
+@media(max-width:1000px) { .regional-wellbeing { padding:25px; } .regional-heading { gap:23px; } .regional-heading > p { max-width:255px; font-size:11px; } .regional-content { grid-template-columns:1fr 1fr; } .regional-map-panel { padding:20px 14px 15px; } .regional-figures { padding:23px; } .regional-main-number strong { font-size:70px; } .regional-main-number > span { font-size:20px; } .regional-number-caption { font-size:18px; } }
+@media(max-width:650px) { .regional-wellbeing { padding:25px 17px 23px; margin-top:34px; border-radius:21px; } .regional-heading { flex-direction:column; align-items:flex-start; gap:16px; margin-bottom:23px; } .regional-heading .eyebrow { font-size:8px; letter-spacing:1.1px; } .regional-heading h2 { font-size:34px; } .regional-heading > p { max-width:none; font-size:12px; } .regional-view-controls { gap:7px; } .regional-view-controls button { padding:10px 12px; font-size:10px; } .regional-view-controls > span { width:100%; margin:6px 0 0; font-size:9px; } .regional-content { grid-template-columns:1fr; } .regional-map-panel { padding:18px 13px 15px; } .wellbeing-asia-map { flex:none; } .regional-figures { padding:26px 22px; } .regional-main-number strong { font-size:83px; } .regional-number-caption { font-size:22px; } .regional-estimate-detail { font-size:11px; } .regional-supporting-stats p { font-size:10px; } .regional-supporting-stats a { font-size:9px; } .regional-main-source { font-size:10px; } .regional-method-note p { font-size:10px; } .regional-support-footer { align-items:flex-start; flex-direction:column; gap:17px; } .regional-support-footer > a { align-self:flex-start; } }
+@media(prefers-reduced-motion:reduce) { .regional-country,.regional-view-controls button { transition:none; } }
+.map-india-label { fill:#4c705b; }
+.map-india-label.is-selected { fill:#f1f7ef; }
+.regional-island-marker { fill:#90b299; }

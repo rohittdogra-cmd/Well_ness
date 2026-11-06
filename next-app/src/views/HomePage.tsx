@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RegionalWellbeing } from "@/components/RegionalWellbeing";
 import { HomeNextSteps } from "@/components/HomeNextSteps";
 import { HomeReturnPanel } from "@/components/HomeReturnPanel";
 import { ConnectionStory } from "@/components/ConnectionStory";
@@ -107,6 +108,8 @@ export function HomePage() {
       <StressArcade />
 
       <HomeNextSteps signedIn={!!user} />
+
+      <RegionalWellbeing />
 
       <details className="connection-guide">
         <summary>
