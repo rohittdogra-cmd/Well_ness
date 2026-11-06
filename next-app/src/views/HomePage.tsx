@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { HomeInterests } from "@/components/HomeInterests";
 import { RegionalWellbeing } from "@/components/RegionalWellbeing";
 import { HomeNextSteps } from "@/components/HomeNextSteps";
 import { HomeReturnPanel } from "@/components/HomeReturnPanel";
@@ -11,7 +12,7 @@ import { GlobalStressPulse } from "@/components/GlobalStressPulse";
 import { ArrowUpRight, ArrowRight, Users, Compass } from "lucide-react";
 import { useGroups } from "@/hooks/useCommunity";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
-import { groupCategories, getCategory } from "@/lib/groupCategories";
+import { getCategory } from "@/lib/groupCategories";
 
 export function HomePage() {
   const groups = useGroups();
@@ -118,38 +119,21 @@ export function HomePage() {
         <ConnectionStory />
       </details>
 
-      {/* 6. Interest Categories */}
-      <section className="home-interests">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow">FOLLOW YOUR CURIOSITY</span>
-            <h2>What’s your kind of good?</h2>
-          </div>
-          <Link className="text-action" href="/groups">
-            View all groups <ArrowRight size={17} />
-          </Link>
-        </div>
-        <div className="home-category-grid">
-          {groupCategories.map((c) => (
-            <Link
-              key={c.id}
-              href={`/groups?category=${c.id}`}
-              className={`home-category ${c.color}`}
-            >
-              <c.icon size={25} />
-              <h3>{c.name}</h3>
-              <p>{c.examples}</p>
-              <ArrowUpRight size={18} />
-            </Link>
-          ))}
-        </div>
-      </section>
+      <HomeInterests />
 
       {/* 7. Bottom Grid: Groups & Daily Check-In */}
       <div className={`home-bottom-grid ${user ? "" : "guest-home-bottom"}`}>
-        <section className="your-groups">
+        <section className="your-groups circle-discovery">
           <div className="section-title">
-            <h2>{user ? "Your groups" : "Find your circle"}</h2>
+            <div>
+              <span className="eyebrow">YOUR NEXT LITTLE CONNECTION</span>
+              <h2>{user ? "Your groups" : "Find your circle"}</h2>
+              <p>
+                {user
+                  ? "Pick up where you left off. Your people are right here."
+                  : "A few places to start. Explore at your own pace."}
+              </p>
+            </div>
             <Link href="/groups" aria-label="Explore your groups">
               <ArrowUpRight size={20} />
             </Link>

@@ -1064,3 +1064,38 @@ test("regional map keeps each estimate with its scope and source date", async ({
   await expect(section.getByText("12 states", { exact: true })).toBeVisible();
   await noOverflow(page);
 });
+
+test("animated interests keep mobile navigation and reduced-motion preferences", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#find-your-interest");
+  const section = page.getByRole("region", {
+    name: "What’s your kind of good?",
+    exact: true,
+  });
+  const sports = section.getByRole("link", { name: /^Sports Football/ });
+  await expect(section.getByRole("link")).toHaveCount(7);
+  await sports.scrollIntoViewIfNeeded();
+  await sports.hover();
+  await expect(sports).toHaveCSS("transform", "none");
+  await noOverflow(page);
+  await page.setViewportSize({ width: 320, height: 740 });
+  await noOverflow(page);
+  await sports.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/groups\?category=sports/);
+  await expect(
+    page.getByRole("heading", { name: "Sports subgroups" }),
+  ).toBeVisible();
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/#find-your-interest");
+  await sports.scrollIntoViewIfNeeded();
+  await sports.hover();
+  await expect
+    .poll(() => sports.evaluate((e) => getComputedStyle(e).transform))
+    .not.toBe("none");
+  await noOverflow(page);
+});
