@@ -97,6 +97,13 @@ test("corporate/student eligibility, provider approval, private guest receipts a
       ).rows.length,
     );
     await as(null);
+    const catalog = await value("select list_public_groups() as value");
+    assert.ok(catalog.length > 0);
+    assert.equal(JSON.stringify(catalog).includes("group_members"), false);
+    assert.equal(JSON.stringify(catalog).includes(member), false);
+    await assert.rejects(db.query("select * from group_members"));
+    await assert.rejects(db.query("select * from posts"));
+    await assert.rejects(db.query("select toggle_group(1,true)"));
     assert.equal((await db.query("select id from providers")).rows.length, 0);
     await assert.rejects(
       db.query(

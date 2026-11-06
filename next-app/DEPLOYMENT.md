@@ -119,3 +119,11 @@ Before enabling guest requests in production, generate a cryptographically rando
 Email booking notifications, SMS, payments, automatic clinician credential verification, availability calendars, and video consultations are not implemented. Supabase's existing SMTP handles authentication emails only; it does not deliver these care notifications. Guest pages explicitly tell visitors to save their status link and that no booking email is sent. Provider review remains a human responsibility. A preferred-time request is not a confirmed session until accepted.
 
 Validate with `npm run typecheck`, `npm run test:db`, `npm run test:auth`, `npm run test:moderation`, `npm run test:workflows`, `npm run test:ui`, and `npm run build`. Database workflow tests run the actual migrations in isolated Postgres (PGlite), separately from UI fixtures. Browser tests cover mobile menu focus/Escape/navigation, returning and expired sessions, personal-email verification gating, provider application/admin approval, profile appointments, member and guest confirmation, notifications, and cancellation. Real inbox delivery cannot be established by fixtures.
+
+## Public home and group discovery
+
+Apply `202611060001_public_group_catalog.sql` before deploying this update to an existing database. It adds an anonymous catalog RPC with group descriptions and aggregate member counts only; raw membership records and conversations remain protected.
+
+A fresh signed-out visit opens Home without a sign-in redirect. The header offers Sign in, visitors can browse group descriptions, and Join/Chat opens sign-in with a safe return path. Signed-in participation still requires the existing administrator verification rules. Private profiles, appointments, calendar and conversations still require authentication.
+
+Validated with type checking, 34 browser tests, the database/workflow checks and a production build.

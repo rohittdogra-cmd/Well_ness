@@ -104,7 +104,7 @@ export function HubHeader() {
                 </SheetDescription>
               </SheetHeader>
               <nav aria-label="Expanded navigation">
-                {[...mainLinks, ...accountLinks].map((item) => (
+                {[...mainLinks, ...(user ? accountLinks : [])].map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -116,14 +116,16 @@ export function HubHeader() {
                   </Link>
                 ))}
               </nav>
-              <button
-                className="hub-drawer-signout"
-                disabled={busy}
-                onClick={signOut}
-              >
-                <LogOut size={18} />
-                {busy ? "Signing out…" : "Sign out"}
-              </button>
+              {user && (
+                <button
+                  className="hub-drawer-signout"
+                  disabled={busy}
+                  onClick={signOut}
+                >
+                  <LogOut size={18} />
+                  {busy ? "Signing out…" : "Sign out"}
+                </button>
+              )}
             </SheetContent>
           </Sheet>
           <Link
@@ -151,8 +153,11 @@ export function HubHeader() {
           </nav>
           <div className="hub-account-actions">
             {!user ? (
-              <Link className="wellness-button" href="/signin">
-                Member sign in
+              <Link
+                className="wellness-button"
+                href={`/signin?next=${encodeURIComponent(path || "/")}`}
+              >
+                Sign in
               </Link>
             ) : (
               <>

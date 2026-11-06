@@ -16,6 +16,7 @@ export type Group = {
   description: string;
   category: string;
   group_members: { user_id: string }[];
+  member_count?: number;
 };
 
 export type Reply = {
@@ -33,106 +34,25 @@ export type Post = Reply & {
   replies: Reply[];
 };
 
-const FALLBACK_GROUPS: Group[] = [
-  {
-    id: 1,
-    slug: "cricket",
-    category: "sports",
-    name: "Cricket",
-    description: "Find a team. Plan your next match.",
-    group_members: [],
-  },
-  {
-    id: 2,
-    slug: "football",
-    category: "sports",
-    name: "Football",
-    description: "Find a five-a-side team or plan a weekend kickabout.",
-    group_members: [],
-  },
-  {
-    id: 3,
-    slug: "badminton",
-    category: "sports",
-    name: "Badminton",
-    description: "Friendly rallies, court reservations, and doubles partners.",
-    group_members: [],
-  },
-  {
-    id: 4,
-    slug: "health-wellness",
-    category: "wellbeing",
-    name: "Health & wellness",
-    description: "Build better habits together.",
-    group_members: [],
-  },
-  {
-    id: 5,
-    slug: "mindfulness",
-    category: "wellbeing",
-    name: "Mindfulness",
-    description: "Share simple ways to slow down and reset.",
-    group_members: [],
-  },
-  {
-    id: 6,
-    slug: "yoga",
-    category: "wellbeing",
-    name: "Yoga",
-    description: "Stretch, breathe and build a practice together.",
-    group_members: [],
-  },
-  {
-    id: 7,
-    slug: "music",
-    category: "arts",
-    name: "Music",
-    description: "Share playlists and discover new sounds.",
-    group_members: [],
-  },
-  {
-    id: 8,
-    slug: "study-circles",
-    category: "learning",
-    name: "Study circles",
-    description: "Find study partners, share resources and learn together.",
-    group_members: [],
-  },
-  {
-    id: 9,
-    slug: "coffee-chats",
-    category: "social",
-    name: "Coffee chats",
-    description: "Make time for a coffee and a new connection.",
-    group_members: [],
-  },
-  {
-    id: 10,
-    slug: "hiking",
-    category: "outdoors",
-    name: "Hiking",
-    description: "Discover local trails and plan a walk with good company.",
-    group_members: [],
-  },
-];
-
 export function useGroups() {
   const { user } = useInternetIdentity();
   return useQuery({
-    queryKey: ["groups", user?.id],
-    enabled: !!user,
+    queryKey: ["groups", user?.id ?? "public"],
     queryFn: async () => {
-      try {
-        const { data, error } = await getSupabase()
-          .from("groups")
-          .select("id,slug,name,description,category,group_members(user_id)")
-          .order("name");
-        if (error) throw error;
-        if (data && data.length > 0) return data as Group[];
-      } catch (e) {
-        console.warn("Using fallback groups:", e);
+      if (!user) {
+        const { data, error } = await getSupabase().rpc("list_public_groups");
+        if (error) throw new Error(error.message);
+        return (data ?? []).map((g: Omit<Group, "group_members">) => ({
+          ...g,
+          group_members: [],
+        })) as Group[];
       }
-      return FALLBACK_GROUPS;
+      const { data, error } = await getSupabase()
+        .from("groups")
+        .select("id,slug,name,description,category,group_members(user_id)")
+        .order("name");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as Group[];
     },
   });
 }

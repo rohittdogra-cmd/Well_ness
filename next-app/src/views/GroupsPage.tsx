@@ -20,13 +20,21 @@ const subscribeToLocation = (callback: () => void) => {
 };
 export function GroupsPage() {
   const groups = useGroups();
-  const { user } = useInternetIdentity();
+  const { user, login } = useInternetIdentity();
   const action = useCommunityAction();
   const [search, setSearch] = useState("");
   const [mine, setMine] = useState(false);
-  const initialCategory = useSyncExternalStore(subscribeToLocation, () => new URLSearchParams(window.location.search).get("category") || "", () => "");
+  const initialCategory = useSyncExternalStore(
+    subscribeToLocation,
+    () => new URLSearchParams(window.location.search).get("category") || "",
+    () => "",
+  );
   const [selectedCategory, setCategory] = useState<string | null>(null);
-  const category = selectedCategory ?? (groupCategories.some(c => c.id === initialCategory) ? initialCategory : "");
+  const category =
+    selectedCategory ??
+    (groupCategories.some((c) => c.id === initialCategory)
+      ? initialCategory
+      : "");
   const [create, setCreate] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -53,6 +61,10 @@ export function GroupsPage() {
           className="wellness-button"
           aria-expanded={create}
           onClick={() => {
+            if (!user) {
+              login();
+              return;
+            }
             setCreate(!create);
             setNewCategory(category || "sports");
           }}
@@ -94,7 +106,13 @@ export function GroupsPage() {
           <button
             aria-pressed={mine}
             className={mine ? "selected" : ""}
-            onClick={() => setMine(true)}
+            onClick={() => {
+              if (!user) {
+                login();
+                return;
+              }
+              setMine(true);
+            }}
           >
             My groups
           </button>
@@ -290,8 +308,10 @@ export function GroupsPage() {
                 <div className="subgroup-footer">
                   <span>
                     <Users size={15} />
-                    {g.group_members.length}{" "}
-                    {g.group_members.length === 1 ? "member" : "members"}
+                    {g.member_count ?? g.group_members.length}{" "}
+                    {(g.member_count ?? g.group_members.length) === 1
+                      ? "member"
+                      : "members"}
                   </span>
                   {joined ? (
                     <b>

@@ -427,6 +427,7 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify(row.id));
     return;
   }
+  if (action === "list_public_groups") { res.end(JSON.stringify(groups.map(g=>({id:g.id,slug:g.slug,name:g.name,description:g.description,category:g.category,member_count:g.group_members.length})))); return; }
   if (action === "verification_status") {
     res.end(JSON.stringify(verification));
     return;

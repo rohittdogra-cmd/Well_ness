@@ -70,8 +70,10 @@ test("email sign in and mobile layout", async ({ page }) => {
   ).toBeVisible();
   await noOverflow(page);
 });
-test("signed-out visitors cannot enter the hub", async ({ page }) => {
-  await page.goto("/groups");
+test("signed-out visitors cannot enter private member pages", async ({
+  page,
+}) => {
+  await page.goto("/profile");
   await expect(page).toHaveURL(/signin/);
 });
 test("account without a profile can complete onboarding and reload", async ({
@@ -650,6 +652,9 @@ test("returning member reaches the original protected deep link after sign in", 
   page,
 }) => {
   await page.goto("/groups/music");
+  await page
+    .getByRole("button", { name: "Join this group", exact: true })
+    .click();
   await expect(page).toHaveURL(/signin\?next=/);
   await page.getByLabel("Email address").fill("alex@example.test");
   await page.getByLabel("Password", { exact: true }).fill("Correct-password1");
@@ -881,4 +886,79 @@ test("administrator approves a provider and the listing becomes bookable", async
   await expect(
     page.getByRole("heading", { name: "Dr. Reviewed Provider" }),
   ).toBeVisible();
+});
+
+test("first visit opens the home page; sign-in is offered in the header", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page).toHaveURL("http://localhost:3101/");
+  await expect(
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("banner")
+      .getByRole("link", { name: "Sign in", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Welcome to your hub." }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: /Good to have you back/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Loading your groups…", { exact: true }),
+  ).toHaveCount(0);
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await noOverflow(page);
+    await expect(
+      page
+        .getByRole("banner")
+        .getByRole("link", { name: "Sign in", exact: true }),
+    ).toBeVisible();
+  }
+});
+
+test("visitors browse groups without seeing conversations and sign in only when joining", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "Find your people", exact: true })
+    .click();
+  await expect(page).toHaveURL("http://localhost:3101/groups");
+  await page.getByRole("link", { name: /Music.*Explore group/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Music", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Anyone up for a lunchtime walk this week?", {
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Join this group", exact: true })
+    .click();
+  await expect(page).toHaveURL(/signin\?next=%2Fgroups%2Fmusic/);
+  await expect(
+    page.getByRole("heading", { name: "Welcome to your hub." }),
+  ).toBeVisible();
+});
+
+test("chat prompts sign-in while a fresh visit to home remains public", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("navigation", { name: "Main navigation", exact: true })
+    .getByRole("link", { name: "Chat", exact: true })
+    .click();
+  await expect(page).toHaveURL(/signin\?next=%2Fdiscuss/);
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: /Your people.*Your pause/ }),
+  ).toBeVisible();
+  await expect(page).toHaveURL("http://localhost:3101/");
 });

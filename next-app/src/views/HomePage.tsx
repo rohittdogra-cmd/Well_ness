@@ -110,12 +110,17 @@ export function HomePage() {
       {/* 3. Global Workplace Stress Monitor (Data, Epidemic Scale & Vitals) */}
       <GlobalStressPulse />
 
-      <HomeReturnPanel />
+      {user && <HomeReturnPanel />}
 
       {/* 4. The Daily De-Stress Arcade & Micro-Games Studio */}
       <StressArcade />
 
-      <details className="connection-guide"><summary>New here? Find your first little connection <ArrowRight size={18} /></summary><ConnectionStory /></details>
+      <details className="connection-guide">
+        <summary>
+          New here? Find your first little connection <ArrowRight size={18} />
+        </summary>
+        <ConnectionStory />
+      </details>
 
       {/* 5. Quick Action Cards */}
       <div className="quick-actions">
@@ -179,10 +184,10 @@ export function HomePage() {
       </section>
 
       {/* 7. Bottom Grid: Groups & Daily Check-In */}
-      <div className="home-bottom-grid">
+      <div className={`home-bottom-grid ${user ? "" : "guest-home-bottom"}`}>
         <section className="your-groups">
           <div className="section-title">
-            <h2>Your groups</h2>
+            <h2>{user ? "Your groups" : "Find your circle"}</h2>
             <Link href="/groups" aria-label="Explore your groups">
               <ArrowUpRight size={20} />
             </Link>
@@ -196,8 +201,8 @@ export function HomePage() {
                 Try again
               </button>
             </div>
-          ) : joined.length ? (
-            joined.slice(0, 4).map((g) => {
+          ) : (user ? joined : (groups.data ?? [])).length ? (
+            (user ? joined : (groups.data ?? [])).slice(0, 4).map((g) => {
               const c = getCategory(g.category);
               return (
                 <Link
@@ -227,7 +232,7 @@ export function HomePage() {
             </div>
           )}
         </section>
-        <DailyCheckIn />
+        {user && <DailyCheckIn />}
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ export function GroupDetailPage() {
   const { topic } = useParams<{ topic: string }>();
   const groups = useGroups();
   const action = useCommunityAction();
-  const { user } = useInternetIdentity();
+  const { user, login } = useInternetIdentity();
   const group = groups.data?.find((g) => g.slug === topic);
   const joined =
     group?.group_members.some((m) => m.user_id === user?.id) ?? false;
@@ -50,12 +50,18 @@ export function GroupDetailPage() {
           </span>
           <h1>{group.name}</h1>
           <p>{group.description}</p>
-          <small>{group.group_members.length} members</small>
+          <small>
+            {group.member_count ?? group.group_members.length} members
+          </small>
         </div>
         <button
           className={`wellness-button ${joined ? "light" : ""}`}
           disabled={action.isPending}
           onClick={async () => {
+            if (!user) {
+              login();
+              return;
+            }
             try {
               await action.mutateAsync({
                 name: "toggle_group",
@@ -76,7 +82,20 @@ export function GroupDetailPage() {
               : "Join this group"}
         </button>
       </header>
-      <ConversationFeed key={group.id} group={group.id} canPost={joined} />
+      {user ? (
+        <ConversationFeed key={group.id} group={group.id} canPost={joined} />
+      ) : (
+        <section className="empty-state">
+          <h2>Find your people. Join the conversation.</h2>
+          <p>
+            Sign in to join this group and take part. Member conversations stay
+            inside the community.
+          </p>
+          <button className="wellness-button" onClick={login}>
+            Sign in to chat
+          </button>
+        </section>
+      )}
     </div>
   );
 }

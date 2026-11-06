@@ -13,6 +13,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
     path === "/signin" ||
     path.startsWith("/auth/") ||
     ["/psychologists", "/appointments/guest"].includes(path);
+  const visitorPage =
+    path === "/" || path === "/groups" || path.startsWith("/groups/");
   const loading = isInitializing || (!!user && profile.isPending);
   const needsProfile =
     !!user &&
@@ -24,14 +26,23 @@ export function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
     if (publicPage || loading || profile.error) return;
-    if (!user)
+    if (!user && !visitorPage)
       router.replace(
         "/signin?next=" +
           encodeURIComponent(window.location.pathname + window.location.search),
       );
-    else if (needsProfile) router.replace("/onboarding");
-  }, [publicPage, loading, user, needsProfile, profile.error, router, path]);
-  if (publicPage) return children;
+    else if (user && needsProfile) router.replace("/onboarding");
+  }, [
+    publicPage,
+    loading,
+    user,
+    needsProfile,
+    profile.error,
+    router,
+    path,
+    visitorPage,
+  ]);
+  if (publicPage || (visitorPage && !user)) return children;
   if (profile.error)
     return (
       <div className="auth-loading" role="alert">

@@ -1,5 +1,6 @@
 "use client";
 // Compatibility hook name retained; live sessions are validated by Supabase.
+import { safeReturnPath } from "@/lib/returnPath.mjs";
 import { useRouter } from "next/navigation";
 import type { Principal } from "@dfinity/principal";
 import type { User } from "@supabase/supabase-js";
@@ -168,7 +169,15 @@ export function InternetIdentityProvider({ children }: PropsWithChildren) {
       value: {
         user,
         identity: user ? { getPrincipal: () => accountId(user.id) } : undefined,
-        login: () => router.push("/signin"),
+        login: () =>
+          router.push(
+            "/signin?next=" +
+              encodeURIComponent(
+                safeReturnPath(
+                  window.location.pathname + window.location.search,
+                ),
+              ),
+          ),
         skipLogin,
         clear,
         isInitializing,
