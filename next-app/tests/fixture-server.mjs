@@ -16,7 +16,6 @@ const protectedActions = new Set([
   "send_direct_message",
   "request_connection",
   "respond_connection",
-  "book_provider",
   "create_session",
   "join_session",
 ]);
@@ -105,7 +104,7 @@ function authSession() {
     user,
   };
 }
-const seedProviders = () => [
+let seedProviders = () => [
   {
     id: 1,
     applicant: id,
@@ -117,6 +116,32 @@ const seedProviders = () => [
     created_at: new Date().toISOString(),
   },
 ];
+const baseProviders = seedProviders;
+if (localDemo) {
+  seedProviders = () => [
+    ...baseProviders(),
+    {
+      id: 2,
+      applicant: "demo-care-2",
+      name: "Dr. Rhea Kapoor",
+      description:
+        "Local preview sample: a professional introduction about managing everyday stress, building resilience and finding balance.",
+      provider_type: "psychologist",
+      status: "approved",
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 3,
+      applicant: "demo-care-3",
+      name: "Dr. Arjun Mehta",
+      description:
+        "Local preview sample: a professional introduction about navigating life changes, self-confidence and emotional wellbeing.",
+      provider_type: "psychologist",
+      status: "approved",
+      created_at: new Date().toISOString(),
+    },
+  ];
+}
 let careProviders = seedProviders();
 let careBookings = localDemo
   ? [
@@ -290,7 +315,7 @@ const server = createServer(async (req, res) => {
           id: String(b.id),
           kind: "member",
           provider: careProviders.find((p) => p.id === b.provider_id)?.name,
-          client: "Private member",
+          client: b.contact_name || "Private member",
           email: null,
           status: b.confirmed ? "confirmed" : "pending",
         })),
@@ -404,14 +429,20 @@ const server = createServer(async (req, res) => {
     );
     return;
   }
-  if (action === "book_provider") {
-    if (!verification.verified) {
-      fail("Verify your profile to chat, message or book", 403);
+  if (action === "book_provider" || action === "book_care") {
+    if (!req.headers.authorization?.startsWith("Bearer ")) {
+      fail("Please sign in", 401);
+      return;
+    }
+    if (action === "book_care" && String(body.p_name || "").trim().length < 2) {
+      fail("Enter your name");
       return;
     }
     const row = {
       id: careBookings.length + 1,
       user_id: id,
+      contact_name: body.p_name,
+      contact_email: user.email,
       provider_id: Number(body.p_provider),
       booking_time: body.p_time,
       confirmed: false,
@@ -427,7 +458,82 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify(row.id));
     return;
   }
-  if (action === "list_public_groups") { res.end(JSON.stringify(groups.map(g=>({id:g.id,slug:g.slug,name:g.name,description:g.description,category:g.category,member_count:g.group_members.length})))); return; }
+  if (action === "get_public_feed") {
+    res.end(
+      JSON.stringify(
+        body.p_before
+          ? []
+          : [
+              {
+                id: 9001,
+                body: "Some days, a ten-minute walk is the reset I need. What helps you switch off after work?",
+                created_at: new Date().toISOString(),
+                alias: "Quiet Willow",
+                anonymous: true,
+                mine: false,
+                likes: 4,
+                liked: false,
+                replies: [
+                  {
+                    id: 9002,
+                    body: "Putting my phone away and making a cup of tea.",
+                    created_at: new Date().toISOString(),
+                    alias: "Quiet Cedar",
+                    mine: false,
+                  },
+                ],
+              },
+            ],
+      ),
+    );
+    return;
+  }
+  if (action === "find_public_members") {
+    res.end(
+      JSON.stringify(
+        body.p_offset ||
+          (body.p_search &&
+            !member.name.toLowerCase().includes(body.p_search.toLowerCase()))
+          ? []
+          : [{ ...member, id: "public-maya" }],
+      ),
+    );
+    return;
+  }
+  if (action === "list_public_activities") {
+    res.end(
+      JSON.stringify([
+        {
+          id: 1,
+          title: "A little lunchtime reset",
+          description: "Walk, talk, and get some fresh air.",
+          program_type: "meetup",
+          date_time: new Date(Date.now() + 86400000).toISOString(),
+          created_at: new Date().toISOString(),
+          max_participants: 8,
+          space_name: "Garden",
+          location: "Courtyard",
+          participant_count: 1,
+        },
+      ]),
+    );
+    return;
+  }
+  if (action === "list_public_groups") {
+    res.end(
+      JSON.stringify(
+        groups.map((g) => ({
+          id: g.id,
+          slug: g.slug,
+          name: g.name,
+          description: g.description,
+          category: g.category,
+          member_count: g.group_members.length,
+        })),
+      ),
+    );
+    return;
+  }
   if (action === "verification_status") {
     res.end(JSON.stringify(verification));
     return;

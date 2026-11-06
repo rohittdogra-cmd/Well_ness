@@ -13,7 +13,6 @@ export const restrictedActions = new Set([
   "send_direct_message",
   "request_connection",
   "respond_connection",
-  "book_provider",
   "create_session",
   "join_session",
 ]);
@@ -27,7 +26,7 @@ export async function requireVerification() {
   if (!(await verificationStatus()).verified) {
     window.location.assign("/verify");
     throw new Error(
-      "Verify your profile to chat, message or book. You can keep browsing freely.",
+      "Verify your profile to chat, connect or join activities. You can keep browsing freely.",
     );
   }
 }

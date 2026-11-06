@@ -14,7 +14,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
     path.startsWith("/auth/") ||
     ["/psychologists", "/appointments/guest"].includes(path);
   const visitorPage =
-    path === "/" || path === "/groups" || path.startsWith("/groups/");
+    [
+      "/",
+      "/groups",
+      "/discuss",
+      "/community",
+      "/people",
+      "/book-activities",
+    ].includes(path) ||
+    path.startsWith("/groups/") ||
+    path.startsWith("/sessions/") ||
+    path.startsWith("/programs/");
   const loading = isInitializing || (!!user && profile.isPending);
   const needsProfile =
     !!user &&

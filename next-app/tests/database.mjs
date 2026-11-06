@@ -294,7 +294,7 @@ assert.equal((await scalar("select verification_status() as value")).verified,fa
 await denied("select publish_post('Blocked',null,null,false)");
 await denied("select create_session('Blocked','Browsing only','meetup',now()+interval '1 day',4,null,null)");
 await denied("select send_direct_message($1,'Blocked')",[cid]);
-await denied("select book_provider($1,now()+interval '10 days')",[pid]);
+assert.ok(await scalar("select book_care($1,now()+interval '10 days','Visitor name') as value",[pid])); checks++;
 await denied("insert into verification_requests(user_id,method,evidence,status) values($1,'linkedin','https://www.linkedin.com/in/visitor','approved')",[alice]);
 await denied("select submit_verification('linkedin','https://fake.example/person')");
 await db.query("select submit_verification('linkedin','https://www.linkedin.com/in/visitor')");

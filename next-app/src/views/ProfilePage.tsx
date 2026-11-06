@@ -529,7 +529,7 @@ export function ProfilePage() {
               {publicProfile.goal || "Feel more balanced"}
             </div>
             <div className="mt-4 pt-4 border-t border-gray-100 text-[11px] text-gray-400">
-              Visible on the Home Page, Topbar greetings, and Member Directory.
+              Your display name, avatar, bio and interests are visible to visitors in the public People directory. Your email and availability stay private.
             </div>
           </aside>
         </div>

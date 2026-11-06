@@ -536,7 +536,7 @@ export function SignInPage() {
               Start by exploring.
               <br />
               <span>
-                Verify your profile to unlock chat, messages and bookings.
+                Verify your profile to unlock chat, connections and community activities. Care needs a signed-in account only.
               </span>
             </p>
           </div>

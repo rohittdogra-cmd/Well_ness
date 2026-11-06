@@ -14,6 +14,14 @@ import {
   type UserProfileEntry,
 } from "../backend.types";
 import { useActor } from "./useActor";
+import { useInternetIdentity } from "./useInternetIdentity";
+import { getSupabase } from "@/lib/supabase/client";
+import { sessionFromRow } from "@/lib/backend";
+async function publicSessions(): Promise<Session[]> {
+  const { data, error } = await getSupabase().rpc("list_public_activities");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(sessionFromRow);
+}
 
 export { ActivityLogType, ProgramType, ProviderType };
 export type {
@@ -28,38 +36,43 @@ export type {
 
 export function useAllSessions() {
   const { actor, isFetching } = useActor();
+  const { user } = useInternetIdentity();
   return useQuery<Session[]>({
-    queryKey: ["sessions"],
+    queryKey: ["sessions", user?.id ?? "public"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllSessions();
+      return actor ? actor.getAllSessions() : publicSessions();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !isFetching,
   });
 }
 
 export function useSessionsByType(programType: ProgramType) {
   const { actor, isFetching } = useActor();
+  const { user } = useInternetIdentity();
   return useQuery<Session[]>({
-    queryKey: ["sessions", "type", programType],
+    queryKey: ["sessions", user?.id ?? "public", "type", programType],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getSessionsByProgramType(programType);
+      return actor
+        ? actor.getSessionsByProgramType(programType)
+        : (await publicSessions()).filter((s) => s.programType === programType);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !isFetching,
   });
 }
 
 export function useSession(sessionId: bigint | null) {
   const { actor, isFetching } = useActor();
+  const { user } = useInternetIdentity();
   return useQuery<Session>({
-    queryKey: ["session", sessionId?.toString()],
+    queryKey: ["session", sessionId?.toString(), user?.id ?? "public"],
     queryFn: async () => {
-      if (!actor || sessionId === null)
-        throw new Error("No actor or sessionId");
-      return actor.getSession(sessionId);
+      if (sessionId === null) throw new Error("No session selected");
+      if (actor) return actor.getSession(sessionId);
+      const found = (await publicSessions()).find((s) => s.id === sessionId);
+      if (!found) throw new Error("This activity is no longer available.");
+      return found;
     },
-    enabled: !!actor && !isFetching && sessionId !== null,
+    enabled: !isFetching && sessionId !== null,
   });
 }
 
@@ -392,4 +405,3 @@ export function useMarkTaskComplete() {
     },
   });
 }
-

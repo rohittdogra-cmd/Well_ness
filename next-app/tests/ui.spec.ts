@@ -271,8 +271,10 @@ test("password sign in, invalid credentials, and sign out", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Account menu", exact: true }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
-  await expect(page).toHaveURL(/signin/);
-  await page.goto("/people");
+  await expect(
+    page.getByRole("link", { name: "Sign in", exact: true }),
+  ).toBeVisible();
+  await page.goto("/profile");
   await expect(page).toHaveURL(/signin/);
 });
 test("student signup requires verification with corporate and student id options", async ({
@@ -528,7 +530,7 @@ test("legacy local demo state never authenticates a live session", async ({
       }),
     ),
   );
-  await page.goto("/people");
+  await page.goto("/profile");
   await expect(page).toHaveURL(/signin/);
   await expect(
     page.getByRole("heading", { name: "Welcome to your hub." }),
@@ -666,7 +668,7 @@ test("returning member reaches the original protected deep link after sign in", 
   ).toBeVisible();
 });
 
-test("unverified personal-email member can browse but cannot book or chat", async ({
+test("personal-email account can request care while community participation still requires approval", async ({
   page,
   context,
   request,
@@ -676,14 +678,22 @@ test("unverified personal-email member can browse but cannot book or chat", asyn
   });
   await signIn(context);
   await page.goto("/psychologists");
+  await page
+    .getByRole("button", { name: "Request a time", exact: true })
+    .click();
+  await expect(page.getByLabel("Your name", { exact: true })).toBeVisible();
+  await page
+    .getByLabel("Preferred date and time")
+    .fill(new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 16));
+  await page.getByRole("checkbox", { name: /Share my name/ }).check();
+  await page
+    .getByRole("button", { name: "Request appointment", exact: true })
+    .click();
+  await expect(page.getByText("Request sent.", { exact: true })).toBeVisible();
+  await page.goto("/discuss");
   await expect(
-    page.getByRole("heading", { name: "Dr. Asha Sen" }),
+    page.getByRole("link", { name: "Verify to start a conversation" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Verify to book" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Verify to book" }).click();
-  await expect(page).toHaveURL(/verify/);
 });
 
 test("member bookings appear with provider names on profile and update after confirmation", async ({
@@ -693,6 +703,10 @@ test("member bookings appear with provider names on profile and update after con
 }) => {
   await signIn(context);
   await page.goto("/psychologists");
+  await page
+    .getByRole("button", { name: "Request a time", exact: true })
+    .click();
+  await page.getByRole("checkbox", { name: /Share my name/ }).check();
   const date = new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16);
   await page.getByLabel("Preferred date and time").fill(date);
   await page
@@ -724,51 +738,30 @@ test("member bookings appear with provider names on profile and update after con
   ).toBeVisible();
 });
 
-test("signed-out guests request private care, keep a receipt and see provider confirmation", async ({
+test("visitors explore care but sign in before requesting an appointment", async ({
   page,
-  context,
   request,
 }) => {
   await page.goto("/psychologists");
-  await expect(page).toHaveURL(/psychologists/);
   await expect(
     page.getByRole("heading", { name: "Dr. Asha Sen" }),
   ).toBeVisible();
+  await expect(page.getByLabel("Preferred date and time")).toHaveCount(0);
   await page
-    .getByLabel("Preferred date and time")
-    .fill(new Date(Date.now() + 86400000 * 5).toISOString().slice(0, 16));
-  await page.getByLabel("Contact email").fill("private-guest@example.test");
-  await page.getByRole("checkbox", { name: /I agree to share/ }).check();
-  await page
-    .getByRole("button", { name: "Request appointment", exact: true })
+    .getByRole("button", { name: "Request a time", exact: true })
     .click();
-  await expect(page).toHaveURL(/appointments\/guest#/);
-  const receiptUrl = page.url();
-  await expect(
-    page.getByText("Awaiting provider confirmation", { exact: true }),
-  ).toBeVisible();
-  await signIn(context);
-  await page.goto("/provider");
-  await expect(
-    page.getByText("Contact: private-guest@example.test"),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Confirm appointment", exact: true })
-    .click();
-  await expect(
-    page.getByText("Appointment confirmed", { exact: true }),
-  ).toBeVisible();
-  await page.goto(receiptUrl);
-  await expect(
-    page.getByText("Your appointment has been accepted by the provider."),
-  ).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
-  await page
-    .getByRole("button", { name: "Cancel request", exact: true })
-    .click();
-  await expect(
-    page.getByText("This request has been cancelled."),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/signin\?next=%2Fpsychologists/);
+  const response = await request.post(
+    "http://localhost:3101/api/guest-appointments",
+    {
+      data: {
+        provider: 1,
+        email: "guest@example.test",
+        time: new Date(Date.now() + 86400000).toISOString(),
+      },
+    },
+  );
+  expect(response.status()).toBe(401);
 });
 
 test("provider applications persist as pending and failed writes never report success", async ({
@@ -947,7 +940,7 @@ test("visitors browse groups without seeing conversations and sign in only when 
   ).toBeVisible();
 });
 
-test("chat prompts sign-in while a fresh visit to home remains public", async ({
+test("anonymous conversations are public and typing prompts sign-in", async ({
   page,
 }) => {
   await page.goto("/");
@@ -955,10 +948,84 @@ test("chat prompts sign-in while a fresh visit to home remains public", async ({
     .getByRole("navigation", { name: "Main navigation", exact: true })
     .getByRole("link", { name: "Chat", exact: true })
     .click();
+  await expect(page).toHaveURL("http://localhost:3101/discuss");
+  await expect(page.getByText(/Some days, a ten-minute walk/)).toBeVisible();
+  await expect(
+    page.getByText("Anyone up for a lunchtime walk this week?", {
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: /What’s on your mind/ }).click();
   await expect(page).toHaveURL(/signin\?next=%2Fdiscuss/);
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: /Your people.*Your pause/ }),
   ).toBeVisible();
   await expect(page).toHaveURL("http://localhost:3101/");
+});
+
+test("visitors can see People but Connect requires sign-in", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/people");
+  await expect(
+    page.getByRole("heading", { name: "Maya", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Loading connections…")).toHaveCount(0);
+  await noOverflow(page);
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(page).toHaveURL(/signin\?next=%2Fpeople/);
+});
+test("visitors can browse activity details but join and create require sign-in", async ({
+  page,
+}) => {
+  await page.goto("/book-activities");
+  await expect(
+    page.getByRole("heading", {
+      name: "A little lunchtime reset",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Sign in to join", exact: true })
+    .click();
+  await expect(page).toHaveURL(/signin\?next=%2Fbook-activities/);
+  await page.goto("/sessions/1");
+  await expect(
+    page.getByRole("heading", {
+      name: "A little lunchtime reset",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Sign in/i }).click();
+  await expect(page).toHaveURL(/signin\?next=%2Fsessions%2F1/);
+  await page.goto("/book-activities");
+  await page
+    .getByRole("button", { name: "Create Activity", exact: true })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/signin\?next=%2Fbook-activities/);
+});
+test("visitor navigation and care directory fit a small mobile screen", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open navigation", exact: true })
+    .click();
+  const nav = page.getByRole("navigation", { name: "Expanded navigation" });
+  await expect(nav.getByRole("link")).toHaveCount(6);
+  await noOverflow(page);
+  await nav.getByRole("link", { name: "Care", exact: true }).click();
+  await expect(page).toHaveURL(/psychologists/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await noOverflow(page);
+  await page
+    .getByRole("searchbox", { name: "Search care professionals" })
+    .fill("nobody");
+  await expect(
+    page.getByRole("heading", { name: "No matches just yet." }),
+  ).toBeVisible();
 });

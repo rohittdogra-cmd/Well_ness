@@ -30,7 +30,7 @@ type Connection = {
 type Message = { id: number; sender: string; body: string; created_at: string };
 
 export default function PeoplePage() {
-  const { user } = useInternetIdentity();
+  const { user, login } = useInternetIdentity();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState<number | null>(() => {
@@ -43,10 +43,9 @@ export default function PeoplePage() {
   const qc = useQueryClient();
   const members = useInfiniteQuery({
     queryKey: ["members", user?.id, filter],
-    enabled: !!user,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) =>
-      (await rpc("find_members", {
+      (await rpc(user ? "find_members" : "find_public_members", {
         p_search: filter,
         p_offset: pageParam,
       })) as Member[],
@@ -78,8 +77,7 @@ export default function PeoplePage() {
       <span className="eyebrow">YOUR COMMUNITY</span>
       <h1>Find your people.</h1>
       <p>
-        Meet other members, connect, and make time for a conversation. Your
-        email and private check-ins stay off your public profile.
+        Explore public member cards and find a shared interest. Sign in to connect; your account email and private check-ins stay private.
       </p>
       {action.error && (
         <p role="alert" className="signin-error">
@@ -150,13 +148,19 @@ export default function PeoplePage() {
                 ) : (
                   <button
                     className="text-action"
-                    disabled={action.isPending || !connections.isSuccess}
-                    onClick={() =>
+                    disabled={
+                      !!user && (action.isPending || !connections.isSuccess)
+                    }
+                    onClick={() => {
+                      if (!user) {
+                        login();
+                        return;
+                      }
                       action.mutate({
                         name: "request_connection",
                         args: { p_member: m.id },
-                      })
-                    }
+                      });
+                    }}
                   >
                     Connect
                   </button>
@@ -176,7 +180,21 @@ export default function PeoplePage() {
         </section>
         <section className="people-panel" aria-label="Connections and messages">
           <h2>Your connections</h2>
-          {connections.isPending && <p role="status">Loading connections…</p>}
+          {!user && (
+            <div className="visitor-connection-note">
+              <h3>A connection starts with hello.</h3>
+              <p>
+                Explore the community, then sign in to connect. Private chats
+                open after your request is accepted.
+              </p>
+              <button className="wellness-button" onClick={login}>
+                Sign in to connect
+              </button>
+            </div>
+          )}
+          {user && connections.isPending && (
+            <p role="status">Loading connections…</p>
+          )}
           {connections.error && (
             <p role="alert">
               Couldn’t load connections.{" "}

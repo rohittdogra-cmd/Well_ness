@@ -60,33 +60,23 @@ export function useGroups() {
 export function useFeed(group: number | null) {
   const { user } = useInternetIdentity();
   return useInfiniteQuery({
-    queryKey: ["feed", user?.id, group],
-    enabled: !!user,
+    queryKey: ["feed", user?.id ?? "public", group],
+    enabled: !!user || group === null,
     initialPageParam: null as number | null,
     queryFn: async ({ pageParam }) => {
-      try {
-        const res = (await rpc("get_feed", {
-          p_group: group,
+      if (!user) {
+        const { data, error } = await getSupabase().rpc("get_public_feed", {
           p_before: pageParam,
           p_limit: 20,
-        })) as Post[];
-        if (Array.isArray(res) && res.length > 0) return res;
-      } catch (e) {
-        console.warn("Feed query fallback:", e);
+        });
+        if (error) throw new Error(error.message);
+        return (data ?? []) as Post[];
       }
-      return [
-        {
-          id: 1,
-          body: "Anyone up for a lunchtime mindful walk this week?",
-          created_at: new Date().toISOString(),
-          alias: "Alex Chen",
-          mine: false,
-          anonymous: false,
-          likes: 3,
-          liked: false,
-          replies: [],
-        },
-      ];
+      return (await rpc("get_feed", {
+        p_group: group,
+        p_before: pageParam,
+        p_limit: 20,
+      })) as Post[];
     },
     getNextPageParam: (last) =>
       last.length === 20 ? last[last.length - 1].id : undefined,

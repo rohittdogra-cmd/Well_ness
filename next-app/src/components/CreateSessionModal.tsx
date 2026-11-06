@@ -1,3 +1,4 @@
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +29,7 @@ export function CreateSessionModal({
   trigger,
   onCreated,
 }: CreateSessionModalProps) {
+  const { user, login } = useInternetIdentity();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   
@@ -95,7 +97,7 @@ export function CreateSessionModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) resetForm(); }}>
+    <Dialog open={open} onOpenChange={(v) => { if (v && !user) { login(); return; } setOpen(v); if(!v) resetForm(); }}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button data-ocid="session.create_button" className="rounded-full shadow-lg">
@@ -114,6 +116,7 @@ export function CreateSessionModal({
               Step {step} of 5
             </span>
           </div>
+          <p className="text-xs text-muted-foreground mb-3">Activity details and location are visible to visitors. Participant identities stay inside the community.</p>
           {/* Progress bar */}
           <div className="w-full bg-border rounded-full h-1.5 overflow-hidden">
             <div className="bg-primary h-full transition-all duration-300" style={{ width: `${(step / 5) * 100}%` }} />

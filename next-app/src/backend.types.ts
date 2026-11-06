@@ -12,6 +12,7 @@ export interface Session {
     title: string;
     creator: Principal;
     participants: Array<Principal>;
+    participantCount?: number;
     createdAt: Time;
     description: string;
     spaceName?: string;

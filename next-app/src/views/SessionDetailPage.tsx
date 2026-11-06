@@ -84,7 +84,7 @@ export function SessionDetailPage() {
       ? session.creator.toString() === principalStr
       : false;
   const isFull = session
-    ? session.participants.length >= Number(session.maxParticipants)
+    ? (session.participantCount ?? session.participants.length) >= Number(session.maxParticipants)
     : false;
   const isTaskSession = session?.programType === ProgramType.taskAllocation;
 
@@ -290,7 +290,7 @@ export function SessionDetailPage() {
                   Participants
                 </div>
                 <div className="text-sm font-medium text-foreground">
-                  {session.participants.length} /{" "}
+                  {session.participantCount ?? session.participants.length} /{" "}
                   {session.maxParticipants.toString()}
                   {isFull && (
                     <Badge variant="secondary" className="ml-2 text-xs">
@@ -374,7 +374,7 @@ export function SessionDetailPage() {
 
         {/* Task Section (taskAllocation only) */}
         <AnimatePresence>
-          {isTaskSession && (
+          {isTaskSession && isAuthenticated && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

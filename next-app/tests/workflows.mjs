@@ -26,7 +26,11 @@ test("corporate/student eligibility, provider approval, private guest receipts a
     );
     for (const name of (
       await readdir(new URL("../supabase/migrations/", import.meta.url))
-    ).sort())
+    )
+      .sort()
+      .filter(
+        (name) => name !== "202611060002_public_browsing_and_account_care.sql",
+      ))
       await db.exec(
         await readFile(
           new URL("../supabase/migrations/" + name, import.meta.url),
@@ -244,6 +248,113 @@ test("corporate/student eligibility, provider approval, private guest receipts a
       (await db.query("select * from notifications where user_id=$1", [doctor]))
         .rows,
       [],
+    );
+    // Exercise the upgrade against existing private content and old receipts.
+    await db.exec("reset role");
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/202611060002_public_browsing_and_account_care.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await db.query(
+      "update profiles set name='Public member',bio='Books and walks' where id=$1",
+      [member],
+    );
+    await as(member);
+    await db.query(
+      "select publish_post('Public anonymous lounge',null,null,true)",
+    );
+    await db.query(
+      "select publish_post('Private named lounge',null,null,false)",
+    );
+    const groupId = catalog[0].id;
+    await db.query("select toggle_group($1,true)", [groupId]);
+    await db.query(
+      "select publish_post('Private group anonymous',$1,null,true)",
+      [groupId],
+    );
+    await db.query(
+      "select create_session('Public activity','A community walk','meetup',now()+interval '20 days',8,null,'Park')",
+    );
+    await as(null);
+    const feed = await value("select get_public_feed() as value");
+    assert.ok(feed.some((p) => p.body === "Public anonymous lounge"));
+    assert.equal(JSON.stringify(feed).includes("Private named"), false);
+    assert.equal(JSON.stringify(feed).includes("Private group"), false);
+    assert.equal(JSON.stringify(feed).includes(member), false);
+    assert.equal(JSON.stringify(feed).includes("Public member"), false);
+    assert.deepEqual(await value("select get_public_feed(0) as value"), []);
+    const people = (
+      await db.query("select * from find_public_members('Public')")
+    ).rows;
+    assert.equal(people[0].name, "Public member");
+    assert.notEqual(people[0].id, member);
+    assert.equal(JSON.stringify(people).includes("@"), false);
+    const activities = await value("select list_public_activities() as value");
+    assert.equal(activities[0].title, "Public activity");
+    assert.equal("creator" in activities[0], false);
+    assert.equal("session_members" in activities[0], false);
+    for (const table of [
+      "profiles",
+      "posts",
+      "direct_messages",
+      "sessions",
+      "session_members",
+      "provider_bookings",
+    ])
+      await assert.rejects(db.query("select * from " + table));
+    await assert.rejects(
+      db.query("select book_care($1,now()+interval '30 days','Guest')", [
+        provider,
+      ]),
+    );
+    await assert.rejects(
+      db.query(
+        "select request_guest_appointment($1,now()+interval '30 days','guest@example.com','test-gateway-only',repeat('a',64))",
+        [provider],
+      ),
+    );
+    assert.equal(
+      (
+        await value("select guest_appointment_status($1) as value", [
+          receipt.receipt,
+        ])
+      ).status,
+      "cancelled",
+    );
+    await as(stranger);
+    assert.equal(
+      (await value("select verification_status() as value")).verified,
+      false,
+    );
+    const care = await value(
+      "select book_care($1,now()+interval '30 days','Care client') as value",
+      [provider],
+    );
+    assert.ok(care);
+    await assert.rejects(
+      db.query("select publish_post('Still blocked',null,null,true)"),
+    );
+    await as(doctor);
+    const careRequests = await value("select provider_appointments() as value");
+    const careRequest = careRequests.find((r) => r.id === String(care));
+    assert.equal(careRequest.client, "Care client");
+    assert.equal(careRequest.email, "person@random-custom.example");
+    await db.exec("reset role");
+    await db.query(
+      "update auth.users set email_confirmed_at=null where id=$1",
+      [stranger],
+    );
+    await as(stranger);
+    await assert.rejects(
+      db.query(
+        "select book_care($1,now()+interval '32 days','Unconfirmed client')",
+        [provider],
+      ),
     );
   } finally {
     await db.close();

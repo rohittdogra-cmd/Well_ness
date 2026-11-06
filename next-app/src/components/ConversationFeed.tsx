@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useVerification } from "@/hooks/useVerification";
 import { useState } from "react";
 import {
@@ -20,6 +21,7 @@ export function ConversationFeed({
   group?: number | null;
   canPost?: boolean;
 }) {
+  const { user, login } = useInternetIdentity();
   const verification = useVerification();
   const feed = useFeed(group);
   const action = useCommunityAction();
@@ -27,6 +29,10 @@ export function ConversationFeed({
   const [anonymous, setAnonymous] = useState(false);
   async function publish(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) {
+      login();
+      return;
+    }
     try {
       await action.mutateAsync({
         name: "publish_post",
@@ -42,7 +48,24 @@ export function ConversationFeed({
   }
   return (
     <div className="conversation-feed">
-      {!verification.data?.verified ? (
+      {!user ? (
+        <div className="composer visitor-composer">
+          <span className="eyebrow">A LITTLE SPACE TO SHARE</span>
+          <h3>Read along. You’re welcome here.</h3>
+          <p>
+            Explore anonymous community conversations. Sign in when you’re ready
+            to join in.
+          </p>
+          <button className="visitor-write-prompt" onClick={login}>
+            <MessageCircle size={20} />
+            <span>What’s on your mind?</span>
+            <Send size={18} />
+          </button>
+          <button className="text-action" onClick={login}>
+            Sign in to start a conversation ↗
+          </button>
+        </div>
+      ) : !verification.data?.verified ? (
         <div className="composer verification-composer">
           <h3>Read along. Join in when you’re verified.</h3>
           <p>
@@ -85,8 +108,9 @@ export function ConversationFeed({
           </div>
           {anonymous && (
             <p className="privacy-note">
-              Your name is hidden from the community. Moderators can trace
-              reported content to an account.
+              Anonymous lounge posts are visible to visitors. Your display name
+              stays hidden; moderators can trace reported content to an account.
+              Group conversations stay inside the community.
             </p>
           )}
         </form>
@@ -160,12 +184,17 @@ function PostCard({
   group: number | null;
   canPost: boolean;
 }) {
+  const { user, login } = useInternetIdentity();
   const action = useCommunityAction();
   const [open, setOpen] = useState(false);
   const [reply, setReply] = useState("");
   const [report, setReport] = useState<number | null>(null);
   const [reason, setReason] = useState("");
   async function run(name: string, args: Record<string, unknown>) {
+    if (!user) {
+      login();
+      return false;
+    }
     try {
       await action.mutateAsync({ name, args });
       return true;
@@ -200,7 +229,10 @@ function PostCard({
               <Trash2 size={16} />
             </button>
           ) : (
-            <button aria-label="Report post" onClick={() => setReport(post.id)}>
+            <button
+              aria-label="Report post"
+              onClick={() => (user ? setReport(post.id) : login())}
+            >
               <Flag size={16} />
             </button>
           )}
@@ -242,7 +274,7 @@ function PostCard({
                 ) : (
                   <button
                     aria-label="Report reply"
-                    onClick={() => setReport(r.id)}
+                    onClick={() => (user ? setReport(r.id) : login())}
                   >
                     <Flag size={14} />
                   </button>
@@ -256,7 +288,12 @@ function PostCard({
               </small>
             </div>
           ))}
-          {canPost && (
+          {!user && (
+            <button className="visitor-write-prompt" onClick={login}>
+              Write a reply… <Send size={16} />
+            </button>
+          )}
+          {user && canPost && (
             <form
               onSubmit={async (e) => {
                 e.preventDefault();

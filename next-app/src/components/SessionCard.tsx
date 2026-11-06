@@ -41,7 +41,7 @@ export function SessionCard({
   const isCreator = principalStr
     ? session.creator.toString() === principalStr
     : false;
-  const isFull = session.participants.length >= Number(session.maxParticipants);
+  const isFull = (session.participantCount ?? session.participants.length) >= Number(session.maxParticipants);
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -114,7 +114,7 @@ export function SessionCard({
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" />
-                  {session.participants.length}/
+                  {session.participantCount ?? session.participants.length}/
                   {session.maxParticipants.toString()}
                 </span>
               </div>
@@ -136,7 +136,7 @@ export function SessionCard({
                       data-ocid="session.signin_button"
                       className="text-xs h-7 px-2.5"
                     >
-                      Sign in to Book
+                      Sign in to join
                     </Button>
                   ) : (
                     !isCreator &&

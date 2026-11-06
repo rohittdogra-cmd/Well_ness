@@ -15,7 +15,7 @@ export function VerificationBanner() {
             : "Look around. Find your people. Verify when you’re ready."}
         </strong>
         <p>
-          Browsing is open. Verify to chat, send messages and make bookings.
+          Browsing is open. Verify to chat, connect and join activities. Care requests need a signed-in account only.
         </p>
       </div>
       <Link href="/verify">

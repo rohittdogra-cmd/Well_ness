@@ -50,6 +50,8 @@ For a **new, empty, dedicated project**, apply `supabase_setup.sql` once. It con
 6. `202610250001_verification.sql`
 7. `202611010001_content_masking.sql`
 8. `202611050001_member_provider_workflows.sql`
+9. `202611060001_public_group_catalog.sql`
+10. `202611060002_public_browsing_and_account_care.sql`
 
 For an existing installation, apply only missing migrations. Never rerun the fresh-install bundle or apply it to an unrelated shared database. This deployment uses one private community per project, without company-level tenant isolation.
 
@@ -127,3 +129,13 @@ Apply `202611060001_public_group_catalog.sql` before deploying this update to an
 A fresh signed-out visit opens Home without a sign-in redirect. The header offers Sign in, visitors can browse group descriptions, and Join/Chat opens sign-in with a safe return path. Signed-in participation still requires the existing administrator verification rules. Private profiles, appointments, calendar and conversations still require authentication.
 
 Validated with type checking, 34 browser tests, the database/workflow checks and a production build.
+
+## Browse before sign-in and account-based care
+
+Local review update: visitors can browse anonymous lounge conversations, limited People cards, groups and upcoming activities. Messaging, reactions, connection requests and joins require sign-in; corporate/student approval still gates community participation. The public lounge excludes named posts, named replies, hidden posts and all group conversations. The People projection excludes account identifiers, email, availability and alias seeds. Public activity results contain counts rather than participant/creator identities. Existing anonymous lounge posts and People/activity listings become public at the owner's explicit request.
+
+Apply `202611060001_public_group_catalog.sql` if missing, then `202611060002_public_browsing_and_account_care.sql` before releasing this frontend. The second migration adds public read RPCs without opening underlying tables. Care requests now require an account with a confirmed email, a contact name, a preferred time and consent. Corporate/student approval is not required for care. The server records the authenticated account email and exposes booking contact details only to its provider and administrators. The unauthenticated request endpoint rejects new requests; existing guest receipt links remain valid for viewing/cancelling previous requests. Existing booking notifications and overlap checks remain active.
+
+The redesigned care directory uses approved live providers only. Three clearly labelled sample professional cards exist solely in the isolated local demo API; none are added to production. No real doctor has been added or approved by this UI change.
+
+Local validation: 37 browser tests, 69 database checks, migration-upgrade workflow checks, authentication and moderation suites, TypeScript checking and the production build passed. This local review has not applied the new public-browsing migrations to the production database.

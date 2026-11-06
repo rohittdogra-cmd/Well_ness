@@ -18,6 +18,8 @@ import {
   Settings,
   Stethoscope,
   LayoutDashboard,
+  ArrowUpRight,
+  ChevronRight,
 } from "lucide-react";
 import {
   Sheet,
@@ -48,6 +50,14 @@ const mainLinks = [
   { label: "Activities", href: "/book-activities", icon: Compass },
   { label: "Care", href: "/psychologists", icon: HeartHandshake },
 ];
+const navigationNotes: Record<string, string> = {
+  "/": "Your daily pause",
+  "/discuss": "Read, share & feel heard",
+  "/groups": "Find your shared interests",
+  "/people": "Meet your kind of people",
+  "/book-activities": "Make a little time together",
+  "/psychologists": "Support, on your terms",
+};
 const accountLinks = [
   { label: "My calendar", href: "/my-sessions", icon: CalendarDays },
   { label: "My profile", href: "/profile", icon: UserRound },
@@ -98,24 +108,66 @@ export function HubHeader() {
             </SheetTrigger>
             <SheetContent side="left" className="hub-navigation-drawer">
               <SheetHeader>
-                <SheetTitle>Make room for you.</SheetTitle>
+                <div className="drawer-brand-mark">
+                  <Flower2 size={25} />
+                  <span>stress & unwind</span>
+                </div>
+                <SheetTitle>A little space for you.</SheetTitle>
                 <SheetDescription>
-                  Your circles, plans and care, in one place.
+                  Good people. Shared interests. Room to recharge.
                 </SheetDescription>
               </SheetHeader>
+              <div className="drawer-section-label">EXPLORE YOUR SPACE</div>
               <nav aria-label="Expanded navigation">
-                {[...mainLinks, ...(user ? accountLinks : [])].map((item) => (
+                {mainLinks.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-label={item.label}
                     aria-current={active(item.href) ? "page" : undefined}
                     onClick={() => setMenu(false)}
                   >
-                    <item.icon size={19} />
-                    {item.label}
+                    <span className="drawer-link-icon">
+                      <item.icon size={21} />
+                    </span>
+                    <span className="drawer-link-copy">
+                      <strong>{item.label}</strong>
+                      <small>{navigationNotes[item.href]}</small>
+                    </span>
+                    <ChevronRight className="drawer-link-arrow" size={17} />
                   </Link>
                 ))}
               </nav>
+              {user ? (
+                <>
+                  <div className="drawer-section-label">YOUR ACCOUNT</div>
+                  <nav aria-label="Account navigation">
+                    {accountLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={active(item.href) ? "page" : undefined}
+                        onClick={() => setMenu(false)}
+                      >
+                        <item.icon size={18} />
+                        {item.label}
+                      </Link>
+                    ))}
+                  </nav>
+                </>
+              ) : (
+                <div className="drawer-invitation">
+                  <strong>Found your kind of good?</strong>
+                  <p>Sign in to connect, join groups and make plans.</p>
+                  <Link
+                    href={`/signin?next=${encodeURIComponent(path || "/")}`}
+                    className="wellness-button"
+                    onClick={() => setMenu(false)}
+                  >
+                    Sign in <ArrowUpRight size={16} />
+                  </Link>
+                </div>
+              )}
               {user && (
                 <button
                   className="hub-drawer-signout"

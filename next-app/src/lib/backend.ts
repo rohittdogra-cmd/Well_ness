@@ -15,11 +15,12 @@ import {
 const ns = (date: string) => BigInt(new Date(date).getTime()) * 1_000_000n;
 const iso = (time: bigint) => new Date(Number(time / 1_000_000n)).toISOString();
 
-const session = (r: any): Session => ({
+export const sessionFromRow = (r: any): Session => ({
   id: BigInt(r.id),
   title: r.title,
   description: r.description,
-  creator: accountId(r.creator),
+  creator: accountId(r.creator ?? "public-host"),
+  participantCount: r.participant_count ?? r.session_members?.length ?? 0,
   participants: (r.session_members ?? []).map((m: any) => accountId(m.user_id)),
   createdAt: ns(r.created_at),
   dateTime: ns(r.date_time),
@@ -84,7 +85,7 @@ export function createBackend(userId: string): backendInterface {
           .select("*,session_members(user_id)")
           .order("date_time"),
       )) ?? []
-    ).map(session) as Session[];
+    ).map(sessionFromRow) as Session[];
   const tasks = async () =>
     ((await result(db.from("tasks").select("*"))) ?? []).map(task) as Task[];
   const providers = async () =>
