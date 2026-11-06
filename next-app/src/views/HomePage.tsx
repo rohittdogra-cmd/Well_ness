@@ -1,22 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { HomeNextSteps } from "@/components/HomeNextSteps";
 import { HomeReturnPanel } from "@/components/HomeReturnPanel";
 import { ConnectionStory } from "@/components/ConnectionStory";
 import { DailyCheckIn } from "@/components/DailyCheckIn";
 import { StressArcade } from "@/components/StressArcade";
 import { GlobalStressPulse } from "@/components/GlobalStressPulse";
-import {
-  ArrowUpRight,
-  ArrowRight,
-  Users,
-  CalendarDays,
-  MessageCircle,
-  Compass,
-  Gamepad2,
-  Globe,
-  Sparkles,
-} from "lucide-react";
+import { ArrowUpRight, ArrowRight, Users, Compass } from "lucide-react";
 import { useGroups } from "@/hooks/useCommunity";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { groupCategories, getCategory } from "@/lib/groupCategories";
@@ -115,46 +106,14 @@ export function HomePage() {
       {/* 4. The Daily De-Stress Arcade & Micro-Games Studio */}
       <StressArcade />
 
+      <HomeNextSteps signedIn={!!user} />
+
       <details className="connection-guide">
         <summary>
           New here? Find your first little connection <ArrowRight size={18} />
         </summary>
         <ConnectionStory />
       </details>
-
-      {/* 5. Quick Action Cards */}
-      <div className="quick-actions">
-        <Link href="/people">
-          <span className="mint">
-            <Users size={22} />
-          </span>
-          <div>
-            <h3>Meet people</h3>
-            <p>Connect, then start a chat</p>
-          </div>
-          <ArrowUpRight size={18} />
-        </Link>
-        <Link href="/book-activities">
-          <span className="peach">
-            <CalendarDays size={22} />
-          </span>
-          <div>
-            <h3>Make a plan</h3>
-            <p>Discover or host an activity</p>
-          </div>
-          <ArrowUpRight size={18} />
-        </Link>
-        <Link href="/discuss">
-          <span className="lilac">
-            <MessageCircle size={22} />
-          </span>
-          <div>
-            <h3>Join the conversation</h3>
-            <p>Share a thought with the hub</p>
-          </div>
-          <ArrowUpRight size={18} />
-        </Link>
-      </div>
 
       {/* 6. Interest Categories */}
       <section className="home-interests">
