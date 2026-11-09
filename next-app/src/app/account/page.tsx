@@ -1,4 +1,5 @@
 "use client";
+import { DeleteAccount } from "@/components/DeleteAccount";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, Eye, EyeOff } from "lucide-react";
@@ -111,6 +112,7 @@ export default function AccountPage() {
           Edit your community profile →
         </Link>
       </div>
+      <DeleteAccount />
     </div>
   );
 }

@@ -173,6 +173,7 @@ test(
       "insert into auth.users values($1,'alice@company.example',now()),($2,'bob@company.example',now())",
       [alice, bob],
     );
+    await db.exec("update profiles set name='Member',interests=array['Sports'],availability=array['Weekends'],goal='Meet people'");
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
       alice,
     ]);

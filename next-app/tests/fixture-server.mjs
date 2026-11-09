@@ -158,6 +158,7 @@ let careBookings = localDemo
 let guestAppointments = [];
 let notifications = [];
 let adminMode = false;
+let suspendedAccounts = new Map();
 const adminRegisteredAt = new Date().toISOString();
 const adminMembers = Array.from({ length: 24 }, (_, index) => ({
   id: `99999999-9999-4999-8999-${String(index).padStart(12, "0")}`,
@@ -265,6 +266,71 @@ const server = createServer(async (req, res) => {
   if (path === "/test/verification") {
     verification = body;
     res.end("null");
+    return;
+  }
+  if (action === "account_access") {
+    res.end(
+      JSON.stringify({
+        active: !suspendedAccounts.has(id),
+        profile_complete:
+          !!profile?.name &&
+          !!profile?.interests?.length &&
+          !!profile?.availability?.length &&
+          !!profile?.goal,
+      }),
+    );
+    return;
+  }
+  if (action === "admin_set_suspension") {
+    if (!adminMode) {
+      fail("Administrator access required", 403);
+      return;
+    }
+    if (body.p_user === id) {
+      fail("Administrator accounts cannot be suspended here");
+      return;
+    }
+    if (body.p_suspend)
+      suspendedAccounts.set(body.p_user, {
+        reason: body.p_reason,
+        suspended_at: new Date().toISOString(),
+      });
+    else suspendedAccounts.delete(body.p_user);
+    res.end("null");
+    return;
+  }
+  if (action === "delete_own_account") {
+    if (adminMode) {
+      fail("Administrator accounts require an access transfer");
+      return;
+    }
+    if (body.p_confirmation !== "DELETE MY ACCOUNT") {
+      fail("Type DELETE MY ACCOUNT to confirm");
+      return;
+    }
+    profile = null;
+    res.end("null");
+    return;
+  }
+  if (path === "/rest/v1/account_suspensions") {
+    res.end(
+      JSON.stringify(
+        suspendedAccounts.get(url.searchParams.get("user_id")?.slice(3)) ??
+          null,
+      ),
+    );
+    return;
+  }
+  if (path === "/rest/v1/group_members") {
+    res.end(
+      JSON.stringify([
+        { group_id: 1, groups: { name: "Cricket", slug: "cricket" } },
+      ]),
+    );
+    return;
+  }
+  if (path === "/rest/v1/session_members") {
+    res.end("[]");
     return;
   }
   if (path === "/test/admin") {
@@ -762,6 +828,7 @@ const server = createServer(async (req, res) => {
     guestAppointments = [];
     notifications = [];
     adminMode = false;
+    suspendedAccounts.clear();
     approvedDomains = [];
     data = null;
   } else if (path === "/test/missing-profile") {
@@ -779,6 +846,21 @@ const server = createServer(async (req, res) => {
     messages.push(m);
     data = m.id;
   } else if (path === "/rest/v1/profiles") {
+    if (
+      url.searchParams.get("select")?.includes("availability") &&
+      url.searchParams.get("select")?.includes("created_at") &&
+      url.searchParams.get("id")
+    ) {
+      res.end(
+        JSON.stringify({
+          ...defaultProfile,
+          id: url.searchParams.get("id").slice(3),
+          name: "Member 01",
+          created_at: adminRegisteredAt,
+        }),
+      );
+      return;
+    }
     if (req.method === "POST" || req.method === "PATCH")
       profile = { ...profile, ...body };
     data =
@@ -788,7 +870,14 @@ const server = createServer(async (req, res) => {
           ? [{ ...profile, id }]
           : []
         : profile;
-  } else if (path === "/rest/v1/rpc/create_group") {
+  } else if (
+    path === "/rest/v1/rpc/create_group" ||
+    path === "/rest/v1/rpc/admin_create_group"
+  ) {
+    if (action === "admin_create_group" && !adminMode) {
+      fail("Administrator access required", 403);
+      return;
+    }
     const group = {
       id: groups.length + 1,
       slug: "new-subgroup",

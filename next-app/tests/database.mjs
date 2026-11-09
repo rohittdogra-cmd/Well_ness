@@ -25,6 +25,7 @@ await db.query("insert into auth.users(id) values ($1),($2),($3)", [
 await db.query("insert into public.admins values ($1)", [admin]);
 await db.exec("insert into organisation_domains(domain,member_type) values ('company.example','corporate')");
 await db.exec("update auth.users set email=id::text || '@company.example',email_confirmed_at=now()");
+await db.exec("update profiles set name='Member',interests=array['Sports'],availability=array['Weekends'],goal='Meet people'");
 async function as(id) {
   await db.exec("reset role");
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
@@ -65,7 +66,7 @@ const post = await scalar(
 await as(bob);
 assert.equal(
   await scalar("select name as value from profiles where id=$1", [bob]),
-  "",
+  "Member",
 );
 checks++;
 await denied("select publish_post('Not a member',$1,null,false)", [gid]);

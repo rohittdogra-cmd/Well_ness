@@ -1,3 +1,6 @@
+import { AdminMemberDetails } from "@/components/AdminMemberDetails";
+import { AdminGroupManager } from "@/components/AdminGroupManager";
+import { AdminActivityLog } from "@/components/AdminActivityLog";
 import { AdminOverview } from "@/components/AdminOverview";
 import { OperationsPanel } from "@/components/OperationsPanel";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +24,6 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Activity,
   BarChart3,
   BookOpen,
   CheckCircle2,
@@ -38,39 +40,14 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ActivityLogType, ProviderType } from "../backend.types";
+import { ProviderType } from "../backend.types";
 import {
-  useAllActivityLogs,
   useAllBookings,
   useAllProviders,
   useApproveProvider,
   useRejectProvider,
 } from "../hooks/useQueries";
 import type { ProviderApplication, ProviderBooking } from "../hooks/useQueries";
-
-const ACTIVITY_LOG_LABELS: Record<ActivityLogType, string> = {
-  [ActivityLogType.sessionCreated]: "Session Created",
-  [ActivityLogType.sessionJoined]: "Session Joined",
-  [ActivityLogType.sessionLeft]: "Session Left",
-  [ActivityLogType.taskCreated]: "Task Created",
-  [ActivityLogType.taskCompleted]: "Task Completed",
-  [ActivityLogType.providerBooked]: "Provider Booked",
-};
-
-const ACTIVITY_LOG_COLORS: Record<ActivityLogType, string> = {
-  [ActivityLogType.sessionCreated]:
-    "bg-emerald-500/15 text-emerald-700 border-emerald-200",
-  [ActivityLogType.sessionJoined]:
-    "bg-blue-500/15 text-blue-700 border-blue-200",
-  [ActivityLogType.sessionLeft]:
-    "bg-orange-500/15 text-orange-700 border-orange-200",
-  [ActivityLogType.taskCreated]:
-    "bg-purple-500/15 text-purple-700 border-purple-200",
-  [ActivityLogType.taskCompleted]:
-    "bg-teal-500/15 text-teal-700 border-teal-200",
-  [ActivityLogType.providerBooked]:
-    "bg-rose-500/15 text-rose-700 border-rose-200",
-};
 
 function formatTs(ns: bigint) {
   return new Date(Number(ns / 1_000_000n)).toLocaleString();
@@ -361,106 +338,6 @@ function ProviderReviewTab() {
 }
 
 // ─── Activity Logs Tab ───────────────────────────────────────────
-function ActivityLogsTab() {
-  const { data: logs, isLoading } = useAllActivityLogs();
-  const [filter, setFilter] = useState<string>("all");
-
-  const filtered = (logs ?? [])
-    .filter((l) => (filter === "all" ? true : l.activityType === filter))
-    .sort((a, b) => Number(b.createdAt - a.createdAt));
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <p className="text-sm font-medium text-foreground">Filter by type:</p>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-52 rounded-xl" data-ocid="admin.select">
-            <SelectValue placeholder="All activities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Activities</SelectItem>
-            {Object.values(ActivityLogType).map((type) => (
-              <SelectItem key={type} value={type}>
-                {ACTIVITY_LOG_LABELS[type]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {!isLoading && (
-          <Badge variant="secondary" className="ml-auto">
-            {filtered.length} entries
-          </Badge>
-        )}
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-6 space-y-3" data-ocid="admin.loading_state">
-              {TABLE_SKELETON_KEYS.map((k) => (
-                <Skeleton key={k} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div
-              className="text-center py-12 text-muted-foreground"
-              data-ocid="admin.empty_state"
-            >
-              <Activity className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">No activity logs yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table data-ocid="admin.table">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-6">Activity</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Related ID</TableHead>
-                    <TableHead className="pr-6">Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((log, i) => (
-                    <TableRow
-                      key={log.id.toString()}
-                      data-ocid={`admin.row.${i + 1}`}
-                    >
-                      <TableCell className="pl-6">
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${ACTIVITY_LOG_COLORS[log.activityType]}`}
-                        >
-                          {ACTIVITY_LOG_LABELS[log.activityType]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs font-mono text-muted-foreground">
-                          {log.user.toString().slice(0, 12)}…
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs text-muted-foreground">
-                          #{log.relatedId.toString()}
-                        </span>
-                      </TableCell>
-                      <TableCell className="pr-6">
-                        <span className="text-xs text-muted-foreground">
-                          {formatTs(log.createdAt)}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // ─── Booking Reports Tab ─────────────────────────────────────────
 function BookingReportsTab() {
   const { data: bookings, isLoading } = useAllBookings();
@@ -797,6 +674,7 @@ function ProviderPerformanceTab() {
 // ─── Main Export ─────────────────────────────────────────────────
 export function AdminDashboardView() {
   const [tab, setTab] = useState("overview");
+  const [memberId, setMemberId] = useState<string | null>(null);
   return (
     <section className="admin-panel hub-page" data-ocid="admin.page">
       <div className="container max-w-6xl mx-auto">
@@ -836,6 +714,7 @@ export function AdminDashboardView() {
             <TabsTrigger value="overview" data-ocid="admin.tab">
               Overview
             </TabsTrigger>
+            <TabsTrigger value="groups">Manage groups</TabsTrigger>
             <TabsTrigger value="operations">Community operations</TabsTrigger>
             <TabsTrigger value="providers" data-ocid="admin.tab">
               Provider Review
@@ -851,7 +730,10 @@ export function AdminDashboardView() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="overview">
-            <AdminOverview onTab={setTab} />
+            <AdminOverview onTab={setTab} onMember={setMemberId} />
+          </TabsContent>
+          <TabsContent value="groups">
+            <AdminGroupManager />
           </TabsContent>
           <TabsContent value="operations">
             <OperationsPanel />
@@ -860,7 +742,7 @@ export function AdminDashboardView() {
             <ProviderReviewTab />
           </TabsContent>
           <TabsContent value="activity">
-            <ActivityLogsTab />
+            <AdminActivityLog onMember={setMemberId} />
           </TabsContent>
           <TabsContent value="bookings">
             <BookingReportsTab />
@@ -869,6 +751,11 @@ export function AdminDashboardView() {
             <ProviderPerformanceTab />
           </TabsContent>
         </Tabs>
+        <AdminMemberDetails
+          key={memberId}
+          id={memberId}
+          onClose={() => setMemberId(null)}
+        />
       </div>
     </section>
   );

@@ -49,6 +49,7 @@ test("corporate/student eligibility, provider approval, private guest receipts a
       [member, doctor, admin, stranger],
     );
     await db.query("insert into admins values($1)", [admin]);
+    await db.exec("update profiles set name='Member',interests=array['Sports'],availability=array['Weekends'],goal='Meet people'");
     const as = async (id) => {
       await db.exec("reset role");
       await db.query("select set_config('request.jwt.claim.sub',$1,false)", [

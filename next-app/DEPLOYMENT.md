@@ -151,3 +151,17 @@ Active participants is the distinct number of members with an activity-log entry
 The registered-member list is paginated at 20 accounts with display-name search and registration dates. Provider Review, Activity Logs, Booking Reports and Provider Performance remain available; Community operations now has its own tab for verification reviews, organisation domains, conversation reports and the contact inbox. The provider workspace retains access to legacy guest requests. Failed count requests show an error rather than zero.
 
 The top navigation also includes a directly visible Log out button on desktop and mobile, in addition to the existing account-menu and drawer options. Administrators can enter `/admin` without first completing a community profile; the role check still blocks ordinary members, including accounts with no profile name.
+
+## Member management release
+
+Apply only `202611090001_admin_member_management.sql` to the existing deployment before publishing this client release. It adds reversible suspension, protected admin group creation, mandatory member profile completion, and caller-only permanent account deletion. Never rerun the full setup bundle on production.
+
+An admin shortcut is visible in the top navigation. Member names open profile preferences, up to 100 group memberships, up to 50 created activities/current activity memberships, and the latest 50 audit records. Activity history shows display names and related activity/task titles when records still exist. Private messages and anonymous-post authorship are not included.
+
+Suspension requires a reason and typed SUSPEND confirmation; restoration requires RESTORE. Existing authenticated tokens are denied protected RPC operations and direct REST access by database checks/RLS. The UI refreshes account status every 30 seconds. Public visitor browsing remains available. Administrators cannot suspend themselves or other administrators. No live suspension is part of deployment.
+
+Regular members must provide a name (at least two characters), one interest, one availability choice and a goal. Bio remains optional. Existing incomplete profiles return to onboarding; admin management and account/security remain accessible without completing a community profile. Database participation functions enforce completion too.
+
+Account → Delete your account requires the exact phrase DELETE MY ACCOUNT. Deletion is caller-only, permanent and cascades linked member records. Administrator accounts are protected, and providers must first cancel/transfer future appointments. Deletion tests use isolated sample accounts only. No production account is deleted during release.
+
+Validation adds `node tests/admin-management.mjs` alongside the existing database, workflow, moderation, browser and production-build checks.

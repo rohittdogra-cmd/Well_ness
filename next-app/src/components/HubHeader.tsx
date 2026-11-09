@@ -221,6 +221,16 @@ export function HubHeader() {
               </Link>
             ) : (
               <>
+                {isAdmin === true && (
+                  <Link
+                    href="/admin"
+                    className="hub-admin-shortcut"
+                    aria-label="Admin panel"
+                  >
+                    <LayoutDashboard size={18} />
+                    <span>Admin</span>
+                  </Link>
+                )}
                 <Notifications />
                 <Link
                   className="hub-profile-link"

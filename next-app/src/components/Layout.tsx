@@ -30,7 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <HubHeader />
               <div className="wellness-content">
                 <main id="main-content" key={path}>
-                  {!["/verify", "/admin", "/dashboard"].includes(path) && (
+                  {!["/verify", "/admin", "/dashboard", "/onboarding"].includes(path) && (
                     <VerificationBanner />
                   )}
                   {children}

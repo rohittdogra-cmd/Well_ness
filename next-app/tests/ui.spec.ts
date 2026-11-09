@@ -87,7 +87,10 @@ test("account without a profile can complete onboarding and reload", async ({
   await expect(page).toHaveURL(/onboarding/, { timeout: 20000 });
   await page.getByLabel("Your display name").fill("New member");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Music", exact: true }).click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Weekends", exact: true }).click();
+  await page.getByRole("button", { name: /^Meet my people/ }).click();
   await page
     .getByRole("button", { name: "Save my profile", exact: true })
     .click();
@@ -1291,4 +1294,170 @@ test("administrator can open the panel before completing a community profile", a
   await expect(
     page.getByRole("heading", { name: "Platform overview", exact: true }),
   ).toHaveCount(0);
+});
+
+test("admin opens member preferences and creates a group from the panel", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: true },
+  });
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Member 01", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Sports");
+  await expect(page.getByRole("dialog")).toContainText("After work");
+  await expect(page.getByRole("dialog")).toContainText("Meet my people");
+  await expect(page.getByRole("dialog")).toContainText("Cricket");
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("tab", { name: "Manage groups", exact: true }).click();
+  await page
+    .getByLabel("Group name", { exact: true })
+    .fill("Admin reading circle");
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("A group for people who enjoy books.");
+  await page.getByRole("button", { name: "Create group", exact: true }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Group created." }),
+  ).toBeVisible();
+});
+
+test("profile interests and rhythm are required before saving", async ({
+  page,
+  context,
+  request,
+}) => {
+  await request.post("http://127.0.0.1:54330/test/missing-profile");
+  await signIn(context);
+  await page.goto("/");
+  await expect(page).toHaveURL(/onboarding/);
+  await page.getByLabel("Your display name").fill("New member");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByText("Choose at least one interest.")).toBeVisible();
+  await page.getByRole("button", { name: "Music", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Save my profile", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Choose your availability and a goal to complete your profile.",
+    ),
+  ).toBeVisible();
+});
+
+test("member self deletion requires the exact confirmation phrase", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.goto("/account");
+  const remove = page.getByRole("button", {
+    name: "Permanently delete my account",
+    exact: true,
+  });
+  await expect(remove).toBeDisabled();
+  await page
+    .getByLabel("Type DELETE MY ACCOUNT to confirm permanent deletion")
+    .fill("DELETE");
+  await expect(remove).toBeDisabled();
+  await page
+    .getByLabel("Type DELETE MY ACCOUNT to confirm permanent deletion")
+    .fill("DELETE MY ACCOUNT");
+  await expect(remove).toBeEnabled();
+});
+
+test("admin suspension and restoration require deliberate confirmation", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: true },
+  });
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Member 01", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("button", { name: "Suspend account", exact: true }),
+  ).toBeDisabled();
+  await dialog
+    .getByLabel("Reason", { exact: true })
+    .fill("Repeated community guideline violations");
+  await dialog.getByLabel("Type SUSPEND to confirm").fill("SUSPEND");
+  await dialog
+    .getByRole("button", { name: "Suspend account", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("heading", { name: "Restore account access" }),
+  ).toBeVisible();
+  await dialog.getByLabel("Type RESTORE to confirm").fill("RESTORE");
+  await dialog
+    .getByRole("button", { name: "Restore access", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("heading", { name: "Suspend account", exact: true }),
+  ).toBeVisible();
+});
+
+test("admin activity history resolves members and activity titles", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: true },
+  });
+  await page.route("**/rest/v1/activity_logs?**", async (route) => {
+    const u = new URL(route.request().url());
+    if (u.searchParams.get("select")?.includes("activity_type"))
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: 1,
+            user_id: "22222222-2222-4222-8222-222222222222",
+            activity_type: "sessionJoined",
+            related_id: 1,
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 2,
+            user_id: "22222222-2222-4222-8222-222222222222",
+            activity_type: "sessionLeft",
+            related_id: 99,
+            created_at: new Date().toISOString(),
+          },
+        ]),
+      });
+    else await route.continue();
+  });
+  await page.route("**/rest/v1/profiles?**", async (route) => {
+    const u = new URL(route.request().url());
+    if (u.searchParams.get("id")?.startsWith("in."))
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify([
+          { id: "22222222-2222-4222-8222-222222222222", name: "Shantanu" },
+        ]),
+      });
+    else await route.continue();
+  });
+  await page.goto("/admin");
+  await page.getByRole("tab", { name: "Activity Logs", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Shantanu", exact: true }),
+  ).toHaveCount(2);
+  await expect(
+    page.getByRole("link", { name: "A little lunchtime reset ↗", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Deleted activity #99", { exact: true }),
+  ).toBeVisible();
 });

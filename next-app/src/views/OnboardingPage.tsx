@@ -79,6 +79,14 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
       setError("Choose a name with at least 2 characters.");
       return;
     }
+    if (step === 1 && !profile.interests.length) {
+      setError("Choose at least one interest.");
+      return;
+    }
+    if (step === 2 && (!profile.availability.length || !profile.goal.trim())) {
+      setError("Choose your availability and a goal to complete your profile.");
+      return;
+    }
     if (step < 2) {
       setStep(step + 1);
       return;
@@ -244,7 +252,7 @@ function ProfileBuilder({ existing }: { existing: LocalProfile | null }) {
                         ))}
                       </div>
                       <p className="form-hint">
-                        These are optional. You can always change them later.
+                        Choose at least one interest. You can change it later.
                       </p>
                     </>
                   )}

@@ -15,7 +15,13 @@ import {
 import { getSupabase } from "@/lib/supabase/client";
 import { loadAdminMembers, loadAdminMetrics } from "@/lib/adminMetrics";
 
-export function AdminOverview({ onTab }: { onTab: (tab: string) => void }) {
+export function AdminOverview({
+  onTab,
+  onMember,
+}: {
+  onTab: (tab: string) => void;
+  onMember: (id: string) => void;
+}) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [searchInput, setSearchInput] = useState("");
@@ -245,9 +251,12 @@ export function AdminOverview({ onTab }: { onTab: (tab: string) => void }) {
                   {members.data.rows.map((member) => (
                     <tr key={member.id}>
                       <td>
-                        <strong>
+                        <button
+                          className="admin-member-link"
+                          onClick={() => onMember(member.id)}
+                        >
                           {member.name || "Profile not completed"}
-                        </strong>
+                        </button>
                       </td>
                       <td>
                         <code title={member.id}>{member.id.slice(0, 8)}…</code>
