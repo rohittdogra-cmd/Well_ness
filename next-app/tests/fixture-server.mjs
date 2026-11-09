@@ -158,6 +158,17 @@ let careBookings = localDemo
 let guestAppointments = [];
 let notifications = [];
 let adminMode = false;
+const adminRegisteredAt = new Date().toISOString();
+const adminMembers = Array.from({ length: 24 }, (_, index) => ({
+  id: `99999999-9999-4999-8999-${String(index).padStart(12, "0")}`,
+  name: `Member ${String(index + 1).padStart(2, "0")}`,
+  created_at: index < 3 ? adminRegisteredAt : "2025-01-01T00:00:00Z",
+}));
+const adminLogs = Array.from({ length: 502 }, (_, index) => ({
+  id: index + 1,
+  user_id: index < 500 ? id : member.id,
+  created_at: adminRegisteredAt,
+}));
 let approvedDomains = localDemo
   ? [
       { domain: "company.example", member_type: "corporate" },
@@ -177,6 +188,7 @@ function bookingRow(b) {
 const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range");
   res.setHeader(
     "Access-Control-Allow-Methods",
     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
@@ -196,6 +208,60 @@ const server = createServer(async (req, res) => {
     res.statusCode = status;
     res.end(JSON.stringify({ message }));
   };
+  // Dashboard fixtures exercise exact counts and pagination without live data.
+  if (
+    req.method === "HEAD" ||
+    (adminMode &&
+      path === "/rest/v1/profiles" &&
+      url.searchParams.get("select") === "id,name,created_at") ||
+    (adminMode &&
+      path === "/rest/v1/activity_logs" &&
+      url.searchParams.get("select") === "user_id")
+  ) {
+    if (!adminMode) {
+      fail("Administrator access required", 403);
+      return;
+    }
+    const table = path.split("/").pop();
+    let rows =
+      {
+        profiles: adminMembers,
+        activity_logs: adminLogs,
+        groups,
+        sessions: [
+          { id: 1, date_time: new Date(Date.now() + 86400000).toISOString() },
+        ],
+        verification_requests: [{ id: 1, status: "pending" }],
+        providers: careProviders,
+        provider_bookings: careBookings,
+        reports: [],
+        contact_requests: [],
+      }[table] ?? [];
+    for (const [key, filter] of url.searchParams) {
+      if (filter.startsWith("gte."))
+        rows = rows.filter((row) => row[key] >= filter.slice(4));
+      if (filter.startsWith("lte."))
+        rows = rows.filter((row) => row[key] <= filter.slice(4));
+      if (filter.startsWith("eq."))
+        rows = rows.filter((row) => String(row[key]) === filter.slice(3));
+      if (filter.startsWith("ilike."))
+        rows = rows.filter((row) =>
+          String(row[key])
+            .toLowerCase()
+            .includes(filter.slice(7, -1).toLowerCase()),
+        );
+    }
+    const total = rows.length;
+    const offset = Number(url.searchParams.get("offset") || 0);
+    const limit = Number(url.searchParams.get("limit") || 500);
+    rows = rows.slice(offset, offset + limit);
+    res.setHeader(
+      "Content-Range",
+      `${offset}-${offset + rows.length - 1}/${total}`,
+    );
+    res.end(req.method === "HEAD" ? undefined : JSON.stringify(rows));
+    return;
+  }
   if (path === "/test/verification") {
     verification = body;
     res.end("null");

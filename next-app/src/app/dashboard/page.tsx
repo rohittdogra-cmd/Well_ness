@@ -1,5 +1,4 @@
-"use client";
-import { DashboardPage } from "../../views/DashboardPage";
+import { redirect } from "next/navigation";
 export default function Page() {
-  return <DashboardPage />;
+  redirect("/admin");
 }

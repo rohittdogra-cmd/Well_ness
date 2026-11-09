@@ -40,6 +40,7 @@ import { Notifications } from "./Notifications";
 import { Mascot } from "./Mascot";
 import { useLocalProfile } from "@/hooks/useLocalProfile";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useIsAdmin } from "@/hooks/useQueries";
 import { toast } from "sonner";
 
 const mainLinks = [
@@ -64,7 +65,6 @@ const accountLinks = [
   { label: "Verification", href: "/verify", icon: ShieldCheck },
   { label: "Account & security", href: "/account", icon: Settings },
   { label: "Provider workspace", href: "/provider", icon: Stethoscope },
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 ];
 const mobileLinks = [
   mainLinks[0],
@@ -77,6 +77,14 @@ export function HubHeader() {
   const path = usePathname();
   const profile = useLocalProfile();
   const { clear, user } = useInternetIdentity();
+  const { data: isAdmin } = useIsAdmin();
+  const visibleAccountLinks =
+    isAdmin === true && user
+      ? [
+          ...accountLinks,
+          { label: "Admin panel", href: "/admin", icon: LayoutDashboard },
+        ]
+      : accountLinks;
   const [menu, setMenu] = useState(false);
   const [busy, setBusy] = useState(false);
   const active = (href: string) =>
@@ -142,7 +150,7 @@ export function HubHeader() {
                 <>
                   <div className="drawer-section-label">YOUR ACCOUNT</div>
                   <nav aria-label="Account navigation">
-                    {accountLinks.map((item) => (
+                    {visibleAccountLinks.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
@@ -236,7 +244,7 @@ export function HubHeader() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="hub-account-menu">
-                    {accountLinks.map((item) => (
+                    {visibleAccountLinks.map((item) => (
                       <DropdownMenuItem key={item.href} asChild>
                         <Link href={item.href}>
                           <item.icon size={17} />

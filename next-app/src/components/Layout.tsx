@@ -30,7 +30,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <HubHeader />
               <div className="wellness-content">
                 <main id="main-content" key={path}>
-                  {path !== "/verify" && <VerificationBanner />}
+                  {!["/verify", "/admin", "/dashboard"].includes(path) && (
+                    <VerificationBanner />
+                  )}
                   {children}
                 </main>
                 <footer className="wellness-footer">
@@ -39,7 +41,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <Link href="/psychologists">Find care</Link>
                     <Link href="/contact">Contact</Link>
                     <Link href="/provider">For providers</Link>
-                    <Link href="/dashboard">Dashboard</Link>
                   </div>
                 </footer>
               </div>

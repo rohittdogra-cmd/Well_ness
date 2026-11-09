@@ -105,7 +105,7 @@ export function Navbar() {
                       <DropdownMenuItem key={type} asChild>
                         <Link
                           href={`/programs/${type}`}
-                         
+
                           className="flex items-center gap-2"
                         >
                           <span className="text-base">{cfg.emoji}</span>
@@ -260,20 +260,24 @@ export function Navbar() {
                         My Profile
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        href="/dashboard"
-                        className="flex items-center gap-2"
-                        data-ocid="nav.dashboard_link"
-                      >
-                        {isAdmin ? (
-                          <Shield className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Gauge className="w-4 h-4" />
-                        )}
-                        {isAdmin ? "Admin Dashboard" : "Dashboard"}
-                      </Link>
-                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-2"
+                            data-ocid="nav.dashboard_link"
+                          >
+                            {isAdmin ? (
+                              <Shield className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <Gauge className="w-4 h-4" />
+                            )}
+                            Admin panel
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link
                         href="/my-sessions"
@@ -358,7 +362,7 @@ export function Navbar() {
                     <Link
                       key={type}
                       href={`/programs/${type}`}
-                     
+
                       data-ocid="nav.programs_link"
                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                       onClick={() => setMobileOpen(false)}
@@ -450,24 +454,28 @@ export function Navbar() {
                       <User className="w-4 h-4 text-primary" />
                       My Profile
                     </Link>
-                    <Link
-                      href="/dashboard"
-                      data-ocid="nav.dashboard_link"
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {isAdmin ? (
-                        <Shield className="w-4 h-4 text-emerald-600" />
-                      ) : (
-                        <Gauge className="w-4 h-4" />
-                      )}
-                      {isAdmin ? "Admin Dashboard" : "Dashboard"}
-                      {isAdmin && (
-                        <Badge className="bg-emerald-500 text-white text-[10px] px-1.5 py-0 h-4 ml-auto">
-                          Admin
-                        </Badge>
-                      )}
-                    </Link>
+                    {isAdmin && (
+                      <>
+                        <Link
+                          href="/admin"
+                          data-ocid="nav.dashboard_link"
+                          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          {isAdmin ? (
+                            <Shield className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Gauge className="w-4 h-4" />
+                          )}
+                          Admin panel
+                          {isAdmin && (
+                            <Badge className="bg-emerald-500 text-white text-[10px] px-1.5 py-0 h-4 ml-auto">
+                              Admin
+                            </Badge>
+                          )}
+                        </Link>
+                      </>
+                    )}
                     <Link
                       href="/my-sessions"
                       data-ocid="nav.my_sessions_link"

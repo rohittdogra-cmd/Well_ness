@@ -1099,3 +1099,124 @@ test("animated interests keep mobile navigation and reduced-motion preferences",
     .not.toBe("none");
   await noOverflow(page);
 });
+
+test("admin panel counts registrations and distinct participants across pages", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: true },
+  });
+  await page.goto("/admin");
+  await expect(
+    page.getByRole("heading", { name: "Admin panel", exact: true }),
+  ).toBeVisible();
+  const metric = (name: string) =>
+    page
+      .locator(".admin-metric")
+      .filter({ hasText: name })
+      .locator(":scope > strong");
+  await expect(metric("Registered accounts")).toHaveText("24");
+  await expect(metric("New registrations")).toHaveText("3");
+  await expect(metric("Active participants")).toHaveText("2");
+  await expect(metric("Scheduled activities")).toHaveText("1");
+  await expect(
+    page.getByText("24 registered accounts", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Member 01", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Member 24", exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("Search members by display name").fill("Member 03");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByText("1 matching accounts")).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Member 03", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Member verification" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Community operations", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "Overview", exact: true }).click();
+  await expect(metric("Registered accounts")).toHaveText("24");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await noOverflow(page);
+  await page.setViewportSize({ width: 320, height: 740 });
+  await noOverflow(page);
+});
+
+test("members have no dashboard link and cannot load admin data", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  const adminRequests: string[] = [];
+  page.on("request", (req) => {
+    if (
+      req.url().includes("/rest/v1/") &&
+      (req.method() === "HEAD" ||
+        req.url().includes("select=id%2Cname%2Ccreated_at"))
+    )
+      adminRequests.push(req.url());
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: /Dashboard|Admin panel/ }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(
+    page.getByRole("heading", { name: "Administrator access required" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Platform overview" }),
+  ).toHaveCount(0);
+  expect(adminRequests).toEqual([]);
+});
+
+test("admin count errors do not appear as zero registrations", async ({
+  page,
+  context,
+  request,
+}) => {
+  await signIn(context);
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: true },
+  });
+  await page.route("**/rest/v1/profiles?**", async (route) => {
+    if (route.request().method() === "HEAD")
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Counts unavailable" }),
+      });
+    else await route.continue();
+  });
+  await page.goto("/admin");
+  await expect(page.locator(".admin-error")).toContainText(
+    "Couldn’t refresh platform counts.",
+    { timeout: 20000 },
+  );
+  await expect(
+    page
+      .locator(".admin-metric")
+      .filter({ hasText: "Registered accounts" })
+      .locator(":scope > strong"),
+  ).toHaveText("—");
+  await page.unroute("**/rest/v1/profiles?**");
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(
+    page
+      .locator(".admin-metric")
+      .filter({ hasText: "Registered accounts" })
+      .locator(":scope > strong"),
+  ).toHaveText("24");
+});

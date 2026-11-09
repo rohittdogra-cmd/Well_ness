@@ -139,3 +139,13 @@ Apply `202611060001_public_group_catalog.sql` if missing, then `202611060002_pub
 The redesigned care directory uses approved live providers only. Three clearly labelled sample professional cards exist solely in the isolated local demo API; none are added to production. No real doctor has been added or approved by this UI change.
 
 Local validation: 37 browser tests, 69 database checks, migration-upgrade workflow checks, authentication and moderation suites, TypeScript checking and the production build passed. This local review has not applied the new public-browsing migrations to the production database.
+
+## Administrator monitoring
+
+The platform admin panel is `/admin`. Old `/dashboard` links redirect there. Regular members have no dashboard link or personal dashboard; they use their profile and calendar. The Admin panel link appears in the account menu and mobile account navigation only after `is_admin()` returns true. Both the page and its data loaders check administrator access; existing database RLS stays in force. No new privileges or migration are required.
+
+The overview shows exact counts for current registered accounts (including unconfirmed accounts), accounts created in the last seven days, future scheduled activities, all activities, groups, approved providers, pending member/provider reviews, future pending member care requests, unresolved reports and all contact messages. Registration dates come from the automatically created profile record. Deleted accounts are excluded. Counts refresh once a minute while the overview is open, on window focus, and through Refresh.
+
+Active participants is the distinct number of members with an activity-log entry in the rolling last seven days. Existing logs cover activity creation/join/leave, task actions and member care bookings. It excludes sign-ins, browsing, chat and current online presence. All result pages are read to avoid the API row limit silently reducing this count. Activity end times are not stored, so the interface uses Scheduled activities rather than claiming to count currently running activities.
+
+The registered-member list is paginated at 20 accounts with display-name search and registration dates. Provider Review, Activity Logs, Booking Reports and Provider Performance remain available; Community operations now has its own tab for verification reviews, organisation domains, conversation reports and the contact inbox. The provider workspace retains access to legacy guest requests. Failed count requests show an error rather than zero.

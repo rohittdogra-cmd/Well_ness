@@ -55,7 +55,7 @@ export function OperationsPanel() {
     }
   }
   return (
-    <section className="hub-page">
+    <section className="admin-operations">
       <h2 className="text-2xl mb-6">Community operations</h2>
       <VerificationReviews />
       <OrganisationDomains />
