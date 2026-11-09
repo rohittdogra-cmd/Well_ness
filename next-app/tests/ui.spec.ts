@@ -1220,3 +1220,75 @@ test("admin count errors do not appear as zero registrations", async ({
       .locator(":scope > strong"),
   ).toHaveText("24");
 });
+
+test("visible logout works on desktop and small mobile screens", async ({
+  page,
+  context,
+}) => {
+  for (const width of [1280, 390, 320]) {
+    await signIn(context);
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/profile");
+    const logout = page.getByRole("button", { name: "Log out", exact: true });
+    await expect(logout).toBeVisible();
+    await noOverflow(page);
+    await logout.click();
+    await expect(page).toHaveURL(/\/signin/);
+    await expect(
+      page.getByLabel("Email address", { exact: true }),
+    ).toBeVisible();
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/signin\?next=%2Fadmin/);
+    await expect(logout).toHaveCount(0);
+  }
+});
+
+test("logout clears local access when remote revocation is unavailable", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.goto("/profile");
+  await page.route("**/auth/v1/logout**", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Service unavailable" }),
+    }),
+  );
+  await page.getByRole("button", { name: "Log out", exact: true }).click();
+  await expect(page).toHaveURL(/\/signin/);
+  await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
+  await page.goto("/admin");
+  await expect(page).toHaveURL(/\/signin\?next=%2Fadmin/);
+  await expect(
+    page.getByRole("button", { name: "Log out", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("administrator can open the panel before completing a community profile", async ({
+  page,
+  context,
+  request,
+}) => {
+  await request.post("http://127.0.0.1:54330/test/missing-profile");
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: true },
+  });
+  await signIn(context);
+  await page.goto("/admin");
+  await expect(
+    page.getByRole("heading", { name: "Admin panel", exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/admin$/);
+  await request.post("http://127.0.0.1:54330/test/admin", {
+    data: { enabled: false },
+  });
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Administrator access required" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Platform overview", exact: true }),
+  ).toHaveCount(0);
+});

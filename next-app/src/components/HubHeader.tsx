@@ -259,6 +259,16 @@ export function HubHeader() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <button
+                  type="button"
+                  className="hub-logout-button"
+                  onClick={signOut}
+                  disabled={busy}
+                  aria-label={busy ? "Logging out…" : "Log out"}
+                >
+                  <LogOut size={17} />
+                  <span>{busy ? "Logging out…" : "Log out"}</span>
+                </button>
               </>
             )}
           </div>

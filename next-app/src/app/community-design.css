@@ -6792,3 +6792,11 @@
 .admin-error { padding:18px; background:#fff0eb; border:1px solid #e5c4b8; border-radius:14px; margin:16px 0; font-size:14px; }.admin-error button { text-decoration:underline; margin-top:8px; }.admin-empty { padding:30px 0; text-align:center; color:#5c705f; }.admin-access-notice { max-width:700px; padding-top:70px; }.admin-access-notice h1 { font-size:30px; margin:20px 0; }.admin-access-notice p { margin-bottom:18px; }
 @media(max-width:1000px) { .admin-metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) { .admin-panel { padding-top:24px; }.admin-panel > div > div:first-child > div { padding:20px; }.admin-panel h1 { font-size:26px; }.admin-panel [role="tab"] { font-size:12px; padding:8px 10px; }.admin-metric { padding:17px; }.admin-metric > strong { font-size:38px; }.admin-metric > div { flex-direction:column-reverse; }.admin-summary-grid { grid-template-columns:1fr; }.admin-section-heading { align-items:flex-start; }.admin-summary-card,.admin-members-card { padding:20px 16px; }.admin-member-table th,.admin-member-table td { padding:12px 8px; }.admin-member-search { gap:6px; }.admin-member-search button { padding:8px; } }
+
+/* Keep account switching visible without opening a menu. */
+.hub-logout-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:42px; flex-shrink:0; padding:9px 12px; border:1px solid #d4ded5; border-radius:12px; color:#345742; background:#f6f8f2; font-size:12px; font-weight:600; }
+.hub-logout-button:hover { background:#e7eee0; border-color:#9bb29a; }
+.hub-logout-button:focus-visible { outline:2px solid #477954; outline-offset:3px; }
+.hub-logout-button:disabled { opacity:.6; cursor:wait; }
+@media(max-width:767px) { .hub-account-actions .hub-profile-link { display:none; }.hub-logout-button { padding:8px; gap:5px; font-size:11px; }.hub-logout-button svg { width:15px; } }
+@media(max-width:380px) { .hub-brand > span { display:none; } }

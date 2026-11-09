@@ -29,7 +29,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const needsProfile =
     !!user &&
     !profile.data?.name.trim() &&
-    !["/onboarding", "/account"].includes(path);
+    !["/onboarding", "/account", "/admin", "/dashboard"].includes(path);
   useEffect(() => {
     if (localAccess && path === "/signin") {
       router.replace("/");
