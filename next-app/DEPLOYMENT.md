@@ -277,3 +277,13 @@ rejected. The authenticated Vercel connector accepted a direct source deployment
 (`dpl_Dan4bru74wHhB65Lcu5ExEc3Wjdb`) to the existing production project. Synchronize
 this branch to GitHub before the next Git-based production release, to prevent
 an older repository revision from replacing the directly deployed changes.
+
+
+The direct production deployment reached `READY` with no alias error on
+10 November 2026. `stress-unwind.com`, `www.stress-unwind.com` and
+`well-ness-pink.vercel.app` are attached to it. HTTPS checks confirmed the
+updated `/signin` and `/admin` JavaScript bundles on the custom domain.
+The signed-out browser correctly redirects `/admin` to sign-in; an authenticated
+administrator UI session was not available for a live end-to-end dashboard check.
+Local browser tests and production SQL role checks cover that remaining gap.
+Inbox placement and access from an affected office Wi-Fi remain unverified.
