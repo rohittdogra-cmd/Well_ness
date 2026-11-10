@@ -1,3 +1,4 @@
+import type { RegisteredMember } from "./adminMetrics";
 import { getSupabase } from "./supabase/client";
 async function data<T>(
   request: PromiseLike<{ data: unknown; error: { message: string } | null }>,
@@ -37,7 +38,7 @@ export async function requireAdmin() {
 export async function memberDetails(id: string) {
   await requireAdmin();
   const db = getSupabase();
-  const [profile, groups, created, joined, logs, suspension] =
+  const [profile, groups, created, joined, logs, suspension, contact] =
     await Promise.all([
       data<MemberProfile>(
         db
@@ -84,8 +85,19 @@ export async function memberDetails(id: string) {
           .eq("user_id", id)
           .maybeSingle(),
       ),
+      data<{ rows: RegisteredMember[]; total: number }>(
+        db.rpc("admin_registered_members", { p_user: id, p_limit: 1 }),
+      ),
     ]);
-  return { profile, groups, created, joined, logs, suspension };
+  return {
+    profile,
+    groups,
+    created,
+    joined,
+    logs,
+    suspension,
+    contact: contact.rows[0],
+  };
 }
 export const activityLabels: Record<string, string> = {
   sessionCreated: "Activity created",

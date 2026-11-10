@@ -162,7 +162,10 @@ let suspendedAccounts = new Map();
 const adminRegisteredAt = new Date().toISOString();
 const adminMembers = Array.from({ length: 24 }, (_, index) => ({
   id: `99999999-9999-4999-8999-${String(index).padStart(12, "0")}`,
-  name: `Member ${String(index + 1).padStart(2, "0")}`,
+  name: index === 23 ? "" : `Member ${String(index + 1).padStart(2, "0")}`,
+  email: `member${String(index + 1).padStart(2, "0")}@example.test`,
+  email_confirmed_at: index === 23 ? null : adminRegisteredAt,
+  profile_complete: index !== 23,
   created_at: index < 3 ? adminRegisteredAt : "2025-01-01T00:00:00Z",
 }));
 const adminLogs = Array.from({ length: 502 }, (_, index) => ({
@@ -747,6 +750,33 @@ const server = createServer(async (req, res) => {
   }
   if (action === "is_admin") {
     res.end(JSON.stringify(adminMode));
+    return;
+  }
+  if (action === "admin_registered_members") {
+    if (!adminMode) {
+      fail("Administrator access required", 403);
+      return;
+    }
+    const search = String(body.p_search ?? "")
+      .trim()
+      .toLowerCase();
+    const rows = adminMembers.filter(
+      (m) =>
+        (!body.p_user || m.id === body.p_user) &&
+        (!body.p_incomplete_only || !m.profile_complete) &&
+        (!search ||
+          m.name.toLowerCase().includes(search) ||
+          m.email.includes(search)),
+    );
+    res.end(
+      JSON.stringify({
+        rows: rows.slice(
+          body.p_offset ?? 0,
+          (body.p_offset ?? 0) + (body.p_limit ?? 20),
+        ),
+        total: rows.length,
+      }),
+    );
     return;
   }
   let data = [];

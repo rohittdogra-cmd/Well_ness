@@ -79,6 +79,20 @@ export function AdminMemberDetails({
               <dl>
                 <dt>Account</dt>
                 <dd>{d.profile.id}</dd>
+                <dt>Email</dt>
+                <dd>
+                  {d.contact?.email ? (
+                    <a href={`mailto:${d.contact.email}`}>{d.contact.email}</a>
+                  ) : (
+                    "No email on account"
+                  )}
+                </dd>
+                <dt>Email status</dt>
+                <dd>
+                  {d.contact?.email_confirmed_at
+                    ? "Confirmed"
+                    : "Awaiting confirmation"}
+                </dd>
                 <dt>Registered</dt>
                 <dd>{new Date(d.profile.created_at).toLocaleDateString()}</dd>
                 <dt>Profile</dt>

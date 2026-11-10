@@ -52,6 +52,8 @@ For a **new, empty, dedicated project**, apply `supabase_setup.sql` once. It con
 8. `202611050001_member_provider_workflows.sql`
 9. `202611060001_public_group_catalog.sql`
 10. `202611060002_public_browsing_and_account_care.sql`
+11. `202611090001_admin_member_management.sql`
+12. `202611100001_admin_registration_contacts.sql`
 
 For an existing installation, apply only missing migrations. Never rerun the fresh-install bundle or apply it to an unrelated shared database. This deployment uses one private community per project, without company-level tenant isolation.
 
@@ -165,3 +167,105 @@ Regular members must provide a name (at least two characters), one interest, one
 Account → Delete your account requires the exact phrase DELETE MY ACCOUNT. Deletion is caller-only, permanent and cascades linked member records. Administrator accounts are protected, and providers must first cancel/transfer future appointments. Deletion tests use isolated sample accounts only. No production account is deleted during release.
 
 Validation adds `node tests/admin-management.mjs` alongside the existing database, workflow, moderation, browser and production-build checks.
+
+
+## Registration contacts, email delivery and office networks (10 November 2026)
+
+Apply only `202611100001_admin_registration_contacts.sql` after the preceding
+member-management migration, before deploying this frontend. Do not rerun the
+fresh-install bundle. This additive migration provides an administrator-only RPC
+that joins Auth accounts to optional profiles. Existing and future registrations
+appear with their current account email, email confirmation status and profile
+completion status, even before onboarding or email confirmation. Search matches
+literal name/email substrings; the incomplete-profile filter resets pagination.
+The member details dialog also shows account email. Addresses remain outside
+public profile projections. No service-role key is required in the client, and
+this change does not send outreach email. Test with `npm run test:contacts`.
+
+### OTP delivery: evidence and remaining configuration
+
+Read-only checks on 10 November 2026 found:
+
+- `stress-unwind.com` SPF: `v=spf1 include:secureserver.net -all`.
+- `_dmarc.stress-unwind.com`: `v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;`.
+- The DNS authority is GoDaddy (`ns75.domaincontrol.com`, `ns76.domaincontrol.com`).
+- A subsequent authenticated Chrome inspection confirmed custom SMTP enabled,
+  host `smtp.gmail.com`, port `465`, and sender display name `Wellness`.
+  Supabase explicitly warns that this provider is designed for personal rather
+  than transactional messages and that deliverability may be impacted.
+- The live Site URL is `https://stress-unwind.com`; eight exact callback URLs
+  cover the custom domain, www, production Vercel URL and branch preview,
+  including their account-recovery query variants. The live OTP template
+  contains the one-time code and the existing `/auth/confirm` link.
+- A later authorized update retained the existing Gmail SMTP account and changed
+  the sender display name to `Stress Unwind`. The sign-in and signup subjects
+  now identify Stress Unwind, and the templates put the OTP before the optional
+  scanner-resistant confirmation link. Both saves were confirmed in Supabase.
+  This is a recognition/usability improvement, not proof of improved placement.
+- Sender SMTP credentials, DNS, confirmation requirements and rate limits were
+  preserved. A transactional provider and verified-domain SMTP configuration
+  remain an optional later delivery upgrade, not a prerequisite to using the
+  existing sender.
+
+These records do not establish the sender address, actual SMTP provider, DKIM
+selector/signature, Return-Path alignment or the cause of a particular spam
+classification. Do not add a guessed SPF include, create a second SPF record,
+change DMARC to bypass failures, or replace DNS with Vercel DNS: GoDaddy is the
+authoritative DNS provider and existing mail must keep working.
+
+To finish delivery configuration, inspect Supabase Authentication email/SMTP
+settings and the sending service's domain verification page. Use a dedicated
+transactional sender on a domain the owner controls. Publish the provider's exact
+DKIM and SPF/return-path records in authoritative DNS and verify them with that
+provider. Preserve other legitimate senders in a single SPF record. Keep DKIM or
+SPF aligned with the visible From domain for DMARC. Disable link/open tracking on
+authentication emails, as described in Supabase's SMTP guide. Use the existing
+scanner-resistant confirmation flow and OTP alternative.
+
+Validate with an owner-controlled Gmail address and an affected corporate
+address. In Gmail's Show original, check SPF, DKIM and DMARC results and sender
+alignment; never paste the OTP or sign-in link into tickets. Confirm an actual
+sign-in with the latest code, check provider delivery/bounce logs, and record
+Inbox/Spam placement. Gmail decides placement and its Primary/Promotions tabs;
+no template or authentication setting can guarantee Primary placement.
+
+References: [Supabase custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp),
+[Gmail sender guidelines](https://support.google.com/mail/answer/81126?hl=en).
+
+### Office Wi-Fi: diagnose the specific block
+
+The production apex returned HTTPS 200 with HSTS, and Vercel's domain check
+reported `misconfigured: false` with no conflicting records. This validates the
+site from the checking network only. It does not demonstrate reachability from
+an affected office or establish a firewall category.
+
+Obtain the exact blocked URL, error text, security vendor/category and time from
+one affected office. Compare the same URL using mobile data. If the home page
+loads but sign-in/data fail, inspect whether the office blocks the Supabase host
+`lxtsiwgepjrglxdvhvpm.supabase.co`, which the browser currently contacts directly.
+An application change cannot override an employer's network policy.
+
+Have the office IT team review HTTPS access to `stress-unwind.com`,
+`www.stress-unwind.com` and the exact Supabase hostname above; do not ask them to
+allow all Vercel/Supabase domains or disable TLS inspection globally. If their
+security service misclassifies the site, use that vendor's category-review
+process and recheck from the affected Wi-Fi after its policy/cache updates.
+Palo Alto does not accept category-change requests for some automatic categories,
+including newly registered domains and risk categories; office IT must decide
+whether a scoped exception is appropriate. No request or allowlist change has
+been submitted as part of these read-only checks.
+
+References: [Fortinet URL rating review](https://docs.fortinet.com/document/fortigate/7.0.13/administration-guide/104823/online-security-tools),
+[Palo Alto URL category review](https://docs.paloaltonetworks.com/advanced-url-filtering/administration/monitoring/request-to-change-the-category-for-a-url).
+
+
+### Release status for the existing-resource improvements
+
+The sign-in UI now explains how to find the sender, mark a legitimate email as
+not spam, use the code when an email link is blocked, and use existing password
+sign-in. This cannot restore access when the office blocks the site itself.
+The administrator contacts migration was checked against production: its earlier
+profile-completion and suspension functions exist, and the new contacts RPC was
+not yet installed. It is staged in the SQL editor pending explicit confirmation
+of administrator access to account email addresses. Do not deploy this dashboard
+client to production until that migration is applied.

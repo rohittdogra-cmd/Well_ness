@@ -1134,9 +1134,21 @@ test("admin panel counts registrations and distinct participants across pages", 
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Member 24", exact: true }),
+    page.getByRole("cell", { name: "Profile not completed", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Search members by display name").fill("Member 03");
+  await expect(
+    page.getByRole("link", { name: "member24@example.test", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Awaiting confirmation", exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("Incomplete profiles only").check();
+  await expect(page.getByText("1 matching accounts")).toBeVisible();
+  await expect(page.getByText("Page 1 of 1")).toBeVisible();
+  await page.getByLabel("Incomplete profiles only").uncheck();
+  await page
+    .getByLabel("Search members by name or email")
+    .fill("member03@example.test");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByText("1 matching accounts")).toBeVisible();
   await expect(
@@ -1164,7 +1176,8 @@ test("members have no dashboard link and cannot load admin data", async ({
     if (
       req.url().includes("/rest/v1/") &&
       (req.method() === "HEAD" ||
-        req.url().includes("select=id%2Cname%2Ccreated_at"))
+        req.url().includes("select=id%2Cname%2Ccreated_at") ||
+        req.url().includes("/rpc/admin_registered_members"))
     )
       adminRequests.push(req.url());
   });

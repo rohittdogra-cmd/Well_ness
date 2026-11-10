@@ -24,6 +24,7 @@ export function AdminOverview({
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const [incompleteOnly, setIncompleteOnly] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const metrics = useQuery({
     queryKey: ["admin-metrics"],
@@ -32,8 +33,11 @@ export function AdminOverview({
     refetchOnWindowFocus: true,
   });
   const members = useQuery({
-    queryKey: ["admin-members", page, search],
-    queryFn: () => loadAdminMembers(getSupabase(), page, search),
+    queryKey: ["admin-members", page, search, incompleteOnly],
+    queryFn: () =>
+      loadAdminMembers(getSupabase(), page, search, incompleteOnly),
+    refetchInterval: 60000,
+    refetchOnWindowFocus: true,
   });
   const data = metrics.data;
   const refresh = () => {
@@ -190,7 +194,7 @@ export function AdminOverview({
             <h3>Registered members</h3>
             <p>
               Newest accounts first. An account can exist before its profile is
-              completed.
+              completed. Email addresses are visible only to administrators.
             </p>
           </div>
           <ShieldCheck size={22} aria-label="Administrator only" />
@@ -205,13 +209,13 @@ export function AdminOverview({
         >
           <label htmlFor="admin-member-search">
             <Search size={17} />
-            <span className="sr-only">Search members by display name</span>
+            <span className="sr-only">Search members by name or email</span>
           </label>
           <input
             id="admin-member-search"
-            placeholder="Search by display name"
+            placeholder="Search by name or email"
             value={searchInput}
-            maxLength={50}
+            maxLength={320}
             onChange={(event) => setSearchInput(event.target.value)}
           />
           <button type="submit">Search</button>
@@ -228,6 +232,17 @@ export function AdminOverview({
             </button>
           )}
         </form>
+        <label className="admin-definition">
+          <input
+            type="checkbox"
+            checked={incompleteOnly}
+            onChange={(event) => {
+              setIncompleteOnly(event.target.checked);
+              setPage(0);
+            }}
+          />{" "}
+          Incomplete profiles only
+        </label>
         {members.error ? (
           <p role="alert">Couldn’t load members: {members.error.message}</p>
         ) : members.isPending ? (
@@ -236,13 +251,18 @@ export function AdminOverview({
           <>
             <p className="admin-member-total">
               {members.data.total.toLocaleString()}{" "}
-              {search ? "matching accounts" : "registered accounts"}
+              {search || incompleteOnly
+                ? "matching accounts"
+                : "registered accounts"}
             </p>
             <div className="admin-member-table-wrap">
               <table className="admin-member-table">
                 <thead>
                   <tr>
                     <th>Member</th>
+                    <th>Email</th>
+                    <th>Email status</th>
+                    <th>Profile</th>
                     <th>Account reference</th>
                     <th>Registered</th>
                   </tr>
@@ -257,6 +277,21 @@ export function AdminOverview({
                         >
                           {member.name || "Profile not completed"}
                         </button>
+                      </td>
+                      <td>
+                        {member.email ? (
+                          <a href={`mailto:${member.email}`}>{member.email}</a>
+                        ) : (
+                          "No email on account"
+                        )}
+                      </td>
+                      <td>
+                        {member.email_confirmed_at
+                          ? "Confirmed"
+                          : "Awaiting confirmation"}
+                      </td>
+                      <td>
+                        {member.profile_complete ? "Complete" : "Incomplete"}
                       </td>
                       <td>
                         <code title={member.id}>{member.id.slice(0, 8)}…</code>
@@ -275,8 +310,8 @@ export function AdminOverview({
             </div>
             {!members.data.rows.length && (
               <p className="admin-empty">
-                {search
-                  ? "No members match this name."
+                {search || incompleteOnly
+                  ? "No accounts match these filters."
                   : "No registered accounts yet."}
               </p>
             )}

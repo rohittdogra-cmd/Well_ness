@@ -134,31 +134,33 @@ export async function loadAdminMetrics(db: SupabaseClient, now = new Date()) {
   };
 }
 
+export type RegisteredMember = {
+  id: string;
+  name: string;
+  email: string | null;
+  created_at: string;
+  email_confirmed_at: string | null;
+  profile_complete: boolean;
+};
+
 export async function loadAdminMembers(
   db: SupabaseClient,
   page: number,
   search: string,
+  incompleteOnly = false,
 ) {
-  const access = await db.rpc("is_admin");
-  if (access.error || access.data !== true)
-    throw new Error("Administrator access required");
-  let query = db
-    .from("profiles")
-    .select("id,name,created_at", { count: "exact" });
-  // Literal name search; wildcard characters are not treated as broad filters.
-  if (search.trim())
-    query = query.ilike(
-      "name",
-      `%${search.trim().replace(/[\\%_]/g, "\\$&")}%`,
-    );
-  const result = await query
-    .order("created_at", { ascending: false })
-    .order("id")
-    .range(page * 20, page * 20 + 19);
+  const result = await db.rpc("admin_registered_members", {
+    p_search: search.trim(),
+    p_offset: page * 20,
+    p_limit: 20,
+    p_incomplete_only: incompleteOnly,
+  });
   if (result.error) throw new Error(result.error.message);
-  if (result.count === null) throw new Error("Could not load member count.");
-  return {
-    rows: result.data as { id: string; name: string; created_at: string }[],
-    total: result.count,
-  };
+  if (
+    !result.data ||
+    !Array.isArray(result.data.rows) ||
+    typeof result.data.total !== "number"
+  )
+    throw new Error("Could not load registered accounts.");
+  return result.data as { rows: RegisteredMember[]; total: number };
 }

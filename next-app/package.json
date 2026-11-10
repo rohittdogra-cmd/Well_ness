@@ -14,7 +14,8 @@
     "test:auth": "node --test tests/local-auth.mjs",
     "test:moderation": "node --test tests/moderation.mjs",
     "moderation:sql": "node scripts/build-moderation-sql.mjs",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "test:contacts": "node tests/registration-contacts.mjs"
   },
   "dependencies": {
     "@dfinity/agent": "^3.4.3",

@@ -295,9 +295,11 @@ export function SignInPage() {
                 </form>
               )}
               <p className="welcome-email-tip">
-                Use the latest email. Check spam if it hasn’t arrived. Email
-                links can be opened in this browser; codes work across devices
-                when included in the email.
+                Look for an email from Stress Unwind and use the latest code. If
+                it is in Spam, choose “Not spam” to help future delivery. You
+                can enter the code here even if the email link is blocked by
+                your office network. Existing members can also go back and sign
+                in with their password.
               </p>
               <button
                 type="button"
@@ -536,7 +538,8 @@ export function SignInPage() {
               Start by exploring.
               <br />
               <span>
-                Verify your profile to unlock chat, connections and community activities. Care needs a signed-in account only.
+                Verify your profile to unlock chat, connections and community
+                activities. Care needs a signed-in account only.
               </span>
             </p>
           </div>
