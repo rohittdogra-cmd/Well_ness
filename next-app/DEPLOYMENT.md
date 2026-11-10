@@ -264,8 +264,16 @@ References: [Fortinet URL rating review](https://docs.fortinet.com/document/fort
 The sign-in UI now explains how to find the sender, mark a legitimate email as
 not spam, use the code when an email link is blocked, and use existing password
 sign-in. This cannot restore access when the office blocks the site itself.
-The administrator contacts migration was checked against production: its earlier
-profile-completion and suspension functions exist, and the new contacts RPC was
-not yet installed. It is staged in the SQL editor pending explicit confirmation
-of administrator access to account email addresses. Do not deploy this dashboard
-client to production until that migration is applied.
+The administrator contacts migration was applied to production after explicit
+approval. Live SQL checks verified 29 Auth accounts, a 20-row administrator page,
+anonymous execution denied, and the non-admin access guard. No private email
+values were included in the verification output. Earlier profile-completion and
+suspension functions were confirmed present before the migration ran.
+
+Source is committed locally on `codex/registration-and-email-delivery` at
+`f7802e1`. GitHub push could not authenticate as the repository owner; the existing
+working GitHub account has read-only access. Vercel CLI credentials were also
+rejected. The authenticated Vercel connector accepted a direct source deployment
+(`dpl_Dan4bru74wHhB65Lcu5ExEc3Wjdb`) to the existing production project. Synchronize
+this branch to GitHub before the next Git-based production release, to prevent
+an older repository revision from replacing the directly deployed changes.
