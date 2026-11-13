@@ -28,9 +28,13 @@ import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 const subscribe = () => () => {};
 type Mode = "signin" | "signup" | "code" | "reset";
 function message(error: unknown) {
-  return error && typeof error === "object" && "message" in error
-    ? String(error.message)
-    : "Could not connect. Please try again.";
+  if (!error || typeof error !== "object")
+    return "Could not connect. Please try again.";
+  const raw = "message" in error ? String(error.message) : "";
+  if (/signups not allowed for otp/i.test(raw)) {
+    return "Signups via one-time code are restricted in backend settings. Please create an account with a password.";
+  }
+  return raw || "Could not connect. Please try again.";
 }
 export function SignInPage() {
   const { user, isInitializing, skipLogin } = useInternetIdentity();
@@ -96,7 +100,11 @@ export function SignInPage() {
     } else {
       const { error } = await auth.signInWithOtp({
         email: address,
-        options: { shouldCreateUser: false, emailRedirectTo: callback },
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: callback,
+          data: { member_type: audience },
+        },
       });
       if (error) throw error;
     }
@@ -130,13 +138,27 @@ export function SignInPage() {
     setBusy(true);
     setError("");
     try {
-      const { data, error } = await getSupabase().auth.verifyOtp({
-        email: email.trim().toLowerCase(),
-        token: code.trim(),
-        type: "email",
+      const address = email.trim().toLowerCase();
+      const token = code.trim();
+      const primaryType = mode === "signup" ? "signup" : "email";
+      let result = await getSupabase().auth.verifyOtp({
+        email: address,
+        token,
+        type: primaryType as "email" | "signup",
       });
-      if (error) throw error;
-      if (!data.session)
+      if (result.error) {
+        const fallbackType = primaryType === "signup" ? "email" : "signup";
+        const fallback = await getSupabase().auth.verifyOtp({
+          email: address,
+          token,
+          type: fallbackType,
+        });
+        if (!fallback.error) {
+          result = fallback;
+        }
+      }
+      if (result.error) throw result.error;
+      if (!result.data?.session)
         throw new Error(
           "The code did not create a session. Request a new email.",
         );
@@ -249,11 +271,11 @@ export function SignInPage() {
           </h2>
           <p className="welcome-form-intro">
             {sent
-              ? `If an eligible account exists, we’ve sent an email to ${email.trim()}. Open its link${mode === "reset" ? " to reset your password" : " or enter the code below"}.`
+              ? `We’ve sent an email with your code to ${email.trim()}. Open its link${mode === "reset" ? " to reset your password" : " or enter the code below"}.`
               : mode === "signup"
                 ? "A little connection. A lot of possibility. Create your account to get started."
                 : mode === "code"
-                  ? "Enter your account email to receive a secure sign-in link. No password needed. New here? Create an account first."
+                  ? "Enter your email to receive a secure sign-in code or link. No password needed — works for both new and existing members."
                   : mode === "reset"
                     ? "Enter your account email and we’ll send a secure password reset link."
                     : "Your circles, conversations and next good thing are waiting."}
@@ -323,7 +345,7 @@ export function SignInPage() {
             </>
           ) : (
             <>
-              {mode === "signup" && (
+              {(mode === "signup" || mode === "code") && (
                 <div className="welcome-audience">
                   <button
                     type="button"
@@ -486,6 +508,22 @@ export function SignInPage() {
                 </>
               ) : (
                 <>
+                  {mode === "signup" && (
+                    <p className="welcome-switch" style={{ marginTop: "16px", marginBottom: "8px" }}>
+                      Prefer passwordless?{" "}
+                      <button type="button" onClick={() => changeMode("code")}>
+                        Register with email code
+                      </button>
+                    </p>
+                  )}
+                  {mode === "code" && (
+                    <p className="welcome-switch" style={{ marginTop: "16px", marginBottom: "8px" }}>
+                      Prefer a password?{" "}
+                      <button type="button" onClick={() => changeMode("signup")}>
+                        Create an account with password
+                      </button>
+                    </p>
+                  )}
                   <button
                     type="button"
                     className="welcome-back"
