@@ -229,6 +229,11 @@ sign-in with the latest code, check provider delivery/bounce logs, and record
 Inbox/Spam placement. Gmail decides placement and its Primary/Promotions tabs;
 no template or authentication setting can guarantee Primary placement.
 
+For this deployment, configure Supabase Auth SMTP with the GoDaddy/Titan mailbox
+`relief@stress-unwind.com` as the authenticated sender and visible From address.
+Keep the SMTP host, port, username and password in Supabase's dashboard secrets;
+do not put them in the Next.js repository or browser environment.
+
 References: [Supabase custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp),
 [Gmail sender guidelines](https://support.google.com/mail/answer/81126?hl=en).
 

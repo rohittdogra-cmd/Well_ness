@@ -1,18 +1,27 @@
 "use client";
 import { DeleteAccount } from "@/components/DeleteAccount";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { getSupabase } from "@/lib/supabase/client";
+import { useSearchParams, useRouter } from "next/navigation";
 export default function AccountPage() {
   const { user } = useInternetIdentity();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const mustSetPassword = user?.user_metadata?.password_required === true;
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (mustSetPassword && searchParams.get("setup") !== "password") {
+      router.replace("/account?setup=password");
+    }
+  }, [mustSetPassword, router, searchParams]);
   return (
     <div className="hub-page account-page">
       <Link href="/" className="text-action">
@@ -28,8 +37,9 @@ export default function AccountPage() {
         <h2>Sign-in details</h2>
         <p className="account-email">{user?.email}</p>
         <p>
-          Already using email links? Set a password here to sign in with your
-          email and password next time.
+          {mustSetPassword
+            ? "For account security, create a password before continuing."
+            : "Already using email links? Set a password here to sign in with your email and password next time."}
         </p>
         <form
           onSubmit={async (e) => {
@@ -44,11 +54,13 @@ export default function AccountPage() {
             try {
               const { error } = await getSupabase().auth.updateUser({
                 password,
+                data: { password_required: false },
               });
               if (error) throw error;
               setSaved(true);
               setPassword("");
               setConfirm("");
+              if (mustSetPassword) router.replace(searchParams.get("next") || "/");
             } catch (e) {
               setError(
                 e instanceof Error
@@ -108,9 +120,9 @@ export default function AccountPage() {
             Password saved. You can use it the next time you sign in.
           </p>
         )}
-        <Link href="/onboarding" className="text-action">
+        {!mustSetPassword && <Link href="/onboarding" className="text-action">
           Edit your community profile →
-        </Link>
+        </Link>}
       </div>
       <DeleteAccount />
     </div>

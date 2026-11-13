@@ -124,6 +124,7 @@ export function SignInPage() {
         if (error) throw error;
         if (!data.session)
           throw new Error("Please confirm your email before signing in.");
+        await getSupabase().from("auth_login_logs").insert({ method: "password" });
         router.replace(returnTo());
         router.refresh();
       } else await send();
@@ -162,7 +163,14 @@ export function SignInPage() {
         throw new Error(
           "The code did not create a session. Request a new email.",
         );
-      router.replace(returnTo());
+      const { data: verifiedUser } = await getSupabase().auth.getUser();
+      if (verifiedUser.user?.user_metadata?.password_required !== false) {
+        await getSupabase().auth.updateUser({
+          data: { password_required: true },
+        });
+      }
+      await getSupabase().from("auth_login_logs").insert({ method: "otp" });
+      router.replace("/account?setup=password&next=" + encodeURIComponent(returnTo()));
       router.refresh();
     } catch (e) {
       setError(message(e));
