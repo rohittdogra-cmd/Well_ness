@@ -76,6 +76,11 @@ export function SignInPage() {
     location.origin +
     "/auth/callback" +
     (next === "/account" ? "?next=/account" : "");
+  async function afterAuth() {
+    const { data } = await getSupabase().rpc("is_admin");
+    router.replace(data === true ? "/admin" : returnTo());
+    router.refresh();
+  }
   async function send() {
     const auth = getSupabase().auth;
     const address = email.trim().toLowerCase();
@@ -88,8 +93,7 @@ export function SignInPage() {
       });
       if (error) throw error;
       if (data.session) {
-        router.replace(returnTo());
-        router.refresh();
+        await afterAuth();
         return;
       }
     } else if (mode === "reset") {
@@ -125,8 +129,7 @@ export function SignInPage() {
         if (!data.session)
           throw new Error("Please confirm your email before signing in.");
         await getSupabase().from("auth_login_logs").insert({ method: "password" });
-        router.replace(returnTo());
-        router.refresh();
+        await afterAuth();
       } else await send();
     } catch (e) {
       setError(message(e));
@@ -170,7 +173,11 @@ export function SignInPage() {
         });
       }
       await getSupabase().from("auth_login_logs").insert({ method: "otp" });
-      router.replace("/account?setup=password&next=" + encodeURIComponent(returnTo()));
+      if (verifiedUser.user?.user_metadata?.password_required === false) {
+        await afterAuth();
+      } else {
+        router.replace("/account?setup=password&next=" + encodeURIComponent("/"));
+      }
       router.refresh();
     } catch (e) {
       setError(message(e));

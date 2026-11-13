@@ -8,6 +8,8 @@ type Request = {
   method: string;
   evidence: string;
   created_at: string;
+  name: string;
+  email: string | null;
 };
 export function VerificationReviews() {
   const qc = useQueryClient();
@@ -16,12 +18,9 @@ export function VerificationReviews() {
   const requests = useQuery({
     queryKey: ["verification-reviews"],
     queryFn: async () => {
-      const { data, error } = await getSupabase()
-        .from("verification_requests")
-        .select("id,user_id,method,evidence,created_at")
-        .eq("status", "pending")
-        .order("created_at")
-        .limit(20);
+      const { data, error } = await getSupabase().rpc(
+        "admin_pending_verifications",
+      );
       if (error) throw error;
       return data as Request[];
     },
@@ -58,7 +57,11 @@ export function VerificationReviews() {
         requests.data.map((r) => (
           <article key={r.id} className="verify-card">
             <strong>{r.method.replaceAll("_", " ")}</strong>
-            <p>Member: {r.user_id}</p>
+            <p>
+              <strong>{r.name || "Unnamed member"}</strong>
+              {r.email ? <> · {r.email}</> : null}
+            </p>
+            <small>Request ID: {r.id}</small>
             {r.method === "linkedin" ? (
               <a href={r.evidence} target="_blank" rel="noopener noreferrer">
                 Open LinkedIn profile ↗
