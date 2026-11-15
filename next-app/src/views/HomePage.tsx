@@ -100,6 +100,24 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* Campaign Banners & Strips */}
+      <picture className="campaign-banner campaign-banner-hero">
+        <source media="(max-width: 760px)" srcSet="/assets/user-banners/community-mobile.jpeg" />
+        <img src="/assets/user-banners/community-wide.jpeg" alt="Your people, your pause, your kind of happy" />
+      </picture>
+      <picture className="campaign-banner campaign-banner-welcome">
+        <source media="(max-width: 760px)" srcSet="/assets/user-banners/welcome-mobile.jpeg" />
+        <img src="/assets/user-banners/welcome-wide.jpeg" alt="Welcome to your happy place" />
+      </picture>
+      <picture className="campaign-strip">
+        <source media="(max-width: 760px)" srcSet="/assets/user-banners/break-mobile.jpeg" />
+        <img src="/assets/user-banners/break-wide.jpeg" alt="Consider this your sign to take a little break" />
+      </picture>
+      <picture className="campaign-strip">
+        <source media="(max-width: 760px)" srcSet="/assets/user-banners/activities-mobile.jpeg" />
+        <img src="/assets/user-banners/activities-wide.jpeg" alt="Find activities. Meet people. Make memories." />
+      </picture>
+
       {/* 3. Global Workplace Stress Monitor (Data, Epidemic Scale & Vitals) */}
       <GlobalStressPulse />
 

@@ -1,4 +1,13 @@
 /* Wellness editorial system */
+.campaign-banner { display: block; width: 100%; margin: 0 0 28px; overflow: hidden; border-radius: 12px; background: #edf0e3; box-shadow: 0 10px 28px rgba(41, 75, 57, 0.08); }
+.campaign-banner img, .campaign-strip img { display: block; width: 100%; height: auto; }
+.campaign-banner-welcome { margin-top: 8px; }
+.campaign-strip { display: block; width: 100%; margin: 18px 0 28px; overflow: hidden; border-radius: 10px; }
+@media (max-width: 760px) {
+  .campaign-banner { border-radius: 10px; margin-bottom: 20px; }
+  .campaign-banner-welcome { margin-top: 0; }
+  .campaign-strip { margin: 14px 0 22px; }
+}
 :root {
   --background: 0.976 0.009 85;
   --foreground: 0.29 0.033 156;
