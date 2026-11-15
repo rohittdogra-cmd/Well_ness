@@ -1,46 +1,29 @@
-import { groupImages } from "../src/lib/groupImages.js";
-
 const KEY = "4a59d871e98c48a7b973ef841cf2560a";
 const HOST = "stress-unwind.com";
 const BASE_URL = `https://${HOST}`;
 
-const staticPaths = [
-  "/",
-  "/groups",
-  "/book-activities",
-  "/psychologists",
-  "/community",
-  "/discuss",
-  "/about",
-  "/membership",
-  "/meetup-activities",
-  "/social-gathering",
-  "/task-sharing",
-  "/apply-provider",
-  "/contact",
-  "/careers",
-  "/programs/meetup",
-  "/programs/exercise",
-  "/programs/socialGathering",
-  "/programs/taskAllocation",
-  "/programs/boxCricket",
-  "/programs/pickleball",
-  "/programs/badminton",
-  "/programs/tennis",
-];
+async function run() {
+  console.log("Fetching live sitemap from https://stress-unwind.com/sitemap.xml...");
+  const sitemapRes = await fetch(`${BASE_URL}/sitemap.xml`);
+  const sitemapText = await sitemapRes.text();
 
-const groupPaths = Object.keys(groupImages || {}).map((slug) => `/groups/${slug}`);
-const allUrls = [...staticPaths, ...groupPaths].map((p) => `${BASE_URL}${p}`);
+  // Extract all <loc> URLs
+  const urls = [];
+  const locRegex = /<loc>(.*?)<\/loc>/g;
+  let match;
+  while ((match = locRegex.exec(sitemapText)) !== null) {
+    urls.push(match[1]);
+  }
 
-const payload = {
-  host: HOST,
-  key: KEY,
-  keyLocation: `${BASE_URL}/${KEY}.txt`,
-  urlList: allUrls,
-};
+  console.log(`Found ${urls.length} URLs in live sitemap.`);
 
-async function submitIndexNow() {
-  console.log(`Submitting ${allUrls.length} URLs to IndexNow...`);
+  const payload = {
+    host: HOST,
+    key: KEY,
+    keyLocation: `${BASE_URL}/${KEY}.txt`,
+    urlList: urls,
+  };
+
   const endpoints = [
     "https://api.indexnow.org/indexnow",
     "https://www.bing.com/indexnow",
@@ -53,11 +36,11 @@ async function submitIndexNow() {
         headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify(payload),
       });
-      console.log(`[${endpoint}] Response status:`, res.status, res.statusText);
+      console.log(`[${endpoint}] Response: ${res.status} ${res.statusText}`);
     } catch (err) {
-      console.warn(`[${endpoint}] Failed:`, err.message);
+      console.error(`[${endpoint}] Error:`, err.message);
     }
   }
 }
 
-submitIndexNow();
+run();
