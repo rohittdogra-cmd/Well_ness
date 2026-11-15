@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { AppointmentList } from "../components/AppointmentList";
 import { Button } from "@/components/ui/button";

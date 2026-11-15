@@ -1,3 +1,5 @@
+"use client";
+
 import { AdminMemberDetails } from "@/components/AdminMemberDetails";
 import { AdminGroupManager } from "@/components/AdminGroupManager";
 import { AdminActivityLog } from "@/components/AdminActivityLog";

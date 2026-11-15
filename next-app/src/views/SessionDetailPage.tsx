@@ -1,3 +1,5 @@
+"use client";
+
 import { EditSession } from "../components/EditSession";
 import { downloadCalendar } from "../lib/calendar";
 import Link from "next/link";

@@ -1,3 +1,5 @@
+"use client";
+
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { Button } from "@/components/ui/button";
 import {
