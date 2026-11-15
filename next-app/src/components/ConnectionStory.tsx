@@ -88,7 +88,7 @@ const stories = [
       "A shared badminton court made saying hello feel easier than another introduction at work.",
     avatar: 2,
     color: "peach",
-    image: "/images/groups/badminton.jpg",
+    image: "/images/groups/badminton.webp",
   },
   {
     title: "The quiet first-timer",
@@ -97,7 +97,7 @@ const stories = [
       "It helped to start with something we both enjoyed. The conversation followed from there.",
     avatar: 3,
     color: "lilac",
-    image: "/images/mindful-connection.jpg",
+    image: "/images/mindful-connection.webp",
   },
 ];
 

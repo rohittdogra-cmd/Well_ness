@@ -113,7 +113,7 @@ export function RegionalWellbeing() {
           <span className="eyebrow">{view === "india" ? "INDIA IN FOCUS" : "A REGIONAL PERSPECTIVE"}</span>
           <div className="regional-human-photo-frame">
             <img
-              src={view === "india" ? "/images/peer-support.jpg" : "/images/team-connection.jpg"}
+              src={view === "india" ? "/images/peer-support.webp" : "/images/team-connection.webp"}
               alt={view === "india" ? "People in a caring, supportive conversation" : "Team members supporting one another"}
               loading="lazy"
             />
@@ -127,9 +127,9 @@ export function RegionalWellbeing() {
           <p>Every number represents someone with a story. Making space to listen, connect and seek care starts with understanding.</p>
           <div className="regional-peer-avatars">
             <div className="avatar-stack">
-              <img src="/images/student-wellness.jpg" alt="Peer guide" />
-              <img src="/images/mindful-support.jpg" alt="Community buddy" />
-              <img src="/images/corporate-wellness.jpg" alt="Wellness mentor" />
+              <img src="/images/student-wellness.webp" alt="Peer guide" />
+              <img src="/images/mindful-support.webp" alt="Community buddy" />
+              <img src="/images/corporate-wellness.webp" alt="Wellness mentor" />
             </div>
             <div className="regional-peer-avatars-text">
               <strong>Dedicated listening circles</strong>
@@ -151,7 +151,7 @@ export function RegionalWellbeing() {
         >
           <div className="regional-stat-image-banner">
             <img
-              src={view === "india" ? "/images/community-friends-wide.jpg" : "/images/community-circle-wide.jpg"}
+              src={view === "india" ? "/images/community-friends-wide.webp" : "/images/community-circle-wide.webp"}
               alt="People connecting in supportive community circle"
               loading="lazy"
             />
@@ -175,7 +175,7 @@ export function RegionalWellbeing() {
             <div className="visual-stat-card">
               <div className="visual-stat-card-image">
                 <img
-                  src={view === "india" ? "/images/counseling-consultation.jpg" : "/images/corporate-wellness.jpg"}
+                  src={view === "india" ? "/images/counseling-consultation.webp" : "/images/corporate-wellness.webp"}
                   alt="Clinical care consultation"
                   loading="lazy"
                 />
@@ -198,7 +198,7 @@ export function RegionalWellbeing() {
             <div className="visual-stat-card">
               <div className="visual-stat-card-image">
                 <img
-                  src={view === "india" ? "/images/team-connection.jpg" : "/images/walk-together.webp"}
+                  src={view === "india" ? "/images/team-connection.webp" : "/images/walk-together.webp"}
                   alt="Regional fieldwork and community connection"
                   loading="lazy"
                 />

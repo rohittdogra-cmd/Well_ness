@@ -91,7 +91,7 @@ export function HomeReturnPanel() {
           <Link href={group ? `/groups/${group.slug}` : "/groups"} className="return-card has-cover">
             <div className="return-card-cover">
               <img
-                src={group ? getGroupImage(group.slug, group.category) : "/images/groups/category-social.jpg"}
+                src={group ? getGroupImage(group.slug, group.category) : "/images/groups/category-social.webp"}
                 alt={group?.name || "Community circle"}
                 loading="lazy"
               />
@@ -155,7 +155,7 @@ export function HomeReturnPanel() {
           <Link href={booking ? "/profile?view=bookings" : "/psychologists"} className="return-card has-cover">
             <div className="return-card-cover cover-top">
               <img
-                src="/images/counseling-consultation.jpg"
+                src="/images/counseling-consultation.webp"
                 alt="Private care & counseling"
                 loading="lazy"
               />

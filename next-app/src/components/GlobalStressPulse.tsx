@@ -47,12 +47,12 @@ const regions = [
 ] as const;
 
 const regionImages = [
-  "/images/peer-support.jpg",
-  "/images/groups/coffee-chats.jpg",
-  "/images/groups/technology.jpg",
-  "/images/groups/cycling.jpg",
-  "/images/groups/travel.jpg",
-  "/images/groups/football.jpg",
+  "/images/peer-support.webp",
+  "/images/groups/coffee-chats.webp",
+  "/images/groups/technology.webp",
+  "/images/groups/cycling.webp",
+  "/images/groups/travel.webp",
+  "/images/groups/football.webp",
 ];
 
 export function GlobalStressPulse() {
@@ -92,7 +92,7 @@ export function GlobalStressPulse() {
           <span>annual productivity cost</span>
         </div>
         <div className="pulse-fact-photo">
-          <img src="/images/groups/mindfulness.jpg" alt="Mindful pause" loading="lazy" />
+          <img src="/images/groups/mindfulness.webp" alt="Mindful pause" loading="lazy" />
           <span>Take a mindful pause today</span>
         </div>
         <p>

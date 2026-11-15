@@ -44,7 +44,7 @@ const steps = [
     text: "Read along, share a small win, or ask an honest question. There’s room for your quiet days, too.",
     cta: "Read the conversations",
     icon: MessageCircle,
-    image: "/images/mindful-connection.jpg",
+    image: "/images/mindful-connection.webp",
     badge: "Open Dialogues",
   },
 ];

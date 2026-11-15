@@ -33,7 +33,16 @@ export function HomePage() {
         </Link>
       </header>
       <section className="home-campaign-hero live-community-hero">
-        <img className="community-hero-photo" src="/assets/user-banners/community-clean.png" alt="Four friends sharing a happy moment together in a park" fetchPriority="high" />
+        <picture>
+          <source media="(max-width: 768px)" srcSet="/assets/user-banners/community-hero-mobile.webp" type="image/webp" />
+          <source srcSet="/assets/user-banners/community-hero-wide.webp" type="image/webp" />
+          <img
+            className="community-hero-photo"
+            src="/assets/user-banners/community-hero-wide.webp"
+            alt="Friends sharing a happy moment together outdoors"
+            fetchPriority="high"
+          />
+        </picture>
         <div className="community-hero-copy">
           <h1>Your people. Your pause.<br /><span>Your kind of happy.</span></h1>
           <p>Find your circle. Share your interests. Make room for the moments that matter.</p>
@@ -61,7 +70,16 @@ export function HomePage() {
       </details>
 
       <section className="live-welcome-banner" aria-labelledby="welcome-banner-title">
-        <img className="welcome-background" src="/assets/user-banners/welcome-clean.png" alt="Friends hiking together through a sunlit field" loading="lazy" />
+        <picture>
+          <source media="(max-width: 768px)" srcSet="/assets/user-banners/welcome-mobile.webp" type="image/webp" />
+          <source srcSet="/assets/user-banners/welcome-wide.webp" type="image/webp" />
+          <img
+            className="welcome-background"
+            src="/assets/user-banners/welcome-wide.webp"
+            alt="Friends enjoying sunny outdoor connection"
+            loading="lazy"
+          />
+        </picture>
         <div className="welcome-live-copy">
           <h2 id="welcome-banner-title">Welcome to your<br />happy place!</h2>
           <p>A little time for yourself. A few new faces.<br />A whole lot of possibilities.</p>

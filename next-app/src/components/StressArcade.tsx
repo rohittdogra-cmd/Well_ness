@@ -19,21 +19,21 @@ const games = [
     label: "Pop a worry",
     time: "Quick play",
     icon: CircleDot,
-    image: "/images/groups/category-arts.jpg",
+    image: "/images/groups/category-arts.webp",
   },
   {
     id: "breathing",
     label: "Breathe",
     time: "60 seconds",
     icon: Wind,
-    image: "/images/groups/mindfulness.jpg",
+    image: "/images/groups/mindfulness.webp",
   },
   {
     id: "stretching",
     label: "Desk stretch",
     time: "2 minutes",
     icon: Armchair,
-    image: "/images/groups/yoga.jpg",
+    image: "/images/groups/yoga.webp",
   },
 ] as const;
 export function StressArcade() {
@@ -103,7 +103,7 @@ export function StressArcade() {
       )}
       <div className="pause-companion has-photo">
         <div className="pause-companion-thumb">
-          <img src="/images/peer-support.jpg" alt="Colleagues laughing and connecting" loading="lazy" />
+          <img src="/images/peer-support.webp" alt="Colleagues laughing and connecting" loading="lazy" />
         </div>
         <div className="cat-trail" aria-hidden="true">
           <svg viewBox="0 0 240 80">
