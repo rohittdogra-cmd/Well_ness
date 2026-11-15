@@ -52,13 +52,13 @@ const items = [
   { slug: "hiking", url: "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=800&q=80" },
   { slug: "cycling", url: "https://images.unsplash.com/photo-1474962558142-9ca83af74bb7?auto=format&fit=crop&w=800&q=80" },
 
-  // Category Banners
-  { slug: "category-sports", url: "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=800&q=80" },
-  { slug: "category-wellbeing", url: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80" },
-  { slug: "category-arts", url: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=800&q=80" },
-  { slug: "category-learning", url: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80" },
-  { slug: "category-social", url: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80" },
-  { slug: "category-outdoors", url: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=800&q=80" },
+  // Category Banners (Landscape 1200x750 with smart focal crops)
+  { slug: "category-sports", url: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&h=750&q=80" },
+  { slug: "category-wellbeing", url: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=1200&h=750&q=80" },
+  { slug: "category-arts", url: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=1200&h=750&q=80" },
+  { slug: "category-learning", url: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&h=750&crop=faces,entropy&q=80" },
+  { slug: "category-social", url: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&h=750&crop=faces,top&q=80" },
+  { slug: "category-outdoors", url: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=1200&h=750&crop=entropy,top&q=80" },
 ];
 
 async function downloadAll() {

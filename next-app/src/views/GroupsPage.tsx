@@ -227,8 +227,13 @@ export function GroupsPage() {
             aria-pressed={category === c.id}
             onClick={() => setCategory(category === c.id ? "" : c.id)}
           >
-            <div className="category-card-thumb">
-              <img src={getCategoryImage(c.id)} alt={c.name} loading="lazy" />
+            <div className={`category-card-thumb photo-${c.id}`}>
+              <img
+                src={getCategoryImage(c.id)}
+                alt={c.name}
+                loading="lazy"
+                className={`interest-img-${c.id}`}
+              />
               <span className="category-symbol">
                 <c.icon size={20} />
               </span>

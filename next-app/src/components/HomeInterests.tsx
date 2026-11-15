@@ -77,11 +77,12 @@ export function HomeInterests() {
                 strokeWidth={0.8}
                 aria-hidden="true"
               />
-              <div className="interest-card-photo">
+              <div className={`interest-card-photo photo-${category.id}`}>
                 <img
                   src={getCategoryImage(category.id)}
                   alt={category.name}
                   loading="lazy"
+                  className={`interest-img-${category.id}`}
                 />
               </div>
               <div className="interest-card-top">

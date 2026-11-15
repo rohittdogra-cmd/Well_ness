@@ -7012,8 +7012,8 @@
 
 .category-card-thumb {
   width: 100%;
-  height: 90px;
-  border-radius: 12px;
+  height: 130px;
+  border-radius: 13px;
   overflow: hidden;
   margin-bottom: 12px;
   position: relative;
@@ -7023,6 +7023,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 25%;
   display: block;
   transition: transform 0.35s ease;
 }
@@ -7095,23 +7096,56 @@
 
 .interest-card-photo {
   width: 100%;
-  height: 120px;
-  border-radius: 14px;
+  height: 190px;
+  border-radius: 15px;
   overflow: hidden;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   position: relative;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   background: #edf1f2;
 }
 .interest-card-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 25%;
   display: block;
   transition: transform 0.35s ease;
 }
 .interest-card:hover .interest-card-photo img {
   transform: scale(1.06);
+}
+
+/* Category-specific focal positioning so faces & subjects are never cropped */
+.interest-card-photo.photo-wellbeing img,
+.category-card-thumb.photo-wellbeing img,
+.interest-img-wellbeing {
+  object-position: center 25% !important;
+}
+.interest-card-photo.photo-sports img,
+.category-card-thumb.photo-sports img,
+.interest-img-sports {
+  object-position: center 25% !important;
+}
+.interest-card-photo.photo-learning img,
+.category-card-thumb.photo-learning img,
+.interest-img-learning {
+  object-position: center 20% !important;
+}
+.interest-card-photo.photo-social img,
+.category-card-thumb.photo-social img,
+.interest-img-social {
+  object-position: center 18% !important;
+}
+.interest-card-photo.photo-outdoors img,
+.category-card-thumb.photo-outdoors img,
+.interest-img-outdoors {
+  object-position: center 22% !important;
+}
+.interest-card-photo.photo-arts img,
+.category-card-thumb.photo-arts img,
+.interest-img-arts {
+  object-position: center center !important;
 }
 
 @media (max-width: 768px) {
@@ -7123,7 +7157,10 @@
     border-radius: 14px;
   }
   .category-card-thumb {
-    height: 70px;
+    height: 100px;
+  }
+  .interest-card-photo {
+    height: 165px;
   }
 }
 
