@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
 import type { PointerEvent } from "react";
 import { groupCategories } from "@/lib/groupCategories";
+import { getCategoryImage } from "@/lib/groupImages";
 
 export function HomeInterests() {
   const reducedMotion = useReducedMotion();
@@ -76,6 +77,13 @@ export function HomeInterests() {
                 strokeWidth={0.8}
                 aria-hidden="true"
               />
+              <div className="interest-card-photo">
+                <img
+                  src={getCategoryImage(category.id)}
+                  alt={category.name}
+                  loading="lazy"
+                />
+              </div>
               <div className="interest-card-top">
                 <span className="interest-icon">
                   <category.icon size={26} strokeWidth={1.6} />

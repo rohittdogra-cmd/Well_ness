@@ -79,6 +79,7 @@ const stories = [
       "I came for a break from my screen. I stayed for the conversations on the way back.",
     avatar: 1,
     color: "mint",
+    image: "/images/walk-together.webp",
   },
   {
     title: "The after-work player",
@@ -87,6 +88,7 @@ const stories = [
       "A shared badminton court made saying hello feel easier than another introduction at work.",
     avatar: 2,
     color: "peach",
+    image: "/images/groups/badminton.jpg",
   },
   {
     title: "The quiet first-timer",
@@ -95,6 +97,7 @@ const stories = [
       "It helped to start with something we both enjoyed. The conversation followed from there.",
     avatar: 3,
     color: "lilac",
+    image: "/images/mindful-connection.jpg",
   },
 ];
 
@@ -354,6 +357,9 @@ export function ConnectionStory() {
               className={`testimonial-card ${story.color} ${testimonial === index ? "is-selected" : ""}`}
               key={story.title}
             >
+              <div className="testimonial-photo-thumb">
+                <img src={story.image} alt="" loading="lazy" />
+              </div>
               <Quote size={24} aria-hidden="true" />
               <blockquote>{story.quote}</blockquote>
               <figcaption>

@@ -45,6 +45,16 @@ const regions = [
     "Job uncertainty and economic pressure",
   ],
 ] as const;
+
+const regionImages = [
+  "/images/peer-support.jpg",
+  "/images/groups/coffee-chats.jpg",
+  "/images/groups/technology.jpg",
+  "/images/groups/cycling.jpg",
+  "/images/groups/travel.jpg",
+  "/images/groups/football.jpg",
+];
+
 export function GlobalStressPulse() {
   const [region, setRegion] = useState(0);
   const [levels, setLevels] = useState([7, 8, 6]);
@@ -80,6 +90,10 @@ export function GlobalStressPulse() {
         <div>
           <strong>$1T</strong>
           <span>annual productivity cost</span>
+        </div>
+        <div className="pulse-fact-photo">
+          <img src="/images/groups/mindfulness.jpg" alt="Mindful pause" loading="lazy" />
+          <span>Take a mindful pause today</span>
         </div>
         <p>
           Global estimates for depression and anxiety.{" "}
@@ -117,10 +131,15 @@ export function GlobalStressPulse() {
               </button>
             ))}
           </div>
-          <p className="region-note" aria-live="polite">
-            <strong>{regions[region][2]}</strong> · {regions[region][4]}. These
-            sample scores are for exploration, not a regional survey.
-          </p>
+          <div className="region-spotlight-card">
+            <div className="region-spotlight-thumb">
+              <img src={regionImages[region]} alt={regions[region][1]} loading="lazy" />
+            </div>
+            <p className="region-note" aria-live="polite">
+              <strong>{regions[region][2]}</strong> · {regions[region][4]}. These
+              sample scores are for exploration, not a regional survey.
+            </p>
+          </div>
         </div>
         <div className="personal-pulse">
           <div className="compact-subhead">

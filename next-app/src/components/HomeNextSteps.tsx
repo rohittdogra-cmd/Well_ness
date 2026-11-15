@@ -20,6 +20,8 @@ const steps = [
     text: "Find someone who enjoys your kind of things. Start with a shared interest; let the conversation follow.",
     cta: "Explore the community",
     icon: Users,
+    image: "/images/community-hero.webp",
+    badge: "Community Circles",
   },
   {
     id: "plans",
@@ -30,6 +32,8 @@ const steps = [
     text: "A lunchtime walk, a friendly game, a proper screen break. Find an activity or bring your own idea.",
     cta: "Find your next plan",
     icon: CalendarDays,
+    image: "/images/walk-together.webp",
+    badge: "Shared Activities",
   },
   {
     id: "conversations",
@@ -40,6 +44,8 @@ const steps = [
     text: "Read along, share a small win, or ask an honest question. There’s room for your quiet days, too.",
     cta: "Read the conversations",
     icon: MessageCircle,
+    image: "/images/mindful-connection.jpg",
+    badge: "Open Dialogues",
   },
 ];
 
@@ -74,9 +80,12 @@ export function HomeNextSteps({ signedIn }: { signedIn: boolean }) {
             aria-labelledby={`next-${step.id}-title`}
           >
             <div className="next-step-scene" aria-hidden="true">
+              <img className="next-step-photo-bg" src={step.image} alt="" loading="lazy" />
+              <div className="next-step-photo-scrim" />
               <span className="next-scene-number">
                 {step.number} / A SMALL START
               </span>
+              <span className="next-step-badge-tag">{step.badge}</span>
               {step.id === "people" ? (
                 <div className="next-people-scene">
                   <span className="next-interest">

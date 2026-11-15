@@ -11,6 +11,8 @@ import {
 import { getSupabase } from "@/lib/supabase/client";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useLocalProfile } from "@/hooks/useLocalProfile";
+import { getGroupImage } from "@/lib/groupImages";
+
 export function HomeReturnPanel() {
   const { user } = useInternetIdentity();
   const profile = useLocalProfile();
@@ -21,7 +23,7 @@ export function HomeReturnPanel() {
       const [groups, sessions, bookings] = await Promise.all([
         getSupabase()
           .from("groups")
-          .select("id,name,slug,group_members(user_id)"),
+          .select("id,name,slug,category,group_members(user_id)"),
         getSupabase()
           .from("sessions")
           .select("id,title,date_time,creator,session_members(user_id)")
@@ -86,67 +88,103 @@ export function HomeReturnPanel() {
         </div>
       ) : (
         <div className="return-grid" aria-busy={query.isPending}>
-          <Link href={group ? `/groups/${group.slug}` : "/groups"}>
-            <span className="return-icon">
-              <Users size={21} />
-            </span>
-            <small>YOUR CIRCLES</small>
-            <h3>
-              {query.isPending
-                ? "Loading your groups…"
-                : group?.name || "Find your first circle"}
-            </h3>
-            <p>
-              {group
-                ? `${data!.groups.length} joined ${data!.groups.length === 1 ? "group" : "groups"} · Jump back into the conversation`
-                : "A shared interest is a lovely place to start."}
-            </p>
-            <span className="return-link">
-              {group ? "Open your group" : "Explore groups"}
-              <ArrowUpRight size={17} />
-            </span>
+          <Link href={group ? `/groups/${group.slug}` : "/groups"} className="return-card has-cover">
+            <div className="return-card-cover">
+              <img
+                src={group ? getGroupImage(group.slug, group.category) : "/images/groups/category-social.jpg"}
+                alt={group?.name || "Community circle"}
+                loading="lazy"
+              />
+              <span className="return-card-badge">
+                <Users size={12} /> {group ? "Joined Circle" : "Explore"}
+              </span>
+            </div>
+            <div className="return-card-content">
+              <span className="return-icon">
+                <Users size={21} />
+              </span>
+              <small>YOUR CIRCLES</small>
+              <h3>
+                {query.isPending
+                  ? "Loading your groups…"
+                  : group?.name || "Find your first circle"}
+              </h3>
+              <p>
+                {group
+                  ? `${data!.groups.length} joined ${data!.groups.length === 1 ? "group" : "groups"} · Jump back into the conversation`
+                  : "A shared interest is a lovely place to start."}
+              </p>
+              <span className="return-link">
+                {group ? "Open your group" : "Explore groups"}
+                <ArrowUpRight size={17} />
+              </span>
+            </div>
           </Link>
-          <Link href={session ? `/sessions/${session.id}` : "/book-activities"}>
-            <span className="return-icon peach">
-              <CalendarDays size={21} />
-            </span>
-            <small>YOUR NEXT GOOD THING</small>
-            <h3>
-              {query.isPending
-                ? "Loading your plans…"
-                : session?.title || "Make a little plan"}
-            </h3>
-            <p>
-              {session
-                ? when(session.date_time)
-                : "A walk, a game, or a moment away from your desk."}
-            </p>
-            <span className="return-link">
-              {session ? "View your activity" : "Find an activity"}
-              <ArrowUpRight size={17} />
-            </span>
+          <Link href={session ? `/sessions/${session.id}` : "/book-activities"} className="return-card has-cover">
+            <div className="return-card-cover cover-top">
+              <img
+                src="/images/walk-together.webp"
+                alt="Shared activity"
+                loading="lazy"
+              />
+              <span className="return-card-badge peach">
+                <CalendarDays size={12} /> {session ? "Next Plan" : "Activities"}
+              </span>
+            </div>
+            <div className="return-card-content">
+              <span className="return-icon peach">
+                <CalendarDays size={21} />
+              </span>
+              <small>YOUR NEXT GOOD THING</small>
+              <h3>
+                {query.isPending
+                  ? "Loading your plans…"
+                  : session?.title || "Make a little plan"}
+              </h3>
+              <p>
+                {session
+                  ? when(session.date_time)
+                  : "A walk, a game, or a moment away from your desk."}
+              </p>
+              <span className="return-link">
+                {session ? "View your activity" : "Find an activity"}
+                <ArrowUpRight size={17} />
+              </span>
+            </div>
           </Link>
-          <Link href={booking ? "/profile?view=bookings" : "/psychologists"}>
-            <span className="return-icon lilac">
-              <HeartHandshake size={21} />
-            </span>
-            <small>SPACE TO TALK</small>
-            <h3>
-              {query.isPending
-                ? "Loading your appointments…"
-                : booking
-                  ? "Your next appointment"
-                  : "Support, on your terms"}
-            </h3>
-            <p>
-              {booking
-                ? `${when(booking.booking_time)} · ${booking.confirmed ? "Confirmed" : "Awaiting confirmation"}`
-                : "Private appointment requests with approved care providers."}
-            </p>
-            <span className="return-link">
-              {booking ? "Manage appointment" : "Explore private care"}
-              <ArrowUpRight size={17} />
-            </span>
+          <Link href={booking ? "/profile?view=bookings" : "/psychologists"} className="return-card has-cover">
+            <div className="return-card-cover cover-top">
+              <img
+                src="/images/counseling-consultation.jpg"
+                alt="Private care & counseling"
+                loading="lazy"
+              />
+              <span className="return-card-badge lilac">
+                <HeartHandshake size={12} /> {booking ? "Care Support" : "1-on-1 Care"}
+              </span>
+            </div>
+            <div className="return-card-content">
+              <span className="return-icon lilac">
+                <HeartHandshake size={21} />
+              </span>
+              <small>SPACE TO TALK</small>
+              <h3>
+                {query.isPending
+                  ? "Loading your appointments…"
+                  : booking
+                    ? "Your next appointment"
+                    : "Support, on your terms"}
+              </h3>
+              <p>
+                {booking
+                  ? `${when(booking.booking_time)} · ${booking.confirmed ? "Confirmed" : "Awaiting confirmation"}`
+                  : "Private appointment requests with approved care providers."}
+              </p>
+              <span className="return-link">
+                {booking ? "Manage appointment" : "Explore private care"}
+                <ArrowUpRight size={17} />
+              </span>
+            </div>
           </Link>
         </div>
       )}

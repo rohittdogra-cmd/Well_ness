@@ -9,7 +9,6 @@ import {
   Info,
   MapPin,
 } from "lucide-react";
-import { asiaCountries } from "@/data/asiaMap";
 const indiaSource = "https://www.pib.gov.in/PressReleasePage.aspx?PRID=1554374";
 const prevalenceSource =
   "https://sansad.in/getFile/annex/253/A114.pdf?source=pqars";
@@ -17,20 +16,6 @@ const surveySource =
   "https://indianmhs.nimhans.ac.in/phase1/detailed-news.php?eid=6";
 const whoSource =
   "https://www.who.int/southeastasia/news/detail/24-07-2025-who-south-east-asia-launches-mental-health-dashboard-to-accelerate-and-strengthen-evidence-based-action";
-// WHO South-East Asia membership shown by WHO at source review, November 2026.
-// This is a source geography, not all of Asia or the geographic ASEAN region.
-const whoCountries = new Set([
-  "BGD",
-  "BTN",
-  "PRK",
-  "IND",
-  "MDV",
-  "MMR",
-  "NPL",
-  "LKA",
-  "THA",
-  "TLS",
-]);
 const views = {
   india: {
     label: "India",
@@ -123,95 +108,40 @@ export function RegionalWellbeing() {
         ))}
         <span>Published estimates · source dates shown</span>
       </div>
-      <div className="regional-content">
-        <div className="regional-map-panel" data-geography={view}>
-          <div className="regional-map-top">
-            <span>ASIA / REGIONAL CONTEXT</span>
-            <span>
-              <i /> {selected.mapLabel}
-            </span>
+      <div className="regional-content regional-content-refresh">
+        <div className="regional-human-panel">
+          <span className="eyebrow">{view === "india" ? "INDIA IN FOCUS" : "A REGIONAL PERSPECTIVE"}</span>
+          <div className="regional-human-photo-frame">
+            <img
+              src={view === "india" ? "/images/peer-support.jpg" : "/images/team-connection.jpg"}
+              alt={view === "india" ? "People in a caring, supportive conversation" : "Team members supporting one another"}
+              loading="lazy"
+            />
+            <div className="regional-photo-overlay">
+              <span className="regional-photo-badge">
+                <HeartHandshake size={14} /> Compassionate Peer Care
+              </span>
+            </div>
           </div>
-          <svg
-            className="wellbeing-asia-map"
-            viewBox="0 0 640 435"
-            role="img"
-            aria-labelledby={`map-title-${id} map-desc-${id}`}
-          >
-            <title id={`map-title-${id}`}>
-              {view === "india"
-                ? "Map of Asia with India highlighted"
-                : "Map highlighting the WHO South-East Asia regional focus"}
-            </title>
-            <desc id={`map-desc-${id}`}>
-              The shading identifies geography only. No country-level prevalence
-              or individual locations are plotted. Use the geography buttons to
-              change the published statistics.
-            </desc>
-            <defs>
-              <clipPath id={`map-clip-${id}`}>
-                <rect width="640" height="435" rx="10" />
-              </clipPath>
-              <pattern
-                id={`map-dots-${id}`}
-                width="17"
-                height="17"
-                patternUnits="userSpaceOnUse"
-              >
-                <circle cx="1" cy="1" r=".7" fill="#bed1d8" />
-              </pattern>
-            </defs>
-            <rect width="640" height="435" fill={`url(#map-dots-${id})`} />
-            <g clipPath={`url(#map-clip-${id})`} aria-hidden="true">
-              {asiaCountries.map((country) => (
-                <path
-                  key={country.id}
-                  d={country.d}
-                  className={`regional-country ${country.id === "IND" && view === "india" ? "country-india" : ""} ${(view === "india" ? country.id === "IND" : whoCountries.has(country.id)) ? "is-highlighted" : ""}`}
-                >
-                  <title>{country.name}</title>
-                </path>
-              ))}
-              {view === "region" && (
-                <circle
-                  cx="188.4"
-                  cy="325"
-                  r="2.5"
-                  className="regional-island-marker"
-                />
-              )}
-              <text x="246" y="130" className="map-context-label">
-                ASIA
-              </text>
-              <text
-                x="210"
-                y="228"
-                className={`map-india-label ${view === "india" ? "is-selected" : ""}`}
-              >
-                INDIA
-              </text>
-              <text x="280" y="375" className="map-water-label">
-                INDIAN OCEAN
-              </text>
-            </g>
-          </svg>
-          <div className="regional-map-note">
-            <MapPin size={15} />
-            <p>
-              {view === "india"
-                ? "India in focus. The figures describe a national survey estimate, not a state-by-state breakdown."
-                : "The highlighted countries show WHO’s regional focus. No country-by-country totals are implied."}
-            </p>
+          <h3>Real lives.<br /><em>Room for support.</em></h3>
+          <p>Every number represents someone with a story. Making space to listen, connect and seek care starts with understanding.</p>
+          <div className="regional-peer-avatars">
+            <div className="avatar-stack">
+              <img src="/images/student-wellness.jpg" alt="Peer guide" />
+              <img src="/images/mindful-support.jpg" alt="Community buddy" />
+              <img src="/images/corporate-wellness.jpg" alt="Wellness mentor" />
+            </div>
+            <div className="regional-peer-avatars-text">
+              <strong>Dedicated listening circles</strong>
+              <span>Safe, moderated spaces for any day</span>
+            </div>
           </div>
-          <div className="regional-map-credit">
-            <span>Geography, not a prevalence heatmap</span>
-            <a
-              href="https://www.naturalearthdata.com/about/terms-of-use/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Map: Natural Earth ↗
-            </a>
+          <div className="regional-study-card">
+            <span>ABOUT THESE FIGURES</span>
+            <strong>{view === "india" ? "National Mental Health Survey" : "WHO South-East Asia Region"}</strong>
+            <p>{view === "india" ? "Survey period: 2015–16. National estimates, with fieldwork across 12 states." : "Published July 2025. A regional estimate covering mental, neurological and substance-use conditions."}</p>
           </div>
+          <Link href="/psychologists" className="regional-care-link">Find support for you <ArrowUpRight size={18} /></Link>
         </div>
         <div
           className="regional-figures"
@@ -219,6 +149,17 @@ export function RegionalWellbeing() {
           aria-live="polite"
           aria-atomic="true"
         >
+          <div className="regional-stat-image-banner">
+            <img
+              src={view === "india" ? "/images/community-friends-wide.jpg" : "/images/community-circle-wide.jpg"}
+              alt="People connecting in supportive community circle"
+              loading="lazy"
+            />
+            <div className="regional-stat-image-caption">
+              <span className="regional-stat-image-badge">Support in Practice</span>
+              <span>Connecting empathy to measurable clinical &amp; peer care</span>
+            </div>
+          </div>
           <span className="eyebrow">{selected.eyebrow}</span>
           <div className="regional-main-number">
             <strong>{selected.amount}</strong>
@@ -230,32 +171,52 @@ export function RegionalWellbeing() {
             {selected.period}
           </span>
           <p className="regional-estimate-detail">{selected.detail}</p>
-          <div className="regional-supporting-stats">
-            <div>
-              <strong>{selected.statA}</strong>
-              <p>{selected.statALabel}</p>
-              {view === "india" && (
-                <a
-                  href={prevalenceSource}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Parliament reply ↗
-                </a>
-              )}
+          <div className="regional-supporting-stats visual-stat-cards">
+            <div className="visual-stat-card">
+              <div className="visual-stat-card-image">
+                <img
+                  src={view === "india" ? "/images/counseling-consultation.jpg" : "/images/corporate-wellness.jpg"}
+                  alt="Clinical care consultation"
+                  loading="lazy"
+                />
+                <span className="visual-stat-badge">Clinical Focus</span>
+              </div>
+              <div className="visual-stat-card-body">
+                <strong>{selected.statA}</strong>
+                <p>{selected.statALabel}</p>
+                {view === "india" && (
+                  <a
+                    href={prevalenceSource}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Parliament reply ↗
+                  </a>
+                )}
+              </div>
             </div>
-            <div>
-              <strong>{selected.statB}</strong>
-              <p>{selected.statBLabel}</p>
-              {view === "india" && (
-                <a
-                  href={surveySource}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  NIMHANS survey ↗
-                </a>
-              )}
+            <div className="visual-stat-card">
+              <div className="visual-stat-card-image">
+                <img
+                  src={view === "india" ? "/images/team-connection.jpg" : "/images/walk-together.webp"}
+                  alt="Regional fieldwork and community connection"
+                  loading="lazy"
+                />
+                <span className="visual-stat-badge">Field Coverage</span>
+              </div>
+              <div className="visual-stat-card-body">
+                <strong>{selected.statB}</strong>
+                <p>{selected.statBLabel}</p>
+                {view === "india" && (
+                  <a
+                    href={surveySource}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    NIMHANS survey ↗
+                  </a>
+                )}
+              </div>
             </div>
           </div>
           <a

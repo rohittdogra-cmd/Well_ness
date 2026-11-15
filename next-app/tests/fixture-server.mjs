@@ -31,30 +31,47 @@ const user = {
   created_at: new Date().toISOString(),
 };
 const groups = [
-  {
-    id: 1,
-    slug: "cricket",
-    category: "sports",
-    name: "Cricket",
-    description: "Find a team. Plan your next match.",
-    group_members: [{ user_id: id }],
-  },
-  {
-    id: 2,
-    slug: "music",
-    category: "arts",
-    name: "Music",
-    description: "Share playlists and discover new sounds.",
-    group_members: [],
-  },
-  {
-    id: 3,
-    slug: "health-wellness",
-    category: "wellbeing",
-    name: "Health & wellness",
-    description: "Build better habits together.",
-    group_members: [],
-  },
+  // Sports
+  { id: 1, slug: "cricket", category: "sports", name: "Cricket", description: "Find a team. Plan your next match.", group_members: [{ user_id: id }] },
+  { id: 2, slug: "badminton", category: "sports", name: "Badminton", description: "Find a doubles partner or an after-work game.", group_members: [{ user_id: id }] },
+  { id: 3, slug: "football", category: "sports", name: "Football", description: "Find a five-a-side team or plan a weekend kickabout.", group_members: [] },
+  { id: 4, slug: "basketball", category: "sports", name: "Basketball", description: "Find your court, your team and your next pickup game.", group_members: [] },
+  { id: 5, slug: "volleyball", category: "sports", name: "Volleyball", description: "Build a team for a friendly game at the net.", group_members: [] },
+  { id: 6, slug: "pickleball", category: "sports", name: "Pickleball", description: "New to the game or ready for doubles? Find a partner.", group_members: [] },
+  { id: 7, slug: "tennis", category: "sports", name: "Tennis", description: "Rally with someone new and arrange your next match.", group_members: [] },
+  { id: 8, slug: "table-tennis", category: "sports", name: "Table tennis", description: "Turn a short break into a friendly match.", group_members: [] },
+  { id: 9, slug: "sports", category: "sports", name: "Sports", description: "Find your next game.", group_members: [] },
+
+  // Wellbeing
+  { id: 10, slug: "health-wellness", category: "wellbeing", name: "Health & wellness", description: "Build better habits together.", group_members: [] },
+  { id: 11, slug: "yoga", category: "wellbeing", name: "Yoga", description: "Stretch, breathe and build a practice together.", group_members: [] },
+  { id: 12, slug: "mindfulness", category: "wellbeing", name: "Mindfulness", description: "Share simple ways to slow down and reset.", group_members: [] },
+  { id: 13, slug: "fitness", category: "wellbeing", name: "Fitness", description: "Find workout partners and encourage consistent habits.", group_members: [] },
+
+  // Arts & Culture
+  { id: 14, slug: "music", category: "arts", name: "Music", description: "Share playlists and discover new sounds.", group_members: [] },
+  { id: 15, slug: "movies", category: "arts", name: "Movies", description: "Your next great watch starts here.", group_members: [] },
+  { id: 16, slug: "creativity", category: "arts", name: "Creativity", description: "Make something just for the joy of it.", group_members: [] },
+  { id: 17, slug: "photography", category: "arts", name: "Photography", description: "Share your perspective and plan a photo walk.", group_members: [] },
+  { id: 18, slug: "dance", category: "arts", name: "Dance", description: "Discover new styles and people who love to move.", group_members: [] },
+
+  // Learning & Growth
+  { id: 19, slug: "career-growth", category: "learning", name: "Career growth", description: "Learn something new and support each other.", group_members: [] },
+  { id: 20, slug: "technology", category: "learning", name: "Technology", description: "Curiosity, tools and ideas worth sharing.", group_members: [] },
+  { id: 21, slug: "books", category: "learning", name: "Books", description: "Good books. Better conversations.", group_members: [] },
+  { id: 22, slug: "study-circles", category: "learning", name: "Study circles", description: "Find study partners, share resources and learn together.", group_members: [] },
+  { id: 23, slug: "languages", category: "learning", name: "Languages", description: "Practice a new language through friendly conversation.", group_members: [] },
+
+  // Social & Food
+  { id: 24, slug: "food-dining", category: "social", name: "Food & dining", description: "Recipes, coffee breaks and good company.", group_members: [] },
+  { id: 25, slug: "coffee-chats", category: "social", name: "Coffee chats", description: "Make time for a coffee and a new connection.", group_members: [] },
+  { id: 26, slug: "board-games", category: "social", name: "Board games", description: "Bring your favourite game and find your next table.", group_members: [] },
+  { id: 27, slug: "cooking", category: "social", name: "Cooking", description: "Swap recipes and explore something delicious.", group_members: [] },
+
+  // Outdoors
+  { id: 28, slug: "travel", category: "outdoors", name: "Travel", description: "Weekend escapes and stories from the road.", group_members: [] },
+  { id: 29, slug: "hiking", category: "outdoors", name: "Hiking", description: "Discover local trails and plan a walk with good company.", group_members: [] },
+  { id: 30, slug: "cycling", category: "outdoors", name: "Cycling", description: "Find riding partners and explore new routes.", group_members: [] },
 ];
 let posts = [
   {

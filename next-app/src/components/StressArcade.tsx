@@ -10,16 +10,30 @@ import {
 import { ZenBubblePopper } from "./ZenBubblePopper";
 import { MindfulResetSanctuary } from "./MindfulResetSanctuary";
 import { ErgonomicDeskStretch } from "./ErgonomicDeskStretch";
+import { AnimatedCat } from "./AnimatedCat";
 import Link from "next/link";
 type GameTab = "bubbles" | "breathing" | "stretching";
 const games = [
-  { id: "bubbles", label: "Pop a worry", time: "Quick play", icon: CircleDot },
-  { id: "breathing", label: "Breathe", time: "60 seconds", icon: Wind },
+  {
+    id: "bubbles",
+    label: "Pop a worry",
+    time: "Quick play",
+    icon: CircleDot,
+    image: "/images/groups/category-arts.jpg",
+  },
+  {
+    id: "breathing",
+    label: "Breathe",
+    time: "60 seconds",
+    icon: Wind,
+    image: "/images/groups/mindfulness.jpg",
+  },
   {
     id: "stretching",
     label: "Desk stretch",
     time: "2 minutes",
     icon: Armchair,
+    image: "/images/groups/yoga.jpg",
   },
 ] as const;
 export function StressArcade() {
@@ -61,15 +75,18 @@ export function StressArcade() {
           <button
             type="button"
             key={game.id}
+            className="reset-choice-button has-thumb"
             aria-pressed={activeTab === game.id && expanded}
             onClick={() => choose(game.id)}
           >
-            <game.icon size={22} />
-            <span>
+            <span className="reset-choice-thumb">
+              <img src={game.image} alt="" loading="lazy" />
+            </span>
+            <span className="reset-choice-body">
               <strong>{game.label}</strong>
               <small>{game.time}</small>
             </span>
-            <span aria-hidden="true">↗</span>
+            <span className="reset-choice-arrow" aria-hidden="true">↗</span>
           </button>
         ))}
       </div>
@@ -84,7 +101,10 @@ export function StressArcade() {
           )}
         </div>
       )}
-      <div className="pause-companion">
+      <div className="pause-companion has-photo">
+        <div className="pause-companion-thumb">
+          <img src="/images/peer-support.jpg" alt="Colleagues laughing and connecting" loading="lazy" />
+        </div>
         <div className="cat-trail" aria-hidden="true">
           <svg viewBox="0 0 240 80">
             <path
@@ -95,7 +115,7 @@ export function StressArcade() {
               strokeDasharray="4 6"
             />
           </svg>
-          <span className="pause-cat">🐈</span>
+          <AnimatedCat />
         </div>
         <div>
           <strong>A little less stress. A little more connection.</strong>

@@ -2,7 +2,6 @@
 import { localAccess } from "@/lib/localAccess";
 import { Toaster } from "@/components/ui/sonner";
 import Link from "next/link";
-import { VerificationBanner } from "./VerificationBanner";
 import { AuthGate } from "./AuthGate";
 import { HubHeader } from "./HubHeader";
 import { usePathname } from "next/navigation";
@@ -30,9 +29,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <HubHeader />
               <div className="wellness-content">
                 <main id="main-content" key={path}>
-                  {!["/verify", "/admin", "/dashboard", "/onboarding"].includes(path) && (
-                    <VerificationBanner />
-                  )}
                   {children}
                 </main>
                 <footer className="wellness-footer">

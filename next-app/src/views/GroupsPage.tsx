@@ -13,6 +13,7 @@ import {
 import { useGroups, useCommunityAction } from "@/hooks/useCommunity";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { groupCategories, getCategory } from "@/lib/groupCategories";
+import { getGroupImage, getCategoryImage } from "@/lib/groupImages";
 import { toast } from "sonner";
 const subscribeToLocation = (callback: () => void) => {
   window.addEventListener("popstate", callback);
@@ -226,9 +227,12 @@ export function GroupsPage() {
             aria-pressed={category === c.id}
             onClick={() => setCategory(category === c.id ? "" : c.id)}
           >
-            <span className="category-symbol">
-              <c.icon size={25} />
-            </span>
+            <div className="category-card-thumb">
+              <img src={getCategoryImage(c.id)} alt={c.name} loading="lazy" />
+              <span className="category-symbol">
+                <c.icon size={20} />
+              </span>
+            </div>
             <strong>{c.name}</strong>
             {!category && (
               <>
@@ -292,34 +296,44 @@ export function GroupsPage() {
             const joined = g.group_members.some((m) => m.user_id === user?.id);
             return (
               <Link
-                className="subgroup-card"
+                className="subgroup-card has-cover"
                 key={g.id}
                 href={`/groups/${g.slug}`}
               >
-                <div className="subgroup-top">
-                  <span className={`subgroup-symbol ${c.color}`}>
-                    <c.icon size={24} />
-                  </span>
-                  <span className="category-tag">{c.name}</span>
-                  <ArrowUpRight size={18} />
+                <div className="subgroup-image">
+                  <img
+                    src={getGroupImage(g.slug, g.category)}
+                    alt={g.name}
+                    loading="lazy"
+                  />
+                  <span className="subgroup-badge">{c.name}</span>
                 </div>
-                <h3>{g.name}</h3>
-                <p>{g.description}</p>
-                <div className="subgroup-footer">
-                  <span>
-                    <Users size={15} />
-                    {g.member_count ?? g.group_members.length}{" "}
-                    {(g.member_count ?? g.group_members.length) === 1
-                      ? "member"
-                      : "members"}
-                  </span>
-                  {joined ? (
-                    <b>
-                      <Check size={14} /> Joined
-                    </b>
-                  ) : (
-                    <strong>Explore group →</strong>
-                  )}
+                <div className="subgroup-content">
+                  <div className="subgroup-top">
+                    <span className={`subgroup-symbol ${c.color}`}>
+                      <c.icon size={20} />
+                    </span>
+                    <span className="category-tag">{c.name}</span>
+                    <ArrowUpRight size={18} />
+                  </div>
+                  <h3>{g.name}</h3>
+                  <p>{g.description}</p>
+                  <div className="subgroup-footer">
+                    <span>
+                      <Users size={15} />
+                      {g.member_count ?? g.group_members.length}{" "}
+                      {(g.member_count ?? g.group_members.length) === 1
+                        ? "member"
+                        : "members"}
+                    </span>
+                    {joined ? (
+                      <b>
+                        <Check size={14} /> Joined
+                      </b>
+                    ) : (
+                      <strong>Explore group →</strong>
+                    )}
+                  </div>
                 </div>
               </Link>
             );

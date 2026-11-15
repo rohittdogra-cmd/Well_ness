@@ -7,6 +7,7 @@ import { ConversationFeed } from "@/components/ConversationFeed";
 import { GroupIcon } from "@/components/GroupIcon";
 import { toast } from "sonner";
 import { getCategory } from "@/lib/groupCategories";
+import { getGroupImage } from "@/lib/groupImages";
 export function GroupDetailPage() {
   const { topic } = useParams<{ topic: string }>();
   const groups = useGroups();
@@ -40,6 +41,15 @@ export function GroupDetailPage() {
       <Link className="text-action" href={`/groups?category=${group.category}`}>
         ← {getCategory(group.category).name} / All subgroups
       </Link>
+      <div className="group-detail-cover">
+        <img
+          src={getGroupImage(group.slug, group.category)}
+          alt={group.name}
+        />
+        <span className="group-detail-cover-badge">
+          {getCategory(group.category).name}
+        </span>
+      </div>
       <header className="group-detail-heading">
         <div className="group-detail-icon">
           <GroupIcon topic={group.slug} label={group.name} />
