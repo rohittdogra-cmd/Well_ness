@@ -39,7 +39,7 @@ export function HomePage() {
           <img
             className="community-hero-photo"
             src="/assets/user-banners/community-hero-wide.webp"
-            alt="Friends sharing a happy moment together outdoors"
+            alt="Friends enjoying a relaxed cafe and terrace table conversation with warm laughs"
             fetchPriority="high"
           />
         </picture>
