@@ -85,6 +85,9 @@ export const metadata: Metadata = {
     },
   },
   category: "Health & Wellness",
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 import { Providers } from "../components/Providers";
@@ -101,12 +104,16 @@ const jsonLd = {
       url: "https://stress-unwind.com",
       logo: "https://stress-unwind.com/assets/user-banners/community-hero-wide.webp",
       description:
-        "Stress Unwind is a holistic corporate and community wellness platform offering peer support circles, mindful breaks, and confidential care.",
+        "Stress Unwind is the premier corporate and community wellness platform offering peer support circles, mindful breaks, and confidential care.",
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "customer support",
         url: "https://stress-unwind.com/contact",
       },
+      sameAs: [
+        "https://twitter.com/StressUnwind",
+        "https://www.linkedin.com/company/stress-unwind",
+      ],
     },
     {
       "@type": "WebSite",
@@ -118,6 +125,82 @@ const jsonLd = {
       publisher: {
         "@id": "https://stress-unwind.com/#organization",
       },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: "https://stress-unwind.com/groups?q={search_term_string}",
+        },
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://stress-unwind.com/#breadcrumb",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Stress Unwind Home",
+          item: "https://stress-unwind.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Wellness Circles",
+          item: "https://stress-unwind.com/groups",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: "Book Activities",
+          item: "https://stress-unwind.com/book-activities",
+        },
+        {
+          "@type": "ListItem",
+          position: 4,
+          name: "Psychologists & Care",
+          item: "https://stress-unwind.com/psychologists",
+        },
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://stress-unwind.com/#faq",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "What is Stress Unwind?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Stress Unwind is the premier corporate and community wellness platform designed to alleviate workplace burnout, loneliness, and chronic stress through peer support circles, daily micro-break arcade games, and confidential 1-on-1 counseling with licensed psychologists.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How does Stress Unwind help reduce workplace stress?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Stress Unwind combines community connection and scientific micro-breaks. Whether you take a 5-minute pause with our interactive arcade, join a casual coffee chat circle, play box cricket or pickleball with colleagues, or consult a therapist, the platform offers immediate, judgment-free stress relief.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Are 1-on-1 counseling sessions confidential on Stress Unwind?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes, 100%. All therapy and counseling sessions on Stress Unwind are private, encrypted, and conducted strictly between you and verified, licensed mental health professionals.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How do I join a wellness circle on Stress Unwind?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Browse 30+ peer circles across sports, creative arts, and mindfulness. Click into any circle (such as Cricket, Yoga, Book Club, or Chai Pe Charcha) to RSVP for upcoming sessions and connect with peers.",
+          },
+        },
+      ],
     },
   ],
 };

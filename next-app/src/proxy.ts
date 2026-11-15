@@ -42,13 +42,25 @@ export async function proxy(request: NextRequest) {
     },
   );
   await supabase.auth.getClaims();
-  response.headers.set("Cache-Control", "private, no-store");
-  if (request.nextUrl.pathname.startsWith("/auth/") || request.nextUrl.pathname === "/appointments/guest") {
-    response.headers.set("Referrer-Policy", "no-referrer");
-    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  const isPrivateRoute =
+    request.nextUrl.pathname.startsWith("/admin") ||
+    request.nextUrl.pathname.startsWith("/account") ||
+    request.nextUrl.pathname.startsWith("/profile") ||
+    request.nextUrl.pathname.startsWith("/my-sessions") ||
+    request.nextUrl.pathname.startsWith("/onboarding") ||
+    request.nextUrl.pathname.startsWith("/verify") ||
+    request.nextUrl.pathname.startsWith("/auth/") ||
+    request.nextUrl.pathname === "/appointments/guest";
+
+  if (isPrivateRoute) {
+    response.headers.set("Cache-Control", "private, no-store");
+    if (request.nextUrl.pathname.startsWith("/auth/") || request.nextUrl.pathname === "/appointments/guest") {
+      response.headers.set("Referrer-Policy", "no-referrer");
+      response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    }
   }
   return response;
 }
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|images/|assets/|sitemap.xml|robots.txt).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|images/|assets/|.*\\.txt|.*\\.html|sitemap.xml|robots.txt).*)"],
 };

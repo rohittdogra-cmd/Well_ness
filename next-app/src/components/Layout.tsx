@@ -32,11 +32,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {children}
                 </main>
                 <footer className="wellness-footer">
-                  <span>Make time for yourself. Make room for connection.</span>
+                  <div className="footer-brand-summary">
+                    <strong>Stress Unwind</strong>
+                    <span>Corporate & Community Wellness Platform</span>
+                    <small>© {new Date().getFullYear()} Stress Unwind. All rights reserved.</small>
+                  </div>
                   <div className="footer-links">
-                    <Link href="/psychologists">Find care</Link>
+                    <Link href="/groups">Wellness Circles</Link>
+                    <Link href="/book-activities">Book Activities</Link>
+                    <Link href="/psychologists">Find Care</Link>
+                    <Link href="/community">Stories</Link>
+                    <Link href="/discuss">Forum</Link>
+                    <Link href="/about">About</Link>
+                    <Link href="/membership">Pricing</Link>
+                    <Link href="/careers">Careers</Link>
+                    <Link href="/apply-provider">For Providers</Link>
                     <Link href="/contact">Contact</Link>
-                    <Link href="/provider">For providers</Link>
                   </div>
                 </footer>
               </div>

@@ -9,7 +9,8 @@ import { ConnectionStory } from "@/components/ConnectionStory";
 import { DailyCheckIn } from "@/components/DailyCheckIn";
 import { StressArcade } from "@/components/StressArcade";
 import { GlobalStressPulse } from "@/components/GlobalStressPulse";
-import { ArrowUpRight, ArrowRight, Compass, Coffee, Gamepad2 } from "lucide-react";
+import { HomeSeoSection } from "@/components/HomeSeoSection";
+import { ArrowUpRight, ArrowRight, Compass, Coffee, Gamepad2, Sparkles } from "lucide-react";
 import { useGroups } from "@/hooks/useCommunity";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { getCategory } from "@/lib/groupCategories";
@@ -39,14 +40,36 @@ export function HomePage() {
           <img
             className="community-hero-photo"
             src="/assets/user-banners/community-hero-wide.webp"
-            alt="Friends enjoying a relaxed cafe and terrace table conversation with warm laughs"
+            alt="Stress Unwind — Colleagues and friends enjoying a relaxed cafe and terrace conversation"
             fetchPriority="high"
           />
         </picture>
         <div className="community-hero-copy">
-          <h1>Your people. Your pause.<br /><span>Your kind of happy.</span></h1>
-          <p>Find your circle. Share your interests. Make room for the moments that matter.</p>
-          <Link href="/groups" className="community-hero-explore">Explore <ArrowRight size={24} /></Link>
+          <span
+            className="hero-brand-badge"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 12px",
+              borderRadius: "999px",
+              background: "rgba(9, 45, 33, 0.85)",
+              border: "1px solid rgba(255, 228, 103, 0.4)",
+              color: "#ffe467",
+              fontSize: "11px",
+              fontWeight: 700,
+              letterSpacing: "0.8px",
+              marginBottom: "12px",
+            }}
+          >
+            <Sparkles size={13} /> STRESS UNWIND
+          </span>
+          <h1>
+            <span className="sr-only">Stress Unwind — </span>
+            Your people. Your pause.<br /><span>Your kind of happy.</span>
+          </h1>
+          <p>Stress Unwind is your space to find your circle, share your interests, and make room for the moments that matter.</p>
+          <Link href="/groups" className="community-hero-explore">Explore Circles <ArrowRight size={24} /></Link>
         </div>
       </section>
 
@@ -76,7 +99,7 @@ export function HomePage() {
           <img
             className="welcome-background"
             src="/assets/user-banners/welcome-wide.webp"
-            alt="Friends enjoying sunny outdoor connection"
+            alt="Stress Unwind — Team members connecting outdoors during a mindful wellness break"
             loading="lazy"
           />
         </picture>
@@ -150,6 +173,10 @@ export function HomePage() {
         </section>
         {user && <DailyCheckIn />}
       </div>
+
+      {/* 8. Complete Workplace Wellness Ecosystem & FAQ Section for Google Ranking */}
+      <HomeSeoSection />
+
       <footer className="home-banner-edge">
         <Link href="/book-activities" className="take-a-break-banner activities-footer-banner">
           <span className="break-coffee" aria-hidden="true"><Gamepad2 size={25} strokeWidth={1.6} /></span>
